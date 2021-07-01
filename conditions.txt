@@ -1,0 +1,42 @@
+This file contains the parameters for the solving method and the boundary
+counditions. Each value must be directly after it's respective line that
+begins with "#". All other text will be ignored.
+
+#SIZE
+   6 6      the length, or number of points in each direction
+#ACCUR
+   0.00001  the desired accuracy or relative error
+#h
+   0.02     the step size
+#B
+   1        the variable parameter
+#num loops
+   1500     the maximum number of loops allowed
+#rel_p
+   0.005    the relaxation parameter
+#bLeft
+   1        the left slip length
+#bRight
+   1        the right slip length
+#bTop
+   1        the top slip length
+#bBott
+   1        the bottom slip length
+#maxStore
+   5        the maximum number of previous vectors to be stored in the acceleration method
+#wait
+   2        the number of iterations to wait before applying the acceleration
+              it will be using normal relaxation until then
+#betas
+   1 -2 -2 -2 2
+   all of the beta coefficients, 1-5, in order
+#alpha
+   -0.005
+   the temperature-dependent alpha coefficient
+#Ks
+   1 1 1
+   the K coefficients
+
+Somehow, we need to be able to set all the
+   boundary conditions based on values that
+   we set in here.
