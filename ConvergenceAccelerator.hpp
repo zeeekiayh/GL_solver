@@ -4,8 +4,8 @@
 #include <complex>
 #include <vector>
 
-#include </home/izek/Downloads/eigen-3.3.9/Eigen/Dense>
-#include </home/izek/Downloads/eigen-3.3.9/Eigen/Sparse>
+#include <eigen/Eigen/Dense>
+#include <eigen/Eigen/Sparse>
 
 //  ------------------ namespaces -------------------------------------------
 using namespace std; 

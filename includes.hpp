@@ -300,8 +300,8 @@ VectorXcd RHS(VectorXcd& del, in_conditions cond)
 //    return Duv_return;
 // }
 
-template<class T>
-ostream& operator<< (ostream& os, const OrderParam<T>& OP)
+template<class Container_type, class Scalar_type>
+ostream& operator<< (ostream& os, const OrderParam<Container_type, Scalar_type>& OP)
 {
    for (int i = 0; i < OP.num_comp; i++)
    {
