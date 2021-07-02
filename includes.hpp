@@ -7,8 +7,8 @@
 #include "math.h"
 #include <complex>
 #include <vector>
-#include </Eigen/Dense>
-#include </Eigen/Sparse>
+#include <eigen/Eigen/Dense>
+#include <eigen/Eigen/Sparse>
 #include "ConvergenceAccelerator.hpp"
 
 using std::cout;
