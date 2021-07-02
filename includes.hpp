@@ -72,118 +72,246 @@ Matrix<VectorXcd,3,3> BuildMatrix(vector<VectorXcd>& del, vector<int>& idx)
    return op;
 }
 
-// a Separate() function
-// funcitons for simplifying the RHS function
-
-
-// A structure to hold a component of the op, and
-//   its boundary conditions. Overload math operations
-//   to insert boundary conditions when multiplying.
-struct Delta
+void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
 {
-   VectorXcd v;
-   Matrix<complex<double>,-1,-1> m;
-
-   Delta(VectorXcd vec, Matrix<complex<double>,-1,-1> mat): v(vec), m(mat) {  }
-   Delta(int size) { this->v.resize(size); this->m.resize(size,size); }
-
-   Delta operator+ (const Delta& d) const { return Delta(d.v+this->v, d.m+this->m); }
-   Delta operator- (const Delta& d) const { return Delta(d.v-this->v, d.m-this->m); }
-   Delta operator* (const double& d) const { return Delta(this->v * d, this->m * d); }
-   Delta operator/ (const double& d) const { return Delta(this->v / d, this->m / d); }
-   Delta& operator= (const Delta& d)
+   // the real part
+   std::ofstream data_r (f_name_real);
+   if (data_r.is_open())
    {
-      this->v = d.v;
-      this->m = d.m;
-      return *this;
+      for (int i = 0; i < f.size(); i++) data_r << f(i).real() << "\n";
+      data_r.close();
    }
-   void operator+= (const Delta& d) { this->v += d.v; this->m += d.m; }
-   int size() const                 { return v.size(); }
-   dcomplex& operator() (int i)     { return v(i); }
+   else cout << "Unable to open file: " << f_name_real << endl;
 
-   // double norm() const { return std::max(para.norm(), perp.norm()); }
-   // double abs() const { return std::sqrt(this->norm()); }
-};
-
-VectorXcd Stack(Delta& d1, Delta& d2)
-{
-   VectorXcd v(d1.size()+d2.size());
-   int i = 0;
-   while (i < d1.size())
+   // the imaginary part
+   std::ofstream data_c (f_name_imag);
+   if (data_c.is_open())
    {
-      v(i) = d1(i);
-      i++;
+      for (int i = 0; i < f.size(); i++) data_c << f(i).imag() << "\n";
+      data_c.close();
    }
-   while (i-d1.size() < d2.size())
-   {
-      v(i) = d2(i-d1.size());
-      i++;
-   }
-   return v;
+   else cout << "Unable to open file: " << f_name_imag << endl;
 }
 
-VectorXcd Stack(Delta& d1, VectorXcd& v2)
+
+// =================================
+template <class T> struct OrderParam
 {
-   VectorXcd v(d1.size()+v2.size());
-   int i = 0;
-   while (i < d1.size())
-   {
-      v(i) = d1(i);
-      i++;
-   }
-   while (i-d1.size() < v2.size())
-   {
-      v(i) = v2(i-d1.size());
-      i++;
-   }
-   return v;
-}
+   // store it as a vector; the OP at one point
+   int num_comp;
+   Matrix<T,-1,1> OP;
 
-VectorXcd Stack(VectorXcd& v1, VectorXcd& v2)
-{
-   VectorXcd v(v1.size()+v2.size());
-   int i = 0;
-   while (i < v1.size())
-   {
-      v(i) = v1(i);
-      i++;
-   }
-   while (i-v1.size() < v2.size())
-   {
-      v(i) = v2(i-v1.size());
-      i++;
-   }
-   return v;
-}
-
-struct BC
-{
-   bool is_value; // if a BC is a function value (true) or a derivative (false)
-   complex<double> val; // what the value is (for function value or derivative)
-   int idx; // index of the BC: 0 or N
-
-   BC(bool val_or_d, complex<double> value): is_value(val_or_d), val(value) {  }
-
-   void InsertBC(SparseMatrix<dcomplex>& m, VectorXcd& rhs)
-   {
-      if (this->is_value) // function value condition
-      {
-         m.insert(idx,idx) = this->val; // insert BC
-         // and also insert the values affected by the ghost points
-         //
-      }
-      else // derivative condition
-      {
-         //
-      }
-   }
+   // virtual(?) functions
+   double Free_energy() = 0.;
+   T F_Bulk();
+   T F_Grad();
 };
 
-struct OrderParam
+// TODO...
+// the right hand side of the matrix equation
+VectorXcd RHS(VectorXcd& del, in_conditions cond)
 {
-   // store it all as a vector
-};
+   VectorXcd d(del.size()); // make a type complex vector the same size as del
 
+   // for (int i = 0; i < del.size(); i+=2) // loop through the whole vector
+   // {
+   //    // use the diff. equ's as obtained from the GL equations of the distorted B-phase
+   //    d(i)   = DD_para(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
+   //    d(i+1) = DD_perp(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
+   // }
+
+   // // keep the boundary conditions fixed
+   // d(del.size()-2) = cond.BCNp;
+   // d(del.size()-1) = cond.BCNs;
+
+   // d(0) = 0.; // BC for specular or diffuse (see BuildProblem() for differences)
+   // d(1) = 0.; // BC: delta_perp [0] = 0
+
+   return d;
+}
+
+// TODO: modify the grad terms to calculate it based on the mesh
+// Calculate the free-energy loss by the integral of the energy density
+// This value has been normalized because the deltas were calculated as
+//    normalized. Dividing f by (alpha(T) * delta_0^2) and simplifying.
+// Gives a warning if the result has ~non-zero imaginary part.
+// double Free_energy()
+// {
+//    if (!solution.size())
+//    {
+//       cout << "ERROR: cannot calculate free-energy without a solution." << endl;
+//       return 0.;
+//    }
+//    complex<double> I = 0; // start the integral sum at 0
+//    complex<double> f_bulk, f_bulk_prev = 0.;
+//    complex<double> f_grad, f_grad_prev = 0.;
+//    VectorXcd integ(size-2); // value of the integral over distance--to plot
+//    // calculate the first step
+//    f_bulk = F_Bulk(0);
+//    f_grad = F_Grad(0,1);
+//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
+//    for (int i = 1; i <= size-2; i++)
+//    {
+//       // set the previous values
+//       f_bulk_prev = f_bulk;
+//       f_grad_prev = f_grad;
+//       f_bulk = F_Bulk(i);
+//       // calculate the gradient term
+//       f_grad = F_Grad(i-1,i+1);
+//       // use a rectangular integral approximation, centered at the midpoints
+//       I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
+//       integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
+//    }
+//    // calculate the last step
+//    f_bulk = F_Bulk(size-1);
+//    f_grad = F_Grad(size-2,size-1);
+//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
+//    // save the integrand vector to plot and inspect
+//    Write_To_File(integ,"integ_c.txt","integ_r.txt"); // using the non-member function
+//    cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
+//    if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
+//    return I.real();
+// }
+// calculate the normalized bulk free-energy density
+// complex<double> F_Bulk(int i)
+// {
+//    // calculate the used forms of A
+//    Matrix<complex<double>,3,3> A = M_index(OP,i),
+//                               AT = A.transpose(),
+//                               A_dag = AT.conjugate(),
+//                               A_conj = A.conjugate();
+//    double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
+//    return -( gl.B1*pow( abs((A * AT).trace()), 2)
+//             +gl.B2*pow( (A * A_dag).trace(), 2)
+//             +gl.B3*(A * AT * A_conj * A_dag).trace()
+//             +gl.B4*(A * A_dag * A * A_dag).trace()
+//             +gl.B5*(A * A_dag * A_conj * AT).trace()
+//          )/(Beta_B*9.)
+//          +2./3.*(A * A_dag).trace();
+// }
+// TODO: make it calculate the gradient using the central difference
+//       derivative for each internal point on the mesh...do we pass
+//       in the mesh? or just pass in the relating indexes?
+// calculate the normalized gradient free-energy density
+// complex<double> F_Grad(int m, int n)
+// {
+//    if (m < 0) { cout << "ERROR: F_Grad 'm' must be >= 0." << endl; return 0.0; }
+//    complex<double> k1 = 0., k2 = 0., k3 = 0.; // grad term sums
+//    // used center difference derivatives
+//    Matrix<complex<double>,3,3> A_next = M_index(OP,n), A_prev = M_index(OP,m);
+//    for (int a = 0; a < 3; a++)
+//    {
+//       for (int k = 0; k < 3; k++)
+//       {
+//          for (int j = 0; j < 3; j++)
+//          {
+//             // these derivatives are divided by their step size when used in Free_Energy()
+//             if (var_mat(a,j)[k])                       k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
+//             if (var_mat(a,k)[j]*var_mat(a,j)[k]) k2 += ( conj(A_next(a,k) - A_prev(a,k)) ) * ( A_next(a,j) - A_prev(a,j) );
+//             if (var_mat(a,j)[k]*var_mat(a,k)[j]) k3 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,k) - A_prev(a,k) );
+//          }
+//       }
+//    }
+//    return -2./3.*(k1+k2+k3)/(pow(2*cond.STEP,2)); // divide by (2h)^2 becasue there
+//                   //  is a product of 2 derivatives, but we have double step size
+// }
+// // returns the D matrices with given boundary value (slip length)
+// SparseMatrix<complex<double>> Du2_BD(double bL, double bR)
+// {
+//    SparseMatrix<complex<double>> Du2_return = Du2;
+//    // loop through the sides (where the BC apply for x)
+//    for (int n_v = 0; n_v < cond.SIZEv; n_v++)
+//    {
+//       // TODO: also modify the neighboring values
+//       // check the size of the b's
+//       int lID = ID(0,n_v,0,0),
+//             rID = ID(cond.SIZEu-1,n_v,0,0);
+//       // insert left
+//       Du2_return.insert(lID,lID) = -2. - 2.*cond.STEP/bL;
+//       // insert right
+//       Du2_return.insert(rID,rID) = -2. - 2.*cond.STEP/bR;
+//    }
+//    return Du2_return;
+// }
+// SparseMatrix<complex<double>> Dv2_BD(double bB, double bT)
+// {
+//    SparseMatrix<complex<double>> Dv2_return = Dv2;
+//    // loop across the top and bottom (where the BC apply for z)
+//    for (int n_u = 0; n_u < cond.SIZEu; n_u++)
+//    {
+//       // TODO: also modify the neighboring values
+//       // check the size of the b's
+//       int bID = ID(n_u,0,0,0),
+//             tID = ID(n_u,cond.SIZEv-1,0,0);
+//       // insert bottom
+//       Dv2_return.insert(bID,bID) = -2. - 2.*cond.STEP/bB;
+//       // insert top
+//       Dv2_return.insert(tID,tID) = -2. - 2.*cond.STEP/bT;
+//    }
+//    return Dv2_return;
+// }
+// // TODO
+// SparseMatrix<complex<double>> Duv_BD(double bL, double bR, double bB, double bT)
+// {
+//    SparseMatrix<complex<double>> Duv_return = Duv;
+//    // need to reset some values from the default setup...
+//    // loop through left and right sides, except corners
+//    for (int n_v = 1; n_v < cond.SIZEu-1; n_v++)
+//    {
+//       // TODO: also modify the neighboring values
+//       // check the size of the b's
+//       int lID    = ID(0,n_v,  0,0), // index of element on the left
+//             lID_up = ID(0,n_v+1,0,0), // index of left, above
+//             lID_dn = ID(0,n_v-1,0,0), // index of left, below
+//             rID    = ID(cond.SIZEu-1,n_v,  0,0), // index of element on the right
+//             rID_up = ID(cond.SIZEu-1,n_v+1,0,0), // index of right, above
+//             rID_dn = ID(cond.SIZEu-1,n_v-1,0,0); // index of right, below
+//       // insert left side
+//       Duv_return.insert(lID,lID_up) =  cond.STEP/(2.*bL);
+//       Duv_return.insert(lID,lID_dn) = -cond.STEP/(2.*bL);
+//       // insert right side
+//       Duv_return.insert(rID,rID_up) =  cond.STEP/(2.*bR);
+//       Duv_return.insert(rID,rID_dn) = -cond.STEP/(2.*bR);
+//    }
+//    // loop through top and bottom sides, except corners
+//    for (int n_u = 1; n_u < cond.SIZEu-1; n_u++)
+//    {
+//       int bID       = ID(n_u,  0,0,0), // index of element on the bottom
+//             bID_left  = ID(n_u-1,0,0,0), // index of bottom, left side
+//             bID_right = ID(n_u+1,0,0,0), // index of bottom, right side
+//             tID       = ID(n_u,  cond.SIZEu-1,0,0), // index of element on the top
+//             tID_left  = ID(n_u-1,cond.SIZEu-1,0,0), // index of top, left side
+//             tID_right = ID(n_u+1,cond.SIZEu-1,0,0); // index of top, right side
+//       // insert bottom side
+//       Duv_return.insert(bID,bID_left)  =  cond.STEP/(2.*bL);
+//       Duv_return.insert(bID,bID_right) = -cond.STEP/(2.*bL);
+//       // insert top side
+//       Duv_return.insert(tID,tID_left)  =  cond.STEP/(2.*bR);
+//       Duv_return.insert(tID,tID_right) = -cond.STEP/(2.*bR);
+//    }
+//    // corners: special case
+//    int u0 = ID(0,0,0,0),
+//          uN = ID(0,0,0,0),
+//          v0 = ID(0,0,0,0),
+//          vN = ID(0,0,0,0);
+//    // ...
+//    return Duv_return;
+// }
+
+template<class T>
+ostream& operator<< (ostream& os, const OrderParam<T>& OP)
+{
+   for (int i = 0; i < OP.num_comp; i++)
+   {
+      os << OP.OP(i);
+      if (i+1 < OP.num_comp) os << "\t";
+   }
+   return os;
+}
+// =================================
+
+
+// =================================
 class GL_Solver
 {
    public:
@@ -199,10 +327,6 @@ class GL_Solver
 
    SparseMatrix<complex<double>> A; // solver matrix
    SparseMatrix<complex<double>> Du2, Dv2, Duv; // derivative matrices
-   // The variable dependence matrix
-   // The var_matrix says what variables each component of the
-   //   OP are dependant on (to use in the f_grad calculation)
-   Matrix<vector<int>,3,3> var_mat;
 
    // * * * * * * * * * * * * * * * *
    // * CONSTRUCTORS & DECSTRUCTOR  *
@@ -217,15 +341,10 @@ class GL_Solver
 
       cout << "Du2 =\n" << Du2.real() << endl;
       // cout << "Du2(1,1) = \n" << Du2_BD(1.,1.) << endl;
-
       cout << "Dv2 =\n" << Dv2 << endl;
       // cout << "Dv2(1,1) = \n" << Dv2_BD(1.,1.) << endl;
-
       cout << "Duv =\n" << Duv << endl;
       // cout << "Duv(1,1,1,1) = \n" << Duv_BD(1.,1.,1.,1.) << endl;
-
-      A.resize(size,size);
-      // then build it out of the D matrices...
    }
    // ~GL_Solver() {};
 
@@ -233,15 +352,17 @@ class GL_Solver
    // * METHODS *
    // * * * * * *
 
-   // TODO: Write all components of the OP, each to their own file (will be 2D or 3D)
-   //   separates the components from solution...storing real and imag parts? ==> up to 18 files?
-   void WriteToFile(VectorXcd& f, string f_name_real, string f_name_imag)
+   // TODO: Write all components of the OP, all into one file, of the form:
+   //             __x__|__y__|_Axx_|_Axy_| ...
+   //              ... | ... | ... | ... | ...
+   //   separates the components from solution...storing real and imag parts ==> up to 18 files
+   void WriteToFile(string f_name_real, string f_name_imag)
    {
       // the real part
       std::ofstream data_r (f_name_real);
       if (data_r.is_open())
       {
-         for (int i = 0; i < f.size(); i++) data_r << f(i).real() << "\n";
+         for (int i = 0; i < solution.size(); i++) data_r << solution(i).real() << "\n";
          data_r.close();
       }
       else cout << "Unable to open file: " << f_name_real << endl;
@@ -250,63 +371,10 @@ class GL_Solver
       std::ofstream data_c (f_name_imag);
       if (data_c.is_open())
       {
-         for (int i = 0; i < f.size(); i++) data_c << f(i).imag() << "\n";
+         for (int i = 0; i < solution.size(); i++) data_c << solution(i).imag() << "\n";
          data_c.close();
       }
       else cout << "Unable to open file: " << f_name_imag << endl;
-   }
-
-   // TODO: modify the grad terms to calculate it based on the mesh
-   // Calculate the free-energy loss by the integral of the energy density
-   // This value has been normalized because the deltas were calculated as
-   //    normalized. Dividing f by (alpha(T) * delta_0^2) and simplifying.
-   // Gives a warning if the result has ~non-zero imaginary part.
-   double Free_energy()
-   {
-      if (!solution.size())
-      {
-         cout << "ERROR: cannot calculate free-energy without a solution." << endl;
-         return 0.;
-      }
-
-      complex<double> I = 0; // start the integral sum at 0
-      complex<double> f_bulk, f_bulk_prev = 0.;
-      complex<double> f_grad, f_grad_prev = 0.;
-      VectorXcd integ(size-2); // value of the integral over distance--to plot
-
-      // calculate the first step
-      f_bulk = F_Bulk(0);
-      f_grad = F_Grad(0,1);
-      I += ( f_bulk + f_grad - 1. )*cond.STEP;
-
-      for (int i = 1; i <= size-2; i++)
-      {
-         // set the previous values
-         f_bulk_prev = f_bulk;
-         f_grad_prev = f_grad;
-
-         f_bulk = F_Bulk(i);
-
-         // calculate the gradient term
-         f_grad = F_Grad(i-1,i+1);
-
-         // use a rectangular integral approximation, centered at the midpoints
-         I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
-
-         integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
-      }
-
-      // calculate the last step
-      f_bulk = F_Bulk(size-1);
-      f_grad = F_Grad(size-2,size-1);
-      I += ( f_bulk + f_grad - 1. )*cond.STEP;
-
-      // save the integrand vector to plot and inspect
-      WriteToFile(integ,"integ_c.txt","integ_r.txt");
-      cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
-
-      if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
-      return I.real();
    }
 
    // TODO...?
@@ -356,144 +424,6 @@ class GL_Solver
 
       solution = f;
       // return f; // return the last value for f
-   }
-
-   // returns the D matrices with given boundary (slip length)
-   SparseMatrix<complex<double>> Du2_BD(double bL, double bR)
-   {
-      SparseMatrix<complex<double>> Du2_return = Du2;
-      // loop through the sides (where the BC apply for x)
-      for (int n_v = 0; n_v < cond.SIZEv; n_v++)
-      {
-         // TODO: also modify the neighboring values
-         // check the size of the b's
-         int lID = ID(0,n_v,0,0),
-             rID = ID(cond.SIZEu-1,n_v,0,0);
-         // insert left
-         Du2_return.insert(lID,lID) = -2. - 2.*cond.STEP/bL;
-         // insert right
-         Du2_return.insert(rID,rID) = -2. - 2.*cond.STEP/bR;
-      }
-      return Du2_return;
-   }
-   SparseMatrix<complex<double>> Dv2_BD(double bB, double bT)
-   {
-      SparseMatrix<complex<double>> Dv2_return = Dv2;
-      // loop across the top and bottom (where the BC apply for z)
-      for (int n_u = 0; n_u < cond.SIZEu; n_u++)
-      {
-         // TODO: also modify the neighboring values
-         // check the size of the b's
-         int bID = ID(n_u,0,0,0),
-             tID = ID(n_u,cond.SIZEv-1,0,0);
-         // insert bottom
-         Dv2_return.insert(bID,bID) = -2. - 2.*cond.STEP/bB;
-         // insert top
-         Dv2_return.insert(tID,tID) = -2. - 2.*cond.STEP/bT;
-      }
-      return Dv2_return;
-   }
-   // TODO
-   SparseMatrix<complex<double>> Duv_BD(double bL, double bR, double bB, double bT)
-   {
-      SparseMatrix<complex<double>> Duv_return = Duv;
-      // need to reset some values from the default setup...
-
-      // loop through left and right sides, except corners
-      for (int n_v = 1; n_v < cond.SIZEu-1; n_v++)
-      {
-         // TODO: also modify the neighboring values
-         // check the size of the b's
-         int lID    = ID(0,n_v,  0,0), // index of element on the left
-             lID_up = ID(0,n_v+1,0,0), // index of left, above
-             lID_dn = ID(0,n_v-1,0,0), // index of left, below
-             rID    = ID(cond.SIZEu-1,n_v,  0,0), // index of element on the right
-             rID_up = ID(cond.SIZEu-1,n_v+1,0,0), // index of right, above
-             rID_dn = ID(cond.SIZEu-1,n_v-1,0,0); // index of right, below
-
-         // insert left side
-         Duv_return.insert(lID,lID_up) =  cond.STEP/(2.*bL);
-         Duv_return.insert(lID,lID_dn) = -cond.STEP/(2.*bL);
-         // insert right side
-         Duv_return.insert(rID,rID_up) =  cond.STEP/(2.*bR);
-         Duv_return.insert(rID,rID_dn) = -cond.STEP/(2.*bR);
-      }
-
-      // loop through top and bottom sides, except corners
-      for (int n_u = 1; n_u < cond.SIZEu-1; n_u++)
-      {
-         int bID       = ID(n_u,  0,0,0), // index of element on the bottom
-             bID_left  = ID(n_u-1,0,0,0), // index of bottom, left side
-             bID_right = ID(n_u+1,0,0,0), // index of bottom, right side
-             tID       = ID(n_u,  cond.SIZEu-1,0,0), // index of element on the top
-             tID_left  = ID(n_u-1,cond.SIZEu-1,0,0), // index of top, left side
-             tID_right = ID(n_u+1,cond.SIZEu-1,0,0); // index of top, right side
-
-         // insert bottom side
-         Duv_return.insert(bID,bID_left)  =  cond.STEP/(2.*bL);
-         Duv_return.insert(bID,bID_right) = -cond.STEP/(2.*bL);
-         // insert top side
-         Duv_return.insert(tID,tID_left)  =  cond.STEP/(2.*bR);
-         Duv_return.insert(tID,tID_right) = -cond.STEP/(2.*bR);
-      }
-
-      // corners: special case
-      int u0 = ID(0,0,0,0),
-          uN = ID(0,0,0,0),
-          v0 = ID(0,0,0,0),
-          vN = ID(0,0,0,0);
-      // ...
-
-      return Duv_return;
-   }
-
-   // protected:
-   // calculate the normalized bulk free-energy density
-   complex<double> F_Bulk(int i)
-   {
-      // calculate the used forms of A
-      Matrix<complex<double>,3,3> A = M_index(OP,i),
-                                 AT = A.transpose(),
-                                 A_dag = AT.conjugate(),
-                                 A_conj = A.conjugate();
-      double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
-
-      return -( gl.B1*pow( abs((A * AT).trace()), 2)
-               +gl.B2*pow( (A * A_dag).trace(), 2)
-               +gl.B3*(A * AT * A_conj * A_dag).trace()
-               +gl.B4*(A * A_dag * A * A_dag).trace()
-               +gl.B5*(A * A_dag * A_conj * AT).trace()
-            )/(Beta_B*9.)
-            +2./3.*(A * A_dag).trace();
-   }
-
-   // TODO: make it calculate the gradient using the central difference
-   //       derivative for each internal point on the mesh...do we pass
-   //       in the mesh? or just pass in the relating indexes?
-   // calculate the normalized gradient free-energy density
-   complex<double> F_Grad(int m, int n)
-   {
-      if (m < 0) { cout << "ERROR: F_Grad 'm' must be >= 0." << endl; return 0.0; }
-
-      complex<double> k1 = 0., k2 = 0., k3 = 0.; // grad term sums
-      // used center difference derivatives
-      Matrix<complex<double>,3,3> A_next = M_index(OP,n), A_prev = M_index(OP,m);
-
-      for (int a = 0; a < 3; a++)
-      {
-         for (int k = 0; k < 3; k++)
-         {
-            for (int j = 0; j < 3; j++)
-            {
-               // these derivatives are divided by their step size when used in Free_Energy()
-               if (var_mat(a,j)[k])                       k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
-               if (var_mat(a,k)[j]*var_mat(a,j)[k]) k2 += ( conj(A_next(a,k) - A_prev(a,k)) ) * ( A_next(a,j) - A_prev(a,j) );
-               if (var_mat(a,j)[k]*var_mat(a,k)[j]) k3 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,k) - A_prev(a,k) );
-            }
-         }
-      }
-      return -2./3.*(k1+k2+k3)/(pow(2*cond.STEP,2)); // divide by (2h)^2 becasue there
-                     //  is a product of 2 derivatives, but we have double step size
    }
 
    // read in the conditions from the file
@@ -602,8 +532,8 @@ class GL_Solver
       Duv.setFromTriplets(coeffs_xz.begin(), coeffs_xz.end());
    }
 
-   // insert method for the Dx^2 matrix derivatives
-   // ? Can we use this to insert the boundary conditions, using 'weight'?
+   // Insert method for the Dx^2 matrix derivatives
+   //   TODO ? Can we use this to insert the boundary conditions, using 'weight'?
    void InsertCoeff_Du2(int id, int u, int v, complex<double> weight, vector<Tr>& coeffs)
    {
       // id is the index of the connecting element, so
@@ -638,46 +568,12 @@ class GL_Solver
       else coeffs.push_back(Tr(id,id1,weight));
    }
 
-   // TODO...
-   // the right hand side of the matrix equation
-   VectorXcd RHS(VectorXcd& del, in_conditions cond)
-   {
-      VectorXcd d(del.size()); // make a type complex vector the same size as del
-
-      // for (int i = 0; i < del.size(); i+=2) // loop through the whole vector
-      // {
-      //    // use the diff. equ's as obtained from the GL equations of the distorted B-phase
-      //    d(i)   = DD_para(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-      //    d(i+1) = DD_perp(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-      // }
-
-      // // keep the boundary conditions fixed
-      // d(del.size()-2) = cond.BCNp;
-      // d(del.size()-1) = cond.BCNs;
-
-      // d(0) = 0.; // BC for specular or diffuse (see BuildProblem() for differences)
-      // d(1) = 0.; // BC: delta_perp [0] = 0
-
-      return d;
-   }
-
    // returns the unique id corresponding to each op-component in the mesh
    int ID(int n_u, int n_v, int mu, int i)
    {
       return size*(3*mu + i) + cond.SIZEu*n_v + n_u;
    }
-
-   // TODO...
-   // divide the solution vector into the OP matrix of matrices
-   void OP_matrix()
-   {
-      for (int id = 0; id < solution.size(); id++)
-      {
-         
-      }
-   }
-
-
-};
+}; // GL_solver class
+// ==================
 
 #endif
