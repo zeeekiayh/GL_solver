@@ -95,16 +95,18 @@ void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
 
 
 // =================================
-template <class T> struct OrderParam
+template <class Container_type, class Scalar_type> struct OrderParam
 {
    // store it as a vector; the OP at one point
    int num_comp;
-   Matrix<T,-1,1> OP;
+   Container_type OP;
 
    // virtual(?) functions
-   double Free_energy() = 0.;
-   T F_Bulk();
-   T F_Grad();
+   double Free_energy() = 0;
+   Scalar_type F_Bulk() = 0;
+   Scalar_type F_Grad() = 0;
+   Container_type RHS() = 0;
+   SparseMatrix<Scalar_type> Du2_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR);
 };
 
 // TODO...
