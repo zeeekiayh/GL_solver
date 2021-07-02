@@ -576,8 +576,4 @@ class GL_Solver
 }; // GL_solver class
 // ==================
 
-<<<<<<< HEAD
 #endif
-=======
-#endif
->>>>>>> 7a2c11bed895a4a78de965c53cbd57bef1771710
