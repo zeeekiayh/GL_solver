@@ -7,9 +7,9 @@
 #include "math.h"
 #include <complex>
 #include <vector>
-#include </home/izek/Downloads/eigen-3.3.9/Eigen/Dense>
-#include </home/izek/Downloads/eigen-3.3.9/Eigen/Sparse>
-#include "/home/izek/Downloads/ConvergenceAccelerator.hpp"
+#include </Eigen/Dense>
+#include </Eigen/Sparse>
+#include "ConvergenceAccelerator.hpp"
 
 using std::cout;
 using std::endl;
