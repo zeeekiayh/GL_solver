@@ -108,6 +108,7 @@ struct OrderParam
    OrderParam() {}
    OrderParam(int n): num_comp(n) {  }
    void Set_OP(Container_type op) { OP = op; }
+   void initialize(int n) { num_comp = n; }
 };
 
 template<class Container_type>
@@ -130,12 +131,13 @@ struct MultiComponentOrderParam : public OrderParam<Container_type> {};
 template<>
 struct MultiComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
 {
-   MultiComponentOrderParam(int n)
-   {
-      num_comp = n;
-      OP.resize(n);
-   }
+   MultiComponentOrderParam(int n) { initialize(n); }
 
+   // void initialize(int n)
+   // {
+   //    num_comp = n;
+   //    OP.resize(n);
+   // }
    void Set_OP(Matrix3cd op) // will we actually use this??
    {
       // flatten the matrix (row major)
@@ -160,15 +162,52 @@ struct MultiComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
 
 // a class to hold the mesh we use in FEM, which holds all the OP's
 template <typename Container_type>
-class Mesh
+class OP_Matrix
 {
    public:
-   Mesh() {}
-   Mesh(int x) {} // for single-component OP
-
+   OP_Matrix() {}
    // for multi-component OP's
-   Mesh(int x1, int x2) {}
-   // Mesh(int x1, int x2, int x3) {}
+   OP_Matrix(int n, int nRows, int nCols) { initialize(n, nRows, nCols); }
+   // OP_Matrix(int n, int nRows, int nCols, int s3) {}
+
+   void initialize(int n, int nRows, int nCols)
+   {
+      size[0] = nRows; // initialize size variables
+      size[1] = nCols;
+      OP_size = n;
+
+      matrix.resize(size[0],size[1]);   // initialize matrix size
+      vector.resize(size[0]*size[1]); // initialize vector size
+
+      // initialize elements in 'matrix'
+      for (int i = 0; i < size[0]; i++) {
+         for (int j = 0; j < size[1]; j++) {
+            matrix(i,j).initialize(OP_size);
+         }
+      }
+   }
+
+   // derivative matrix methods
+   SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double bL, double bR)
+   {
+      //
+   }
+   
+   SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Du2, double bB, double bT)
+   {
+      //
+   }
+   
+   SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Du2, double bB, double bT, double bL, double bR)
+   {
+      //
+   }
+   
+   // convert the OP matrix into a vector
+   void setVectorForm()
+   {
+      for (int vi = 0; vi < OP_size; vi++) for (int row = 0; row < size[0]; row++) for (int col = 0; col < size[1]; col++) vector(size[0]*size[1]*vi + size[1]*row + row) = matrix(row,col)(vi);
+   }
 
    // free-energy functions
    complex<double> f_bulk();
@@ -176,17 +215,29 @@ class Mesh
    double free_energy();
 
    private:
+   int OP_size; // number components of each OP
    int size[2]; // to hold the possible 2 sizes
    // int size[3]; // to hold the possible 3 sizes
 
    // to hold the OP at each point on the mesh
-   Matrix<OrderParam<Container_type>,-1,-1> mesh;
+   Matrix<OrderParam<Container_type>,-1,-1> matrix;
+
+   // the vector form of matrix
+   VectorXcd vector;
 };
 
-// not all OP's will have BC's
-// SparseMatrix<Scalar_type> Du2_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR);
-// SparseMatrix<Scalar_type> Dv2_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT);
-// SparseMatrix<Scalar_type> Duv_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT, double bL, double bR);
+// specialized classes for single-component OP's
+template <>
+class OP_Matrix<complex<double>>
+{
+   //
+};
+
+template <>
+class OP_Matrix<double>
+{
+   //
+};
 
 // TODO...
 // the right hand side of the matrix equation
@@ -387,7 +438,7 @@ class GL_Solver
    in_conditions cond; // struct of all the BC's and other parameters for the methods
    VectorXcd solution; // to store the solution to the GL equ. (in the single vector form)
 
-   Mesh<Container_type> mesh; // the matrix of OP at each mesh point
+   OP_Matrix<Container_type> op_matrix(); // the matrix of OP at each mesh point
 
    SparseMatrix<complex<double>> A; // solver matrix
    SparseMatrix<complex<double>> Du2, Dv2, Duv; // derivative matrices
