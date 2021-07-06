@@ -94,23 +94,48 @@ void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
 }
 
 
-// ============================
-template <class Container_type>
+// ===============================
+template <typename Container_type>
 struct OrderParam
 {
+   // Container_type can be something like complex<double> or Vector3cd
+   // If your order parameter is a matrix, it must be flattened as a Vector3cd
+
    // store it as a vector; the OP at one point
    int num_comp = 1; // we'll assume it's 1, unless in the derived class
    Container_type OP;
 
-   // Container_type can be something like complex<double> or Vector3cd
-   // If your order parameter is a matrix, it must be flattened as a Vector3cd
+   OrderParam() {}
    OrderParam(int n): num_comp(n) {  }
    void Set_OP(Container_type op) { OP = op; }
 };
 
-template<>
-struct MultiComponentOrderParam : public OrderParam<VectorXcd>
+template<class Container_type>
+ostream& operator<< (ostream& os, const OrderParam<Container_type>& OP)
 {
+   for (int i = 0; i < OP.num_comp; i++)
+   {
+      os << OP.OP(i);
+      if (i+1 < OP.num_comp) os << "\t";
+   }
+   return os;
+}
+// ===============================
+
+// to allow for the specialized struct, define a template
+template<typename Container_type>
+struct MultiComponentOrderParam : public OrderParam<Container_type> {};
+
+// a structure specialized for multi-component order parameters
+template<>
+struct MultiComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
+{
+   MultiComponentOrderParam(int n)
+   {
+      num_comp = n;
+      OP.resize(n);
+   }
+
    void Set_OP(Matrix3cd op) // will we actually use this??
    {
       // flatten the matrix (row major)
@@ -130,20 +155,38 @@ struct MultiComponentOrderParam : public OrderParam<VectorXcd>
       } // for's
    }
 
-   
-}
+   //
+};
+
+// a class to hold the mesh we use in FEM, which holds all the OP's
+template <typename Container_type>
+class Mesh
+{
+   public:
+   Mesh() {}
+   Mesh(int x) {} // for single-component OP
+
+   // for multi-component OP's
+   Mesh(int x1, int x2) {}
+   // Mesh(int x1, int x2, int x3) {}
+
+   // free-energy functions
+   complex<double> f_bulk();
+   complex<double> f_grad();
+   double free_energy();
+
+   private:
+   int size[2]; // to hold the possible 2 sizes
+   // int size[3]; // to hold the possible 3 sizes
+
+   // to hold the OP at each point on the mesh
+   Matrix<OrderParam<Container_type>,-1,-1> mesh;
+};
 
 // not all OP's will have BC's
 // SparseMatrix<Scalar_type> Du2_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR);
 // SparseMatrix<Scalar_type> Dv2_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT);
 // SparseMatrix<Scalar_type> Duv_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT, double bL, double bR);
-
-
-// template<>
-// double OrderParam<double,double>::Du2_BD()
-// {
-// }
-
 
 // TODO...
 // the right hand side of the matrix equation
@@ -331,20 +374,8 @@ struct MultiComponentOrderParam : public OrderParam<VectorXcd>
 //    return Duv_return;
 // }
 
-template<class Container_type>
-ostream& operator<< (ostream& os, const OrderParam<Container_type>& OP)
-{
-   for (int i = 0; i < OP.num_comp; i++)
-   {
-      os << OP.OP(i);
-      if (i+1 < OP.num_comp) os << "\t";
-   }
-   return os;
-}
-// =================================
-
-
-// =================================
+// ============================
+template <class Container_type>
 class GL_Solver
 {
    public:
@@ -356,7 +387,7 @@ class GL_Solver
    in_conditions cond; // struct of all the BC's and other parameters for the methods
    VectorXcd solution; // to store the solution to the GL equ. (in the single vector form)
 
-   Matrix<VectorXcd,3,3> OP; // order paramter matrix
+   Mesh<Container_type> mesh; // the matrix of OP at each mesh point
 
    SparseMatrix<complex<double>> A; // solver matrix
    SparseMatrix<complex<double>> Du2, Dv2, Duv; // derivative matrices
@@ -385,7 +416,7 @@ class GL_Solver
    // * METHODS *
    // * * * * * *
 
-   // TODO: Write all components of the OP, all into one file, of the form:
+   // Write all components of the OP, all into one file, of the form:
    //             __x__|__y__|_Axx_|_Axy_| ...
    //              ... | ... | ... | ... | ...
    //   separates the components from solution...storing real and imag parts ==> up to 18 files
