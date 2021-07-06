@@ -94,64 +94,73 @@ void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
 }
 
 
-// =================================
-template <class Container_type, class Scalar_type> class OrderParam
+// ============================
+template <class Container_type>
+struct OrderParam
 {
-   // Container_type can be something like double, complex<double>, or VectorXcd,
-   //    but should always be the same or greater 'dimension' above Scalar_type,
-   //    i.e. Container_type = double and Scalar_type = complex is invalid.
-   //    Scalar_type should only be double or complex<double>.
-   // If your order parameter is a matrix, it will be flattened as a VectorXcd
-   OrderParam()
-   {
-      // change thses statements--they throw errors--but how do we check??
-      if ((Container_type == double && Scalar_type != double) ||
-          (Scalar_type != complex<double> || Scalar_type != double) )
-      {
-         throw "ERROR: OrderParam: invalid combination of Container_type and Scalar_type"
-      }
-   }
-   OrderParam(int n): num_comp(n)
-   {
-      // change thses statements--they throw errors--but how do we check??
-      if ((Container_type == double && Scalar_type != double) ||
-          (Scalar_type != complex<double> || Scalar_type != double) )
-      {
-         throw "ERROR: OrderParam: invalid combination of Container_type and Scalar_type"
-      }
-   }
-
    // store it as a vector; the OP at one point
-   int num_comp;
+   int num_comp = 1; // we'll assume it's 1, unless in the derived class
    Container_type OP;
 
-   // virtual(?) functions
-   double Free_energy() = 0;
-   Scalar_type F_Bulk() = 0;
-   Scalar_type F_Grad() = 0;
-   Container_type RHS() = 0;
-   SparseMatrix<Scalar_type> Du2_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR);
-   SparseMatrix<Scalar_type> Dv2_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT);
-   SparseMatrix<Scalar_type> Duv_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR, double bB, double bT);
-
+   // Container_type can be something like complex<double> or Vector3cd
+   // If your order parameter is a matrix, it must be flattened as a Vector3cd
+   OrderParam(int n): num_comp(n) {  }
+   void Set_OP(Container_type op) { OP = op; }
 };
+
+template<>
+struct MultiComponentOrderParam : public OrderParam<VectorXcd>
+{
+   void Set_OP(Matrix3cd op) // will we actually use this??
+   {
+      // flatten the matrix (row major)
+      int i = 0; // count the values put into the vector OP
+
+      for (int a = 0; a < 3; a++) {
+         for (int j = 0; j < 3; j++) {
+
+            if (abs(op(a,j)) > pow(10,-8)) { // if not 0
+               if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
+               else {
+                  this->OP(i) = op(a,j);
+                  i++;
+               }
+            }
+         }
+      } // for's
+   }
+
+   
+}
+
+// not all OP's will have BC's
+// SparseMatrix<Scalar_type> Du2_BD(SparseMatrix<Scalar_type> Du2, double bL, double bR);
+// SparseMatrix<Scalar_type> Dv2_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT);
+// SparseMatrix<Scalar_type> Duv_BD(SparseMatrix<Scalar_type> Du2, double bB, double bT, double bL, double bR);
+
+
+// template<>
+// double OrderParam<double,double>::Du2_BD()
+// {
+// }
+
 
 // TODO...
 // the right hand side of the matrix equation
 // VectorXcd RHS(VectorXcd& del, in_conditions cond)
 // {
 //    VectorXcd d(del.size()); // make a type complex vector the same size as del
-   // for (int i = 0; i < del.size(); i+=2) // loop through the whole vector
-   // {
-   //    // use the diff. equ's as obtained from the GL equations of the distorted B-phase
-   //    d(i)   = DD_para(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-   //    d(i+1) = DD_perp(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-   // }
-   // // keep the boundary conditions fixed
-   // d(del.size()-2) = cond.BCNp;
-   // d(del.size()-1) = cond.BCNs;
-   // d(0) = 0.; // BC for specular or diffuse (see BuildProblem() for differences)
-   // d(1) = 0.; // BC: delta_perp [0] = 0
+//    for (int i = 0; i < del.size(); i+=2) // loop through the whole vector
+//    {
+//       // use the diff. equ's as obtained from the GL equations of the distorted B-phase
+//       d(i)   = DD_para(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
+//       d(i+1) = DD_perp(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
+//    }
+//    // keep the boundary conditions fixed
+//    d(del.size()-2) = cond.BCNp;
+//    d(del.size()-1) = cond.BCNs;
+//    d(0) = 0.; // BC for specular or diffuse (see BuildProblem() for differences)
+//    d(1) = 0.; // BC: delta_perp [0] = 0
 //    return d;
 // }
 // TODO: modify the grad terms to calculate it based on the mesh
@@ -322,8 +331,8 @@ template <class Container_type, class Scalar_type> class OrderParam
 //    return Duv_return;
 // }
 
-template<class Container_type, class Scalar_type>
-ostream& operator<< (ostream& os, const OrderParam<Container_type, Scalar_type>& OP)
+template<class Container_type>
+ostream& operator<< (ostream& os, const OrderParam<Container_type>& OP)
 {
    for (int i = 0; i < OP.num_comp; i++)
    {
