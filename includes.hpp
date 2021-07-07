@@ -216,11 +216,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
 
             // set the values at these indexes using the ghost points
-            Du2_copy(id0,id0) = -2. -2.*h/bL;
-            Du2_copy(id0,id0_connect) = 2.;
+            Du2_copy.insert(id0,id0) = -2. -2.*h/bL;
+            Du2_copy.insert(id0,id0_connect) = 2.;
 
-            Du2_copy(idN,idN) = -2. -2.*h/bR; // TODO: is it -2h... or +2h... ?
-            Du2_copy(idN,idN_connect) = 2.;
+            Du2_copy.insert(idN,idN) = -2. -2.*h/bR; // TODO: is it -2h... or +2h... ?
+            Du2_copy.insert(idN,idN_connect) = 2.;
          }
 
          return Du2_copy;
@@ -243,11 +243,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
 
             // set the values at these indexes using the ghost points
-            Dv2_copy(id0,id0) = -2. -2.*h/bB;
-            Dv2_copy(id0,id0_connect) = 2.;
+            Dv2_copy.insert(id0,id0) = -2. -2.*h/bB;
+            Dv2_copy.insert(id0,id0_connect) = 2.;
 
-            Dv2_copy(idN,idN) = -2. -2.*h/bT; // TODO: is it -2h... or +2h... ?
-            Dv2_copy(idN,idN_connect) = 2.;
+            Dv2_copy.insert(idN,idN) = -2. -2.*h/bT; // TODO: is it -2h... or +2h... ?
+            Dv2_copy.insert(idN,idN_connect) = 2.;
          }
 
          return Dv2_copy;
@@ -280,19 +280,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_disconnectT = ID(sz, size[0]-2, size[0], n_v+1, 0); // index of the top point to disconnect from
 
             // set the values at these indexes using the ghost points
-            Duv_copy(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy(id0,id0_connectT) = h/(2.*bL);
-            Duv_copy(id0,id0_connectB) = -h/(2.*bL);
+            Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
+            Duv_copy.insert(id0,id0_connectT) = h/(2.*bL);
+            Duv_copy.insert(id0,id0_connectB) = -h/(2.*bL);
 
-            Duv_copy(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy(idN,idN_connectT) = h/(2.*bR);
-            Duv_copy(idN,idN_connectB) = -h/(2.*bR);
+            Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
+            Duv_copy.insert(idN,idN_connectT) = h/(2.*bR);
+            Duv_copy.insert(idN,idN_connectB) = -h/(2.*bR);
 
             // disconnect from default connections
-            Duv_copy(id0,id0_disconnectB) = 0.;
-            Duv_copy(id0,id0_disconnectT) = 0.;
-            Duv_copy(idN,idN_disconnectB) = 0.;
-            Duv_copy(idN,idN_disconnectT) = 0.;
+            Duv_copy.insert(id0,id0_disconnectB) = 0.;
+            Duv_copy.insert(id0,id0_disconnectT) = 0.;
+            Duv_copy.insert(idN,idN_disconnectB) = 0.;
+            Duv_copy.insert(idN,idN_disconnectT) = 0.;
          }
          for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
@@ -313,19 +313,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_disconnectR = ID(sz, n_u+1, size[0], size[1]-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
-            Duv_copy(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy(id0,id0_connectR) = h/(2.*bB);
-            Duv_copy(id0,id0_connectL) = -h/(2.*bB);
+            Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
+            Duv_copy.insert(id0,id0_connectR) = h/(2.*bB);
+            Duv_copy.insert(id0,id0_connectL) = -h/(2.*bB);
 
-            Duv_copy(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy(idN,idN_connectR) = h/(2.*bT);
-            Duv_copy(idN,idN_connectL) = -h/(2.*bT);
+            Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
+            Duv_copy.insert(idN,idN_connectR) = h/(2.*bT);
+            Duv_copy.insert(idN,idN_connectL) = -h/(2.*bT);
 
             // disconnect from default connections
-            Duv_copy(id0,id0_disconnectL) = 0.;
-            Duv_copy(id0,id0_disconnectR) = 0.;
-            Duv_copy(idN,idN_disconnectL) = 0.;
-            Duv_copy(idN,idN_disconnectR) = 0.;
+            Duv_copy.insert(id0,id0_disconnectL) = 0.;
+            Duv_copy.insert(id0,id0_disconnectR) = 0.;
+            Duv_copy.insert(idN,idN_disconnectL) = 0.;
+            Duv_copy.insert(idN,idN_disconnectR) = 0.;
          }
 
          // special case for the corners
@@ -334,26 +334,26 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // Top left
          id =            ID(sz,0,size[0],size[1]-1,0);
          id_disconnect = ID(sz,1,size[0],size[1]-2,0);
-         Duv_copy(id,id)            = h*h/(bL*bT);
-         Duv_copy(id,id_disconnect) = 0.;
+         Duv_copy.insert(id,id)            = h*h/(bL*bT);
+         Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Top right
          id =            ID(sz,size[0]-1,size[0],size[1]-1,0);
          id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
-         Duv_copy(id,id)            = h*h/(bR*bT);
-         Duv_copy(id,id_disconnect) = 0.;
+         Duv_copy.insert(id,id)            = h*h/(bR*bT);
+         Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Bottom left
          id =            ID(sz,0,size[0],0,0);
          id_disconnect = ID(sz,1,size[0],1,0);
-         Duv_copy(id,id)            = h*h/(bL*bB);
-         Duv_copy(id,id_disconnect) = 0.;
+         Duv_copy.insert(id,id)            = h*h/(bL*bB);
+         Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Bottom right
          id =            ID(sz,size[0]-1,size[0],0,0);
          id_disconnect = ID(sz,size[0]-2,size[0],1,0);
-         Duv_copy(id,id)            = h*h/(bR*bB);
-         Duv_copy(id,id_disconnect) = 0.;
+         Duv_copy.insert(id,id)            = h*h/(bR*bB);
+         Duv_copy.insert(id,id_disconnect) = 0.;
 
          return Duv_copy;
       }
@@ -378,6 +378,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       complex<double> f_grad();
       double free_energy();
 
+      // templates for use-defined functions
+      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
+                                                           SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
+                                                           double,double,double,double,double);
+      VectorXcd RHS_He3Defect(GL_param);
+
       private:
       int OP_size; // number components of each OP
       int size[2]; // to hold the possible 2 sizes
@@ -391,7 +397,49 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    };
 
 // User-defined methods to build the solver matrix and the rhs vector
-   //
+   template <>
+   SparseMatrix<complex<double>> OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
+                                                                              SparseMatrix<complex<double>>& Du2,
+                                                                              SparseMatrix<complex<double>>& Dv2,
+                                                                              SparseMatrix<complex<double>>& Duv,
+                                                                              double h, double bB, double bT, double bL, double bR)
+   {
+      // to make the code cleaner, define some constants
+      double K123 = gl.K1+gl.K2+gl.K3,
+             K23  = gl.K2+gl.K3;
+
+      // define matrices to use
+      MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5);
+      MatrixXcd zero(Du2.rows(),Du2.cols());
+      zero.setZero(); // make sure it's zero
+
+      // define each non-zero 'element'
+      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,bL,bR)+gl.K1*Dv2_BD(Dv2,h,bB,bT),
+                elem_10 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
+                elem_01 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
+                elem_11 = K123*Duv_BD(Duv,h,bB,bT,bL,bR)+gl.K1*Du2_BD(Du2,h,bL,bR),
+                elem_22 = gl.K1*(Du2_BD(Du2,h,bL,bR)+Dv2_BD(Dv2,h,bB,bT)),
+                elem_33 = K123*Du2_BD(Du2,h,bL,bR)+gl.K1*Dv2_BD(Dv2,h,bB,bT),
+                elem_34 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
+                elem_43 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
+                elem_44 = K123*Duv_BD(Duv,h,bB,bT,bL,bR)+gl.K1*Du2_BD(Du2,h,bL,bR);
+
+      // use the comma initializer to build the matrix
+      SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
+                      elem_10, elem_11, zero,    zero,    zero,
+                      zero,    zero,    elem_22, zero,    zero,
+                      zero,    zero,    zero,    elem_33, elem_34,                          
+                      zero,    zero,    zero,    elem_43, elem_44;
+
+      // turn the matrix into a sparse matrix
+      return SolverMatrix.sparseView(1,pow(10,-8));
+   }
+
+   template <>
+   VectorXcd OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
+   {
+      //
+   }
 // ================================================================
 
 
@@ -476,7 +524,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //    // calculate the used forms of A
 //    Matrix<complex<double>,3,3> A = M_index(OP,i),
 //                               AT = A.transpose(),
-//                               A_dag = AT.conjugate(),
+//                               A_dag = A.adjoint(),
 //                               A_conj = A.conjugate();
 //    double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
 //    return -( gl.B1*pow( abs((A * AT).trace()), 2)
@@ -738,7 +786,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
 
       // Insert method for the Dx^2 matrix derivatives
-      //   TODO ? Can we use this to insert the boundary conditions, using 'weight'?
       void InsertCoeff_Du2(int id, int u, int v, complex<double> weight, vector<Tr>& coeffs)
       {
          // id is the index of the connecting element, so
@@ -750,7 +797,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          else coeffs.push_back(Tr(id,id1,weight));
       }
 
-      // insert method for the Dx^2 matrix derivatives
+      // insert method for the Dz^2 matrix derivatives
       void InsertCoeff_Dv2(int id, int u, int v, complex<double> weight, vector<Tr>& coeffs)
       {
          // id is the index of the connecting element, so
