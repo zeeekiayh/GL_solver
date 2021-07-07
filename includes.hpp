@@ -93,6 +93,12 @@ void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
    else cout << "Unable to open file: " << f_name_imag << endl;
 }
 
+// returns the unique id corresponding to each op-component in the mesh.
+//    n_u: mesh index 1
+//    n_v: mesh index 2
+//    i:   vector (OP) index
+//    size: num elements in mesh
+int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max*n_v + n_u; }
 
 // ===============================
 template <typename Container_type>
@@ -176,7 +182,7 @@ class OP_Matrix
       size[1] = nCols;
       OP_size = n;
 
-      matrix.resize(size[0],size[1]);   // initialize matrix size
+      matrix.resize(size[0],size[1]); // initialize matrix size
       vector.resize(size[0]*size[1]); // initialize vector size
 
       // initialize elements in 'matrix'
@@ -188,26 +194,179 @@ class OP_Matrix
    }
 
    // derivative matrix methods
-   SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double bL, double bR)
+   SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double h, double bL, double bR) const
    {
-      //
+      // the matrix that we will edit and return to not modify the original
+      SparseMatrix<complex<double>> Du2_copy = Du2;
+
+      // loop through just the left and right boundary points of the mesh
+      for (int n_v = 0; n_v < size[1]; n_v++)
+      {
+         // indexes for the left side
+         int id0 =         ID(size[0]*size[1], 0, size[0], n_v, 0),
+             id0_connect = ID(size[0]*size[1], 1, size[0], n_v, 0);
+         
+         // indexes for the right side
+         int idN =         ID(size[0]*size[1], size[0]-1, size[0], n_v, 0),
+             idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
+
+         // set the values at these indexes using the ghost points
+         Du2_copy(id0,id0) = -2. -2.*h/bL;
+         Du2_copy(id0,id0_connect) = 2.;
+
+         Du2_copy(idN,idN) = -2. -2.*h/bR; // TODO: is it -2h... or +2h... ?
+         Du2_copy(idN,idN_connect) = 2.;
+      }
+
+      return Du2_copy;
    }
    
-   SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Du2, double bB, double bT)
+   SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Dv2, double h, double bB, double bT) const
    {
-      //
+      // the matrix that we will edit and return to not modify the original
+      SparseMatrix<complex<double>> Dv2_copy = Dv2;
+
+      // loop through just the top and bottom boundary points of the mesh
+      for (int n_u = 0; n_u < size[0]; n_u++)
+      {
+         // indexes for the bottom side
+         int id0 =         ID(size[0]*size[1], n_u, size[0], 0, 0),
+             id0_connect = ID(size[0]*size[1], n_u, size[0], 1, 0);
+         
+         // indexes for the top side
+         int idN =         ID(size[0]*size[1], n_u, size[0], size[0]-1, 0),
+             idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
+
+         // set the values at these indexes using the ghost points
+         Dv2_copy(id0,id0) = -2. -2.*h/bB;
+         Dv2_copy(id0,id0_connect) = 2.;
+
+         Dv2_copy(idN,idN) = -2. -2.*h/bT; // TODO: is it -2h... or +2h... ?
+         Dv2_copy(idN,idN_connect) = 2.;
+      }
+
+      return Dv2_copy;
    }
    
-   SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Du2, double bB, double bT, double bL, double bR)
+   SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Duv, double h, double bB, double bT, double bL, double bR) const
    {
-      //
+      // the matrix that we will edit and return to not modify the original
+      SparseMatrix<complex<double>> Duv_copy = Duv;
+
+      int sz = size[0]*size[1]; // size of D matrix (num of mesh points)
+
+      // loop through just the boundary points of the mesh
+      for (int n_v = 1; n_v < size[1]-1; n_v++) // loop through the left and right boundary points of the mesh
+      {
+         // indexes for the left side
+         int id0 =             ID(sz, 0, size[0], n_v,   0), // the index of the mesh point we're at
+             id0_connectB =    ID(sz, 0, size[0], n_v-1, 0), // index of the bottom point to connect to
+             id0_connectT =    ID(sz, 0, size[0], n_v+1, 0), // index of the top point to connect to
+             // we need to disconnect from the points that the default D matrix has
+             id0_disconnectB = ID(sz, 1, size[0], n_v-1, 0), // index of the bottom point to disconnect from
+             id0_disconnectT = ID(sz, 1, size[0], n_v+1, 0); // index of the top point to disconnect from
+         
+         // indexes for the right side
+         int idN =             ID(sz, size[0]-1, size[0], n_v,   0), // the index of the mesh point we're at
+             idN_connectB =    ID(sz, size[0]-1, size[0], n_v-1, 0), // index of the bottom point to connect to
+             idN_connectT =    ID(sz, size[0]-1, size[0], n_v+1, 0), // index of the top point to connect to
+             // we need to disconnect from the points that the default D matrix has
+             idN_disconnectB = ID(sz, size[0]-2, size[0], n_v-1, 0), // index of the bottom point to disconnect from
+             idN_disconnectT = ID(sz, size[0]-2, size[0], n_v+1, 0); // index of the top point to disconnect from
+
+         // set the values at these indexes using the ghost points
+         Duv_copy(id0,id0) = 0.; // disconnect from the point itself
+         Duv_copy(id0,id0_connectT) = h/(2.*bL);
+         Duv_copy(id0,id0_connectB) = -h/(2.*bL);
+
+         Duv_copy(idN,idN) = 0.; // disconnect from the point itself
+         Duv_copy(idN,idN_connectT) = h/(2.*bR);
+         Duv_copy(idN,idN_connectB) = -h/(2.*bR);
+
+         // disconnect from default connections
+         Duv_copy(id0,id0_disconnectB) = 0.;
+         Duv_copy(id0,id0_disconnectT) = 0.;
+         Duv_copy(idN,idN_disconnectB) = 0.;
+         Duv_copy(idN,idN_disconnectT) = 0.;
+      }
+      for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
+      {
+         // indexes for the bottom side
+         int id0 =             ID(sz, n_u,   size[0], 0, 0), // the index of the mesh point we're at
+             id0_connectL =    ID(sz, n_u-1, size[0], 0, 0), // index of the left point to connect to
+             id0_connectR =    ID(sz, n_u+1, size[0], 0, 0), // index of the right point to connect to
+             // we need to disconnect from the points that the default D matrix has
+             id0_disconnectL = ID(sz, n_u-1, size[0], 1, 0), // index of the left point to disconnect from
+             id0_disconnectR = ID(sz, n_u+1, size[0], 1, 0); // index of the right point to disconnect from
+         
+         // indexes for the top side
+         int idN =             ID(sz, n_u,   size[0], size[1]-1, 0), // the index of the mesh point we're at
+             idN_connectL =    ID(sz, n_u-1, size[0], size[1]-1, 0), // index of the left point to connect to
+             idN_connectR =    ID(sz, n_u+1, size[0], size[1]-1, 0), // index of the right point to connect to
+             // we need to disconnect from the points that the default D matrix has
+             idN_disconnectL = ID(sz, n_u-1, size[0], size[1]-2, 0), // index of the left point to disconnect from
+             idN_disconnectR = ID(sz, n_u+1, size[0], size[1]-2, 0); // index of the right point to disconnect from
+
+         // set the values at these indexes using the ghost points
+         Duv_copy(id0,id0) = 0.; // disconnect from the point itself
+         Duv_copy(id0,id0_connectR) = h/(2.*bB);
+         Duv_copy(id0,id0_connectL) = -h/(2.*bB);
+
+         Duv_copy(idN,idN) = 0.; // disconnect from the point itself
+         Duv_copy(idN,idN_connectR) = h/(2.*bT);
+         Duv_copy(idN,idN_connectL) = -h/(2.*bT);
+
+         // disconnect from default connections
+         Duv_copy(id0,id0_disconnectL) = 0.;
+         Duv_copy(id0,id0_disconnectR) = 0.;
+         Duv_copy(idN,idN_disconnectL) = 0.;
+         Duv_copy(idN,idN_disconnectR) = 0.;
+      }
+
+      // special case for the corners
+      int id, id_disconnect;
+
+      // Top left
+      id =            ID(sz,0,size[0],size[1]-1,0);
+      id_disconnect = ID(sz,1,size[0],size[1]-2,0);
+      Duv_copy(id,id)            = h*h/(bL*bT);
+      Duv_copy(id,id_disconnect) = 0.;
+
+      // Top right
+      id =            ID(sz,size[0]-1,size[0],size[1]-1,0);
+      id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
+      Duv_copy(id,id)            = h*h/(bR*bT);
+      Duv_copy(id,id_disconnect) = 0.;
+
+      // Bottom left
+      id =            ID(sz,0,size[0],0,0);
+      id_disconnect = ID(sz,1,size[0],1,0);
+      Duv_copy(id,id)            = h*h/(bL*bB);
+      Duv_copy(id,id_disconnect) = 0.;
+
+      // Bottom right
+      id =            ID(sz,size[0]-1,size[0],0,0);
+      id_disconnect = ID(sz,size[0]-2,size[0],1,0);
+      Duv_copy(id,id)            = h*h/(bR*bB);
+      Duv_copy(id,id_disconnect) = 0.;
+
+      return Duv_copy;
    }
    
    // convert the OP matrix into a vector
    void setVectorForm()
    {
-      for (int vi = 0; vi < OP_size; vi++) for (int row = 0; row < size[0]; row++) for (int col = 0; col < size[1]; col++) vector(size[0]*size[1]*vi + size[1]*row + row) = matrix(row,col)(vi);
+      for (int vi = 0; vi < OP_size; vi++) {
+         for (int row = 0; row < size[0]; row++) {
+            for (int col = 0; col < size[1]; col++) {
+               vector(ID(size[0]*size[1],row,size[0],col,vi)) = matrix(row,col)(vi);
+            }
+         }
+      }
    }
+
+   VectorXcd getVector() const { return vector; }
+   VectorXcd& getVector()      { return vector; }
 
    // free-energy functions
    complex<double> f_bulk();
@@ -607,7 +766,7 @@ class GL_Solver
       {
          for (int n_v = 0; n_v < cond.SIZEv; n_v++)
          {
-            int id = ID(n_u,n_v,0,0);
+            int id = ID(size,n_u,cond.SIZEu,n_v,0);
 
             // We only need to calculate the derivative matrices if the
             //   mesh is more than one element long in a given direction
@@ -653,7 +812,7 @@ class GL_Solver
    {
       // id is the index of the connecting element, so
       //   id1 is the index of the element being inserted
-      int id1 = ID(u,v,0,0);
+      int id1 = ID(size,u,cond.SIZEu,v,0);
 
            if (u == -1 || u == cond.SIZEu);  // would add boundary conditions here, but we use ghost points, so do nothing
       // we'll just insert default values, filling the spaces, but they will be modified later for each OP-component
@@ -665,7 +824,7 @@ class GL_Solver
    {
       // id is the index of the connecting element, so
       //   id1 is the index of the element being inserted
-      int id1 = ID(u,v,0,0);
+      int id1 = ID(size,u,cond.SIZEu,v,0);
 
       if (v == -1 || v == cond.SIZEv);  // would add boundary conditions here,//  but we use ghost points, so do nothing
       else coeffs.push_back(Tr(id,id1,weight));
@@ -676,18 +835,13 @@ class GL_Solver
    {
       // id is the index of the connecting element, so
       //   id1 is the index of the element being inserted
-      int id1 = ID(u,v,0,0);
+      int id1 = ID(size,u,cond.SIZEu,v,0);
 
            if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
       else if (v == -1 || v == cond.SIZEv); //  but we use ghost points, so do nothing
       else coeffs.push_back(Tr(id,id1,weight));
    }
 
-   // returns the unique id corresponding to each op-component in the mesh
-   int ID(int n_u, int n_v, int mu, int i)
-   {
-      return size*(3*mu + i) + cond.SIZEu*n_v + n_u;
-   }
 }; // GL_solver class
 // ==================
 
