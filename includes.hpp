@@ -170,6 +170,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 // ======================================================
 
 
+// ============================================
+// To hold the 4 slip lengths for a sigle OP
+   struct Bound_Cond { double bB, bT, bL, bR; }
+// ============================================
+
+
 // ================================================================
 // a class to hold the mesh we use in FEM, which holds all the OP's
    template <typename Container_type>
