@@ -387,7 +387,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // templates for use-defined functions
       SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
                                                            SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
-                                                           double,double,double,double,double);
+                                                           double,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
       VectorXcd RHS_He3Defect(GL_param);
 
       private:
@@ -408,7 +408,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                                                                               SparseMatrix<complex<double>>& Du2,
                                                                               SparseMatrix<complex<double>>& Dv2,
                                                                               SparseMatrix<complex<double>>& Duv,
-                                                                              double h, double bB, double bT, double bL, double bR)
+                                                                              double h, Bound_Cond Axx,
+                                                                              Bound_Cond Axz, Bound_Cond Ayy,
+                                                                              Bound_Cond Azx, Bound_Cond Azz)
    {
       // to make the code cleaner, define some constants
       double K123 = gl.K1+gl.K2+gl.K3,
