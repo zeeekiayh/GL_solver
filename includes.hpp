@@ -224,6 +224,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                matrix(i,j).initialize(OP_size);
             }
          }
+
+         // make the vector form available
+         setVectorForm();
       }
 
       // derivative matrix methods
@@ -406,13 +409,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       complex<double> f_grad();
       double free_energy();
 
-      // templates for use-defined functions
-      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
-                                                           SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
-                                                           double,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
-      VectorXcd RHS_He3Defect(GL_param,MultiComponentOrderParam<VectorXcd>);
-
-      private:
+      protected:
       int OP_size; // number of components in a single OP
       int size[2]; // to hold the possible 2 sizes
       // int size[3]; // to hold the possible 3 sizes
@@ -424,9 +421,24 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       VectorXcd vector;
    };
 
-// User-defined methods to build the solver matrix and the rhs vector
+   template <typename Container_type>
+   class MultiComponent_OP_Matrix: public OP_Matrix<Container_type> {};
    template <>
-   SparseMatrix<complex<double>> OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
+   class MultiComponent_OP_Matrix<VectorXcd>: public OP_Matrix<VectorXcd>
+   {
+      public:
+      // templates for use-defined functions
+      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
+                                                           SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
+                                                           double,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
+      VectorXcd RHS_He3Defect(GL_param);
+
+      private:
+      Matrix<MultiComponentOrderParam<VectorXcd>,-1,-1> matrix;
+   };
+
+// User-defined methods to build the solver matrix and the rhs vector
+   SparseMatrix<complex<double>> MultiComponent_OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
                                                                               SparseMatrix<complex<double>>& Du2,
                                                                               SparseMatrix<complex<double>>& Dv2,
                                                                               SparseMatrix<complex<double>>& Duv,
@@ -465,19 +477,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       return SolverMatrix.sparseView(1,pow(10,-8));
    }
 
-   template <>
-   VectorXcd OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl, MultiComponentOrderParam<VectorXcd> op)
+   VectorXcd MultiComponent_OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
    {
-      Matrix3cd A = op.GetMatrixForm_He3Defect(),
-                A_T = A.transpose(),
-                A_dag = A.adjoint(),
-                A_conj = A.conjugate();
+      Matrix3cd A, A_T, A_dag, A_conj;
       VectorXcd rhs;
 
-      // loop through the 5 non-zero components of op
-      for (int i = 0; i < op.num_comp; i++)
-      {
-         //
+      // loop through this->vector
+      for (int vi = 0; vi < OP_size; vi++) {
+         for (int row = 0; row < size[0]; row++) {
+            for (int col = 0; col < size[1]; col++) {
+               vector(ID(size[0]*size[1],row,size[0],col,vi));
+               matrix(row,col).GetMatrixForm_He3Defect();
+            }
+         }
       }
    }
 // ================================================================
@@ -516,6 +528,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //    d(1) = 0.; // BC: delta_perp [0] = 0
 //    return d;
 // }
+
 // TODO: modify the grad terms to calculate it based on the mesh
 // Calculate the free-energy loss by the integral of the energy density
 // This value has been normalized because the deltas were calculated as
@@ -592,7 +605,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //          for (int j = 0; j < 3; j++)
 //          {
 //             // these derivatives are divided by their step size when used in Free_Energy()
-//             if (var_mat(a,j)[k])                       k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
+//             if (var_mat(a,j)[k])                 k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
 //             if (var_mat(a,k)[j]*var_mat(a,j)[k]) k2 += ( conj(A_next(a,k) - A_prev(a,k)) ) * ( A_next(a,j) - A_prev(a,j) );
 //             if (var_mat(a,j)[k]*var_mat(a,k)[j]) k3 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,k) - A_prev(a,k) );
 //          }
