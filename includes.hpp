@@ -442,7 +442,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       VectorXcd MultiComponent_OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
       {
          Matrix3cd A, A_T, A_dag, A_conj;
-         VectorXcd rhs;
+         VectorXcd rhs(vector.size());
 
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
@@ -465,6 +465,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                   //   OP matrix, given a value for vi: the # of element in the
                   //   vector. This is specific to this one case with 5 OP components
                   //   that are arranged in the corners and center.
+
+                  // add val to rhs, in the matching location
+                  rhs(ID(size[0]*size[1],row,size[0],col,vi)) = val;
                }
             }
          }
