@@ -114,7 +114,21 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       OrderParam() {}
       OrderParam(int n): num_comp(n) {  }
       void Set_OP(Container_type op) { OP = op; }
-      void initialize(int n) { num_comp = n; }
+      void initialize(int n)
+      {
+         num_comp = n;
+         if (num_comp > 1) OP.resize(num_comp);
+      }
+      complex<double>& operator() (int i)
+      {
+         if (i > num_comp-1) // check the range first
+         {
+            cout << "ERROR: index out of range OrderParam::operator()" << endl;
+            return 0.;
+         }
+         if (num_comp == 1) return OP; // if it's just one-component OP, return that value
+         else return OP(i);            // otherwise, it is a vector, so return it's component
+      }
    };
 
    template<class Container_type>
@@ -140,12 +154,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    struct MultiComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
    {
       MultiComponentOrderParam(int n) { initialize(n); }
-
-      // void initialize(int n)
-      // {
-      //    num_comp = n;
-      //    OP.resize(n);
-      // }
       void Set_OP(Matrix3cd op) // will we actually use this??
       {
          // flatten the matrix (row major)
@@ -161,19 +169,33 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      i++;
                   }
                }
+
             }
          } // for's
       }
-
-      //
+      Matrix3cd GetMatrixForm_He3Defect(); // this function is specific to one OP structure
    };
+
+   Matrix3cd MultiComponentOrderParam<VectorXcd>::GetMatrixForm_He3Defect()
+   {
+      Matrix3cd A(3,3);
+      A << OP(0), 0.,    OP(1),
+           0.,    OP(2), 0.,
+           OP(3), 0.,    OP(4);
+      return A;
+   }
 // ======================================================
 
 
-// =============================================
-// To hold the 4 slip lengths for a sigle OP
-   struct Bound_Cond { double bB, bT, bL, bR; };
-// =============================================
+// ===========================================
+// Boundary condition structure for a sigle OP
+   struct Bound_Cond
+   {
+      string type; // type of BC: Dirichlet (value) or Neumann (derivative)
+      double bB, bT, bL, bR; // for Neumann BC:   slip length
+                             // for Dirichlet BC: function value
+   };
+// ===========================================
 
 
 // ================================================================
@@ -388,10 +410,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
                                                            SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
                                                            double,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
-      VectorXcd RHS_He3Defect(GL_param);
+      VectorXcd RHS_He3Defect(GL_param,MultiComponentOrderParam<VectorXcd>);
 
       private:
-      int OP_size; // number components of each OP
+      int OP_size; // number of components in a single OP
       int size[2]; // to hold the possible 2 sizes
       // int size[3]; // to hold the possible 3 sizes
 
@@ -444,9 +466,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    }
 
    template <>
-   VectorXcd OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
+   VectorXcd OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl, MultiComponentOrderParam<VectorXcd> op)
    {
-      // continue here
+      Matrix3cd A = op.GetMatrixForm_He3Defect(),
+                A_T = A.transpose(),
+                A_dag = A.adjoint(),
+                A_conj = A.conjugate();
+      VectorXcd rhs;
+
+      // loop through the 5 non-zero components of op
+      for (int i = 0; i < op.num_comp; i++)
+      {
+         //
+      }
    }
 // ================================================================
 
