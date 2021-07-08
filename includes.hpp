@@ -181,12 +181,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       void initialize(int n, int nRows, int nCols)
       {
+         cout << "in OP_Martix::initialize()" << endl;
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
          OP_size = n; // number of OP components
+         cout << "member variables initialized" << endl;
 
-         matrix.resize(size[0],size[1]); // initialize matrix size
-         vector.resize(size[0]*size[1]); // initialize vector size
+         matrix.resize(size[0],size[1]); // initialize matrix
+         vector.resize(size[0]*size[1]*OP_size); // initialize vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
+         cout << "this->matrix and this->vector resized" << endl;
 
          // initialize elements in 'matrix'
          for (int i = 0; i < size[0]; i++) {
@@ -194,16 +197,22 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                matrix(i,j).initialize(OP_size);
             }
          }
+         cout << "all matrix elements successfully initialized" << endl;
 
          // make the vector form available
          setVectorForm();
+         cout << "made vector form available" << endl;
       }
 
       // derivative matrix methods
-      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC) const
       {
+         cout << "in Du2_BD()" << endl;
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Du2_copy = Du2;
+
+         cout << "size[0] = " << size[0] << endl;
+         cout << "size[1] = " << size[1] << endl;
 
          // loop through just the left and right boundary points of the mesh
          for (int n_v = 0; n_v < size[1]; n_v++)
@@ -215,6 +224,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             // indexes for the right side
             int idN =         ID(size[0]*size[1], size[0]-1, size[0], n_v, 0),
                 idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
+            
+            cout << "id0         = " << id0 << endl;
+            cout << "id0_connect = " << id0_connect << endl;
+            cout << "idN         = " << idN << endl;
+            cout << "idN_connect = " << idN_connect << endl;
 
             // set the values at these indexes using the ghost points
             if (BC.typeL == string("Neumann"))
@@ -222,20 +236,28 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bL;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeL == string("Dirichlet")) Du2_copy.coeffRef(id0,id0) = 1.;
+            else if (BC.typeL == string("Dirichlet"))
+            {
+               cout << "";
+               Du2_copy.coeffRef(id0,id0) = 1.;
+            }
 
             if (BC.typeR == string("Neumann"))
             {
                Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeR == string("Dirichlet")) Du2_copy.coeffRef(idN,idN) = 1.;
+            else if (BC.typeR == string("Dirichlet"))
+            {
+               cout << "";
+               Du2_copy.coeffRef(idN,idN) = 1.;
+            }
          }
 
          return Du2_copy;
       }
       
-      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Dv2, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC) const
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Dv2_copy = Dv2;
@@ -270,7 +292,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return Dv2_copy;
       }
       
-      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Duv, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC) const
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
@@ -449,25 +471,36 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                                                            Bound_Cond Axz, Bound_Cond Ayy,
                                                            Bound_Cond Azx, Bound_Cond Azz)
       {
+         cout << "building SolverMatrix_He3Defect" << endl;
          // to make the code cleaner, define some constants
          double K123 = gl.K1+gl.K2+gl.K3,
-               K23  = gl.K2+gl.K3;
+                K23  = gl.K2+gl.K3;
 
          // define matrices to use, with their sizes
          MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5); // the matrix to be used by the solver
          MatrixXcd zero(Du2.rows(),Du2.cols()); // a zero matrix to fill in the spaces with the comma initializer
          zero.setZero(); // make sure it's zero
+         cout << "matrices prepared" << endl;
 
          // define each non-zero 'element'
-         MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx),
-                   elem_10 = K23*Duv_BD(Duv,h,Axx),
-                   elem_01 = K23*Duv_BD(Duv,h,Axz),
-                   elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz),
-                   elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)),
-                   elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx),
-                   elem_43 = K23*Duv_BD(Duv,h,Azx),
-                   elem_34 = K23*Duv_BD(Duv,h,Azz),
-                   elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
+         MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx);
+            cout << "elem_00 initialized" << endl;
+         MatrixXcd elem_10 = K23*Duv_BD(Duv,h,Axx);
+            cout << "elem_10 initialized" << endl;
+         MatrixXcd elem_01 = K23*Duv_BD(Duv,h,Axz);
+            cout << "elem_01 initialized" << endl;
+         MatrixXcd elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz);
+            cout << "elem_11 initialized" << endl;
+         MatrixXcd elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy));
+            cout << "elem_22 initialized" << endl;
+         MatrixXcd elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx);
+            cout << "elem_33 initialized" << endl;
+         MatrixXcd elem_43 = K23*Duv_BD(Duv,h,Azx);
+            cout << "elem_43 initialized" << endl;
+         MatrixXcd elem_34 = K23*Duv_BD(Duv,h,Azz);
+            cout << "elem_34 initialized" << endl;
+         MatrixXcd elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
+         cout << "matrix elements defined" << endl;
 
          // use the comma initializer to build the matrix
          SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
@@ -475,6 +508,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                          zero,    zero,    elem_22, zero,    zero,
                          zero,    zero,    zero,    elem_33, elem_34,                          
                          zero,    zero,    zero,    elem_43, elem_44;
+         cout << "comma initializer success for SolverMatrix" << endl;
 
          // turn the matrix into a sparse matrix
          return SolverMatrix.sparseView(1,pow(10,-8));
@@ -534,26 +568,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       //
    };
 // =============================================
-
-
-// TODO...
-// the right hand side of the matrix equation
-// VectorXcd RHS(VectorXcd& del, in_conditions cond)
-// {
-//    VectorXcd d(del.size()); // make a type complex vector the same size as del
-//    for (int i = 0; i < del.size(); i+=2) // loop through the whole vector
-//    {
-//       // use the diff. equ's as obtained from the GL equations of the distorted B-phase
-//       d(i)   = DD_para(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-//       d(i+1) = DD_perp(del(i), del(i+1), cond.gl) * pow(cond.STEP,2);
-//    }
-//    // keep the boundary conditions fixed
-//    d(del.size()-2) = cond.BCNp;
-//    d(del.size()-1) = cond.BCNs;
-//    d(0) = 0.; // BC for specular or diffuse (see BuildProblem() for differences)
-//    d(1) = 0.; // BC: delta_perp [0] = 0
-//    return d;
-// }
 
 // TODO: modify the grad terms to calculate it based on the mesh
 // Calculate the free-energy loss by the integral of the energy density
@@ -641,7 +655,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //                   //  is a product of 2 derivatives, but we have double step size
 // }
 
-
 // ===============================
    template <class Container_type>
    class GL_Solver
@@ -665,7 +678,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // * * * * * * * * * * * * * * * *
       // * CONSTRUCTORS & DECSTRUCTOR  *
       // * * * * * * * * * * * * * * * *
-      GL_Solver();
+      GL_Solver() {};
       GL_Solver(string conditions_file)
       {
          ReadConditions(conditions_file);
@@ -869,8 +882,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          cout << "Dv2 =\n" << Dv2.real() << endl;
          cout << "Duv =\n" << Duv.real() << endl;
 
-         this->op_matrix.initialize(n,n*size,n*size);
+         this->op_matrix.initialize(n,size,size);
+         cout << "initialized op_matrix" << endl;
          A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
+         cout << "got SolverMatrix_He3Defect" << endl;
       }
 
       // TODO...?
