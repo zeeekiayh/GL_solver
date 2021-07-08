@@ -446,7 +446,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    template <>
    VectorXcd OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
    {
-      //
+      // continue here
    }
 // ================================================================
 
