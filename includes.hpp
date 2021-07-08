@@ -170,10 +170,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 // ======================================================
 
 
-// ============================================
+// =============================================
 // To hold the 4 slip lengths for a sigle OP
-   struct Bound_Cond { double bB, bT, bL, bR; }
-// ============================================
+   struct Bound_Cond { double bB, bT, bL, bR; };
+// =============================================
 
 
 // ================================================================
@@ -422,15 +422,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       zero.setZero(); // make sure it's zero
 
       // define each non-zero 'element'
-      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,bL,bR)+gl.K1*Dv2_BD(Dv2,h,bB,bT),
-                elem_10 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
-                elem_01 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
-                elem_11 = K123*Duv_BD(Duv,h,bB,bT,bL,bR)+gl.K1*Du2_BD(Du2,h,bL,bR),
-                elem_22 = gl.K1*(Du2_BD(Du2,h,bL,bR)+Dv2_BD(Dv2,h,bB,bT)),
-                elem_33 = K123*Du2_BD(Du2,h,bL,bR)+gl.K1*Dv2_BD(Dv2,h,bB,bT),
-                elem_34 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
-                elem_43 = K23*Duv_BD(Duv,h,bB,bT,bL,bR),
-                elem_44 = K123*Duv_BD(Duv,h,bB,bT,bL,bR)+gl.K1*Du2_BD(Du2,h,bL,bR);
+      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx.bL,Axx.bR)+gl.K1*Dv2_BD(Dv2,h,Axx.bB,Axx.bT),
+                elem_10 = K23*Duv_BD(Duv,h,Axx.bB,Axx.bT,Axx.bL,Axx.bR),
+                elem_01 = K23*Duv_BD(Duv,h,Axz.bB,Axz.bT,Axz.bL,Axz.bR),
+                elem_11 = K123*Duv_BD(Duv,h,Axz.bB,Axz.bT,Axz.bL,Axz.bR)+gl.K1*Du2_BD(Du2,h,Axz.bL,Axz.bR),
+                elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy.bL,Ayy.bR)+Dv2_BD(Dv2,h,Ayy.bB,Ayy.bT)),
+                elem_33 = K123*Du2_BD(Du2,h,Azx.bL,Azx.bR)+gl.K1*Dv2_BD(Dv2,h,Azx.bB,Azx.bT),
+                elem_43 = K23*Duv_BD(Duv,h,Azx.bB,Azx.bT,Azx.bL,Azx.bR),
+                elem_34 = K23*Duv_BD(Duv,h,Azz.bB,Azz.bT,Azz.bL,Azz.bR),
+                elem_44 = K123*Duv_BD(Duv,h,Azz.bB,Azz.bT,Azz.bL,Azz.bR)+gl.K1*Du2_BD(Du2,h,Azz.bL,Azz.bR);
 
       // use the comma initializer to build the matrix
       SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
