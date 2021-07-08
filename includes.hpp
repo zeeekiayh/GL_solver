@@ -37,40 +37,13 @@ struct in_conditions
        wait;     // iterations to wait before using acceleration
    double ACCUR, // the minimum desired accuracy
           STEP,  // step size
-         //  B,     // variable parameter
           rel_p, // relaxation param
           bLeft, // slip length on left side
           bRight,//   "   "   on right side
           bTop,  //   "   "   on top side
           bBott; //   "   "   on bottom side
-   // double BCNp;  // parallel: bc's at the end (N): slope or value
-   // double BCNs;  // perpendicular: bc's at the end (N): slope or value
    // string BC0;   // boundary conditions at 0: "specular" or "diffuse"
 };
-
-// returns a matrix of the values at index i from each vector in m
-Matrix<complex<double>,3,3> M_index(Matrix<VectorXcd,3,3> m, int i)
-{
-   Matrix<complex<double>,3,3> r;
-
-   // loop through the whole matrix
-   //   and check to see if the element (VectorXcd) has any components before accessing them
-   for(int j = 0; j < 3; j++) for(int k = 0; k < 3; k++) r(j,k) = m(j,k).size() ? m(j,k)(i) : 0.0;
-   return r;
-}
-
-Matrix<VectorXcd,3,3> BuildMatrix(vector<VectorXcd>& del, vector<int>& idx)
-{
-   Matrix<VectorXcd,3,3> op;
-   if (del.size() != idx.size()) { cout << "ERROR: BuildMatrix must have vectors of the same size."; return op; }
-   
-   // insert deltas into their respective indecies
-   vector<VectorXcd>::iterator it_del = del.begin();
-   for (vector<int>::iterator it_idx = idx.begin(); it_idx != idx.end(); it_idx++, it_del++) {
-      op(floor((*it_idx)/3),(*it_idx)%3) = *it_del;
-   }
-   return op;
-}
 
 void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
 {
@@ -161,7 +134,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          for (int a = 0; a < 3; a++) {
             for (int j = 0; j < 3; j++) {
-
                if (abs(op(a,j)) > pow(10,-8)) { // if not 0
                   if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
                   else {
@@ -169,21 +141,18 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      i++;
                   }
                }
-
             }
          } // for's
       }
-      Matrix3cd GetMatrixForm_He3Defect(); // this function is specific to one OP structure
+      Matrix3cd GetMatrixForm_He3Defect() // this function is specific to one OP structure
+      {
+         Matrix3cd A(3,3);
+         A << OP(0), 0.,    OP(1),
+              0.,    OP(2), 0.,
+              OP(3), 0.,    OP(4);
+         return A;
+      }
    };
-
-   Matrix3cd MultiComponentOrderParam<VectorXcd>::GetMatrixForm_He3Defect()
-   {
-      Matrix3cd A(3,3);
-      A << OP(0), 0.,    OP(1),
-           0.,    OP(2), 0.,
-           OP(3), 0.,    OP(4);
-      return A;
-   }
 // ======================================================
 
 
@@ -213,7 +182,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       {
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
-         OP_size = n;
+         OP_size = n; // number of OP components
 
          matrix.resize(size[0],size[1]); // initialize matrix size
          vector.resize(size[0]*size[1]); // initialize vector size
@@ -389,7 +358,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return Duv_copy;
       }
       
-      // convert the OP matrix into a vector
+      // Convert the OP matrix into a vector
+      // This functions may need to be used repeatedly
+      //   as the guess is updated...or we could just
+      //   use the &getVector() method to change it directly
       void setVectorForm()
       {
          for (int vi = 0; vi < OP_size; vi++) {
@@ -427,71 +399,80 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    class MultiComponent_OP_Matrix<VectorXcd>: public OP_Matrix<VectorXcd>
    {
       public:
-      // templates for use-defined functions
-      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param,SparseMatrix<complex<double>>&,
-                                                           SparseMatrix<complex<double>>&,SparseMatrix<complex<double>>&,
-                                                           double,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
-      VectorXcd RHS_He3Defect(GL_param);
+      // User-defined methods to build the solver matrix and the rhs vector
+      SparseMatrix<complex<double>> MultiComponent_OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
+                                                                                 SparseMatrix<complex<double>>& Du2,
+                                                                                 SparseMatrix<complex<double>>& Dv2,
+                                                                                 SparseMatrix<complex<double>>& Duv,
+                                                                                 double h, Bound_Cond Axx,
+                                                                                 Bound_Cond Axz, Bound_Cond Ayy,
+                                                                                 Bound_Cond Azx, Bound_Cond Azz)
+      {
+         // to make the code cleaner, define some constants
+         double K123 = gl.K1+gl.K2+gl.K3,
+               K23  = gl.K2+gl.K3;
+
+         // define matrices to use, with their sizes
+         MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5); // the matrix to be used by the solver
+         MatrixXcd zero(Du2.rows(),Du2.cols()); // a zero matrix to fill in the spaces with the comma initializer
+         zero.setZero(); // make sure it's zero
+
+         // define each non-zero 'element'
+         MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx),
+                   elem_10 = K23*Duv_BD(Duv,h,Axx),
+                   elem_01 = K23*Duv_BD(Duv,h,Axz),
+                   elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz),
+                   elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)),
+                   elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx),
+                   elem_43 = K23*Duv_BD(Duv,h,Azx),
+                   elem_34 = K23*Duv_BD(Duv,h,Azz),
+                   elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
+
+         // use the comma initializer to build the matrix
+         SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
+                         elem_10, elem_11, zero,    zero,    zero,
+                         zero,    zero,    elem_22, zero,    zero,
+                         zero,    zero,    zero,    elem_33, elem_34,                          
+                         zero,    zero,    zero,    elem_43, elem_44;
+
+         // turn the matrix into a sparse matrix
+         return SolverMatrix.sparseView(1,pow(10,-8));
+      }
+
+      VectorXcd MultiComponent_OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
+      {
+         Matrix3cd A, A_T, A_dag, A_conj;
+         VectorXcd rhs;
+
+         // loop through all the OP components in the mesh
+         for (int vi = 0; vi < OP_size; vi++) {
+            for (int row = 0; row < size[0]; row++) {
+               for (int col = 0; col < size[1]; col++) {
+                  complex<double> A_mui = vector(ID(size[0]*size[1],row,size[0],col,vi));
+                  
+                  A = matrix(row,col).GetMatrixForm_He3Defect();
+                  A_T = A.transpose();
+                  A_dag = A.adjoint();
+                  A_conj = A.conjugate();
+
+                  complex<double> val = 2*gl.B1*(A*A_T).trace()*conj(A_mui)
+                                       +2*gl.B2*(A*A_dag).trace()*A_mui
+                                       +2*gl.B3*(A*A_T*A_conj)(floor(2*vi/3),(2*vi)%3)
+                                       +2*gl.B4*(A*A_dag*A)(floor(2*vi/3),(2*vi)%3)
+                                       +2*gl.B5*(A_conj*A_T*A)(floor(2*vi/3),(2*vi)%3)
+                                       +gl.A*A_mui;
+                  // Where (floor(2*vi/3),(2*vi)%3) gives us (row#, col#) in the
+                  //   OP matrix, given a value for vi: the # of element in the
+                  //   vector. This is specific to this one case with 5 OP components
+                  //   that are arranged in the corners and center.
+               }
+            }
+         }
+      }
 
       private:
       Matrix<MultiComponentOrderParam<VectorXcd>,-1,-1> matrix;
    };
-
-// User-defined methods to build the solver matrix and the rhs vector
-   SparseMatrix<complex<double>> MultiComponent_OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
-                                                                              SparseMatrix<complex<double>>& Du2,
-                                                                              SparseMatrix<complex<double>>& Dv2,
-                                                                              SparseMatrix<complex<double>>& Duv,
-                                                                              double h, Bound_Cond Axx,
-                                                                              Bound_Cond Axz, Bound_Cond Ayy,
-                                                                              Bound_Cond Azx, Bound_Cond Azz)
-   {
-      // to make the code cleaner, define some constants
-      double K123 = gl.K1+gl.K2+gl.K3,
-             K23  = gl.K2+gl.K3;
-
-      // define matrices to use
-      MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5);
-      MatrixXcd zero(Du2.rows(),Du2.cols());
-      zero.setZero(); // make sure it's zero
-
-      // define each non-zero 'element'
-      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx),
-                elem_10 = K23*Duv_BD(Duv,h,Axx),
-                elem_01 = K23*Duv_BD(Duv,h,Axz),
-                elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz),
-                elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)),
-                elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx),
-                elem_43 = K23*Duv_BD(Duv,h,Azx),
-                elem_34 = K23*Duv_BD(Duv,h,Azz),
-                elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
-
-      // use the comma initializer to build the matrix
-      SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
-                      elem_10, elem_11, zero,    zero,    zero,
-                      zero,    zero,    elem_22, zero,    zero,
-                      zero,    zero,    zero,    elem_33, elem_34,                          
-                      zero,    zero,    zero,    elem_43, elem_44;
-
-      // turn the matrix into a sparse matrix
-      return SolverMatrix.sparseView(1,pow(10,-8));
-   }
-
-   VectorXcd MultiComponent_OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
-   {
-      Matrix3cd A, A_T, A_dag, A_conj;
-      VectorXcd rhs;
-
-      // loop through this->vector
-      for (int vi = 0; vi < OP_size; vi++) {
-         for (int row = 0; row < size[0]; row++) {
-            for (int col = 0; col < size[1]; col++) {
-               vector(ID(size[0]*size[1],row,size[0],col,vi));
-               matrix(row,col).GetMatrixForm_He3Defect();
-            }
-         }
-      }
-   }
 // ================================================================
 
 
