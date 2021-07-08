@@ -161,7 +161,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 // Boundary condition structure for a sigle OP
    struct Bound_Cond
    {
-      string type; // type of BC: Dirichlet (value) or Neumann (derivative)
+      string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
       double bB, bT, bL, bR; // for Neumann BC:   slip length
                              // for Dirichlet BC: function value
    };
@@ -217,11 +217,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
 
             // set the values at these indexes using the ghost points
-            Du2_copy.insert(id0,id0) = -2. -2.*h/BC.bL;
-            Du2_copy.insert(id0,id0_connect) = 2.;
+            if (BC.typeL == string("Neumann"))
+            {
+               Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bL;
+               Du2_copy.coeffRef(id0,id0_connect) = 2.;
+            }
+            else if (BC.typeL == string("Dirichlet")) Du2_copy.coeffRef(id0,id0) = 1.;
 
-            Du2_copy.insert(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
-            Du2_copy.insert(idN,idN_connect) = 2.;
+            if (BC.typeR == string("Neumann"))
+            {
+               Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
+               Du2_copy.coeffRef(idN,idN_connect) = 2.;
+            }
+            else if (BC.typeR == string("Dirichlet")) Du2_copy.coeffRef(idN,idN) = 1.;
          }
 
          return Du2_copy;
@@ -244,11 +252,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
 
             // set the values at these indexes using the ghost points
-            Dv2_copy.insert(id0,id0) = -2. -2.*h/BC.bB;
-            Dv2_copy.insert(id0,id0_connect) = 2.;
+            if (BC.typeB == string("Neumann"))
+            {
+               Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bB;
+               Dv2_copy.coeffRef(id0,id0_connect) = 2.;
+            }
+            else if (BC.typeB == string("Dirichlet")) Dv2_copy.coeffRef(id0,id0) = 1.;
 
-            Dv2_copy.insert(idN,idN) = -2. -2.*h/BC.bT; // TODO: is it -2h... or +2h... ?
-            Dv2_copy.insert(idN,idN_connect) = 2.;
+            if (BC.typeT == string("Neumann"))
+            {
+               Dv2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bT; // TODO: is it -2h... or +2h... ?
+               Dv2_copy.coeffRef(idN,idN_connect) = 2.;
+            }
+            else if (BC.typeT == string("Dirichlet")) Dv2_copy.coeffRef(idN,idN) = 1.;
          }
 
          return Dv2_copy;
@@ -281,19 +297,27 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 idN_disconnectT = ID(sz, size[0]-2, size[0], n_v+1, 0); // index of the top point to disconnect from
 
             // set the values at these indexes using the ghost points
-            Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy.insert(id0,id0_connectT) = h/(2.*BC.bL);
-            Duv_copy.insert(id0,id0_connectB) = -h/(2.*BC.bL);
+            if (BC.typeL == string("Neumann"))
+            {
+               Duv_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
+               Duv_copy.coeffRef(id0,id0_connectT) = h/(2.*BC.bL);
+               Duv_copy.coeffRef(id0,id0_connectB) = -h/(2.*BC.bL);
+            }
+            else if (BC.typeL == string("Dirichlet")) Duv_copy.coeffRef(id0,id0) = 1.;
 
-            Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy.insert(idN,idN_connectT) = h/(2.*BC.bR);
-            Duv_copy.insert(idN,idN_connectB) = -h/(2.*BC.bR);
+            if (BC.typeR == string("Neumann"))
+            {
+               Duv_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
+               Duv_copy.coeffRef(idN,idN_connectT) = h/(2.*BC.bR);
+               Duv_copy.coeffRef(idN,idN_connectB) = -h/(2.*BC.bR);
+            }
+            else if (BC.typeR == string("Dirichlet")) Duv_copy.coeffRef(idN,idN) = 1.;
 
             // disconnect from default connections
-            Duv_copy.insert(id0,id0_disconnectB) = 0.;
-            Duv_copy.insert(id0,id0_disconnectT) = 0.;
-            Duv_copy.insert(idN,idN_disconnectB) = 0.;
-            Duv_copy.insert(idN,idN_disconnectT) = 0.;
+            Duv_copy.coeffRef(id0,id0_disconnectB) = 0.;
+            Duv_copy.coeffRef(id0,id0_disconnectT) = 0.;
+            Duv_copy.coeffRef(idN,idN_disconnectB) = 0.;
+            Duv_copy.coeffRef(idN,idN_disconnectT) = 0.;
          }
          for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
@@ -314,47 +338,63 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 idN_disconnectR = ID(sz, n_u+1, size[0], size[1]-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
-            Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy.insert(id0,id0_connectR) = h/(2.*BC.bB);
-            Duv_copy.insert(id0,id0_connectL) = -h/(2.*BC.bB);
+            if (BC.typeB == string("Neumann"))
+            {
+               Duv_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
+               Duv_copy.coeffRef(id0,id0_connectR) = h/(2.*BC.bB);
+               Duv_copy.coeffRef(id0,id0_connectL) = -h/(2.*BC.bB);
+            }
+            else if (BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id0,id0) = 1.;
 
-            Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy.insert(idN,idN_connectR) = h/(2.*BC.bT);
-            Duv_copy.insert(idN,idN_connectL) = -h/(2.*BC.bT);
+            if (BC.typeT == string("Neumann"))
+            {
+               Duv_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
+               Duv_copy.coeffRef(idN,idN_connectR) = h/(2.*BC.bT);
+               Duv_copy.coeffRef(idN,idN_connectL) = -h/(2.*BC.bT);
+            }
+            else if (BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(idN,idN) = 1.;
 
             // disconnect from default connections
-            Duv_copy.insert(id0,id0_disconnectL) = 0.;
-            Duv_copy.insert(id0,id0_disconnectR) = 0.;
-            Duv_copy.insert(idN,idN_disconnectL) = 0.;
-            Duv_copy.insert(idN,idN_disconnectR) = 0.;
+            Duv_copy.coeffRef(id0,id0_disconnectL) = 0.;
+            Duv_copy.coeffRef(id0,id0_disconnectR) = 0.;
+            Duv_copy.coeffRef(idN,idN_disconnectL) = 0.;
+            Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
          }
 
          // special case for the corners
          int id, id_disconnect;
 
          // Top left
-         id =            ID(sz,0,size[0],size[1]-1,0);
          id_disconnect = ID(sz,1,size[0],size[1]-2,0);
-         Duv_copy.insert(id,id)            = h*h/(BC.bL*BC.bT);
-         Duv_copy.insert(id,id_disconnect) = 0.;
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
+         id = ID(sz,0,size[0],size[1]-1,0);
+              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bT);
+         else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.;
+               // TODO: determine if this assumption is correct, that
+               //    if the function value is given for one side, we
+               //    don't have to worry about the derivative condition.
+               //    (x4, below)
 
          // Top right
-         id =            ID(sz,size[0]-1,size[0],size[1]-1,0);
          id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
-         Duv_copy.insert(id,id)            = h*h/(BC.bR*BC.bT);
-         Duv_copy.insert(id,id_disconnect) = 0.;
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
+         id = ID(sz,size[0]-1,size[0],size[1]-1,0);
+              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bT);
+         else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; // here...
 
          // Bottom left
-         id =            ID(sz,0,size[0],0,0);
          id_disconnect = ID(sz,1,size[0],1,0);
-         Duv_copy.insert(id,id)            = h*h/(BC.bL*BC.bB);
-         Duv_copy.insert(id,id_disconnect) = 0.;
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
+         id = ID(sz,0,size[0],0,0);
+              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bB);
+         else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...here...
 
          // Bottom right
-         id =            ID(sz,size[0]-1,size[0],0,0);
          id_disconnect = ID(sz,size[0]-2,size[0],1,0);
-         Duv_copy.insert(id,id)            = h*h/(BC.bR*BC.bB);
-         Duv_copy.insert(id,id_disconnect) = 0.;
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
+         id = ID(sz,size[0]-1,size[0],0,0);
+              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bB);
+         else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...and here
 
          return Duv_copy;
       }
