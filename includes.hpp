@@ -205,7 +205,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
 
       // derivative matrix methods
-      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC)
       {
          cout << "in Du2_BD()" << endl;
          // the matrix that we will edit and return to not modify the original
@@ -257,10 +257,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return Du2_copy;
       }
       
-      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC)
       {
+         cout << "in Dv2_BD()" << endl;
+
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Dv2_copy = Dv2;
+
+         cout << "size[0] = " << size[0] << endl;
+         cout << "size[1] = " << size[1] << endl;
 
          // loop through just the top and bottom boundary points of the mesh
          for (int n_u = 0; n_u < size[0]; n_u++)
@@ -270,8 +275,13 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 id0_connect = ID(size[0]*size[1], n_u, size[0], 1, 0);
             
             // indexes for the top side
-            int idN =         ID(size[0]*size[1], n_u, size[0], size[0]-1, 0),
-                idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
+            int idN =         ID(size[0]*size[1], n_u, size[0], size[1]-1, 0),
+                idN_connect = ID(size[0]*size[1], n_u, size[0], size[1]-2, 0);
+            
+            cout << "id0         = " << id0 << endl;
+            cout << "id0_connect = " << id0_connect << endl;
+            cout << "idN         = " << idN << endl;
+            cout << "idN_connect = " << idN_connect << endl;
 
             // set the values at these indexes using the ghost points
             if (BC.typeB == string("Neumann"))
@@ -292,7 +302,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return Dv2_copy;
       }
       
-      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC) const
+      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC)
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
@@ -483,23 +493,23 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          cout << "matrices prepared" << endl;
 
          // define each non-zero 'element'
-         MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx);
+         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx));
             cout << "elem_00 initialized" << endl;
-         MatrixXcd elem_10 = K23*Duv_BD(Duv,h,Axx);
+         MatrixXcd elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx));
             cout << "elem_10 initialized" << endl;
-         MatrixXcd elem_01 = K23*Duv_BD(Duv,h,Axz);
+         MatrixXcd elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz));
             cout << "elem_01 initialized" << endl;
-         MatrixXcd elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz);
+         MatrixXcd elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz));
             cout << "elem_11 initialized" << endl;
-         MatrixXcd elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy));
+         MatrixXcd elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)));
             cout << "elem_22 initialized" << endl;
-         MatrixXcd elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx);
+         MatrixXcd elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx));
             cout << "elem_33 initialized" << endl;
-         MatrixXcd elem_43 = K23*Duv_BD(Duv,h,Azx);
+         MatrixXcd elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx));
             cout << "elem_43 initialized" << endl;
-         MatrixXcd elem_34 = K23*Duv_BD(Duv,h,Azz);
+         MatrixXcd elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz));
             cout << "elem_34 initialized" << endl;
-         MatrixXcd elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
+         MatrixXcd elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz));
          cout << "matrix elements defined" << endl;
 
          // use the comma initializer to build the matrix
@@ -878,9 +888,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                         Bound_Cond Azz)
       {
          Build_D_Matrices();
-         cout << "Du2 =\n" << Du2.real() << endl;
+         // cout << "Du2 =\n" << Du2.real() << endl;
          cout << "Dv2 =\n" << Dv2.real() << endl;
-         cout << "Duv =\n" << Duv.real() << endl;
+         // cout << "Duv =\n" << Duv.real() << endl;
 
          this->op_matrix.initialize(n,size,size);
          cout << "initialized op_matrix" << endl;
