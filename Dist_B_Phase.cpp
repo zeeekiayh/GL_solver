@@ -40,5 +40,6 @@ int main()
     // complex<double> Free_energy = Free_Energy(c, OP, var_mat);
     // cout << "Free-energy result: " << Free_energy << endl;
 
-    GL_Solver<VectorXcd> gls("conditions.txt");
+    MultiComponent_GL_Solver<VectorXcd> gls("conditions.txt");
+    gls.BuildProblem(5,Axx,Axz,Ayy,Azx,Azz);
 }

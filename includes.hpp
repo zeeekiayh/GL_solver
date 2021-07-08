@@ -97,9 +97,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          if (i > num_comp-1) // check the range first
          {
             cout << "ERROR: index out of range OrderParam::operator()" << endl;
-            return 0.;
+            // return 0.;
          }
-         if (num_comp == 1) return OP; // if it's just one-component OP, return that value
+         // will these all have to be specialized??
+         // if (num_comp == 1) return OP; // if it's just one-component OP, return that value
          else return OP(i);            // otherwise, it is a vector, so return it's component
       }
    };
@@ -209,11 +210,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          {
             // indexes for the left side
             int id0 =         ID(size[0]*size[1], 0, size[0], n_v, 0),
-               id0_connect = ID(size[0]*size[1], 1, size[0], n_v, 0);
+                id0_connect = ID(size[0]*size[1], 1, size[0], n_v, 0);
             
             // indexes for the right side
             int idN =         ID(size[0]*size[1], size[0]-1, size[0], n_v, 0),
-               idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
+                idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
 
             // set the values at these indexes using the ghost points
             Du2_copy.insert(id0,id0) = -2. -2.*h/BC.bL;
@@ -236,11 +237,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          {
             // indexes for the bottom side
             int id0 =         ID(size[0]*size[1], n_u, size[0], 0, 0),
-               id0_connect = ID(size[0]*size[1], n_u, size[0], 1, 0);
+                id0_connect = ID(size[0]*size[1], n_u, size[0], 1, 0);
             
             // indexes for the top side
             int idN =         ID(size[0]*size[1], n_u, size[0], size[0]-1, 0),
-               idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
+                idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
 
             // set the values at these indexes using the ghost points
             Dv2_copy.insert(id0,id0) = -2. -2.*h/BC.bB;
@@ -265,19 +266,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          {
             // indexes for the left side
             int id0 =             ID(sz, 0, size[0], n_v,   0), // the index of the mesh point we're at
-               id0_connectB =    ID(sz, 0, size[0], n_v-1, 0), // index of the bottom point to connect to
-               id0_connectT =    ID(sz, 0, size[0], n_v+1, 0), // index of the top point to connect to
+                id0_connectB =    ID(sz, 0, size[0], n_v-1, 0), // index of the bottom point to connect to
+                id0_connectT =    ID(sz, 0, size[0], n_v+1, 0), // index of the top point to connect to
                // we need to disconnect from the points that the default D matrix has
-               id0_disconnectB = ID(sz, 1, size[0], n_v-1, 0), // index of the bottom point to disconnect from
-               id0_disconnectT = ID(sz, 1, size[0], n_v+1, 0); // index of the top point to disconnect from
+                id0_disconnectB = ID(sz, 1, size[0], n_v-1, 0), // index of the bottom point to disconnect from
+                id0_disconnectT = ID(sz, 1, size[0], n_v+1, 0); // index of the top point to disconnect from
             
             // indexes for the right side
             int idN =             ID(sz, size[0]-1, size[0], n_v,   0), // the index of the mesh point we're at
-               idN_connectB =    ID(sz, size[0]-1, size[0], n_v-1, 0), // index of the bottom point to connect to
-               idN_connectT =    ID(sz, size[0]-1, size[0], n_v+1, 0), // index of the top point to connect to
+                idN_connectB =    ID(sz, size[0]-1, size[0], n_v-1, 0), // index of the bottom point to connect to
+                idN_connectT =    ID(sz, size[0]-1, size[0], n_v+1, 0), // index of the top point to connect to
                // we need to disconnect from the points that the default D matrix has
-               idN_disconnectB = ID(sz, size[0]-2, size[0], n_v-1, 0), // index of the bottom point to disconnect from
-               idN_disconnectT = ID(sz, size[0]-2, size[0], n_v+1, 0); // index of the top point to disconnect from
+                idN_disconnectB = ID(sz, size[0]-2, size[0], n_v-1, 0), // index of the bottom point to disconnect from
+                idN_disconnectT = ID(sz, size[0]-2, size[0], n_v+1, 0); // index of the top point to disconnect from
 
             // set the values at these indexes using the ghost points
             Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
@@ -298,19 +299,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          {
             // indexes for the bottom side
             int id0 =             ID(sz, n_u,   size[0], 0, 0), // the index of the mesh point we're at
-               id0_connectL =    ID(sz, n_u-1, size[0], 0, 0), // index of the left point to connect to
-               id0_connectR =    ID(sz, n_u+1, size[0], 0, 0), // index of the right point to connect to
+                id0_connectL =    ID(sz, n_u-1, size[0], 0, 0), // index of the left point to connect to
+                id0_connectR =    ID(sz, n_u+1, size[0], 0, 0), // index of the right point to connect to
                // we need to disconnect from the points that the default D matrix has
-               id0_disconnectL = ID(sz, n_u-1, size[0], 1, 0), // index of the left point to disconnect from
-               id0_disconnectR = ID(sz, n_u+1, size[0], 1, 0); // index of the right point to disconnect from
+                id0_disconnectL = ID(sz, n_u-1, size[0], 1, 0), // index of the left point to disconnect from
+                id0_disconnectR = ID(sz, n_u+1, size[0], 1, 0); // index of the right point to disconnect from
             
             // indexes for the top side
             int idN =             ID(sz, n_u,   size[0], size[1]-1, 0), // the index of the mesh point we're at
-               idN_connectL =    ID(sz, n_u-1, size[0], size[1]-1, 0), // index of the left point to connect to
-               idN_connectR =    ID(sz, n_u+1, size[0], size[1]-1, 0), // index of the right point to connect to
+                idN_connectL =    ID(sz, n_u-1, size[0], size[1]-1, 0), // index of the left point to connect to
+                idN_connectR =    ID(sz, n_u+1, size[0], size[1]-1, 0), // index of the right point to connect to
                // we need to disconnect from the points that the default D matrix has
-               idN_disconnectL = ID(sz, n_u-1, size[0], size[1]-2, 0), // index of the left point to disconnect from
-               idN_disconnectR = ID(sz, n_u+1, size[0], size[1]-2, 0); // index of the right point to disconnect from
+                idN_disconnectL = ID(sz, n_u-1, size[0], size[1]-2, 0), // index of the left point to disconnect from
+                idN_disconnectR = ID(sz, n_u+1, size[0], size[1]-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
             Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
@@ -400,13 +401,13 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    {
       public:
       // User-defined methods to build the solver matrix and the rhs vector
-      SparseMatrix<complex<double>> MultiComponent_OP_Matrix<VectorXcd>::SolverMatrix_He3Defect(GL_param gl,
-                                                                                 SparseMatrix<complex<double>>& Du2,
-                                                                                 SparseMatrix<complex<double>>& Dv2,
-                                                                                 SparseMatrix<complex<double>>& Duv,
-                                                                                 double h, Bound_Cond Axx,
-                                                                                 Bound_Cond Axz, Bound_Cond Ayy,
-                                                                                 Bound_Cond Azx, Bound_Cond Azz)
+      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param gl,
+                                                           SparseMatrix<complex<double>>& Du2,
+                                                           SparseMatrix<complex<double>>& Dv2,
+                                                           SparseMatrix<complex<double>>& Duv,
+                                                           double h, Bound_Cond Axx,
+                                                           Bound_Cond Axz, Bound_Cond Ayy,
+                                                           Bound_Cond Azx, Bound_Cond Azz)
       {
          // to make the code cleaner, define some constants
          double K123 = gl.K1+gl.K2+gl.K3,
@@ -439,7 +440,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return SolverMatrix.sparseView(1,pow(10,-8));
       }
 
-      VectorXcd MultiComponent_OP_Matrix<VectorXcd>::RHS_He3Defect(GL_param gl)
+      VectorXcd RHS_He3Defect(GL_param gl)
       {
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
@@ -471,6 +472,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                }
             }
          }
+         return rhs;
       }
 
       private:
@@ -604,43 +606,38 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    template <class Container_type>
    class GL_Solver
    {
-      public:
       // * * * * * * *
       // * VARIABLES *
       // * * * * * * *
+      private:
+      OP_Matrix<Container_type> op_matrix; // the matrix of OP at each mesh point
+
+      protected:
       int size; // the size of the D matrices and the OP-component vectors
       GL_param gl; // temperature-dependent parameters for the GL equation
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       VectorXcd solution; // to store the solution to the GL equ. (in the single vector form)
 
-      OP_Matrix<Container_type> op_matrix(); // the matrix of OP at each mesh point
-
       SparseMatrix<complex<double>> A; // solver matrix
       SparseMatrix<complex<double>> Du2, Dv2, Duv; // derivative matrices
 
+      public:
       // * * * * * * * * * * * * * * * *
       // * CONSTRUCTORS & DECSTRUCTOR  *
       // * * * * * * * * * * * * * * * *
       GL_Solver();
       GL_Solver(string conditions_file)
       {
-         // initialize variables and build problem
          ReadConditions(conditions_file);
          size = cond.SIZEu*cond.SIZEv;
-         Build_D_Matrices();
-
-         cout << "Du2 =\n" << Du2.real() << endl;
-         // cout << "Du2(1,1) = \n" << Du2_BD(1.,1.) << endl;
-         cout << "Dv2 =\n" << Dv2 << endl;
-         // cout << "Dv2(1,1) = \n" << Dv2_BD(1.,1.) << endl;
-         cout << "Duv =\n" << Duv << endl;
-         // cout << "Duv(1,1,1,1) = \n" << Duv_BD(1.,1.,1.,1.) << endl;
       }
       // ~GL_Solver() {};
 
       // * * * * * *
       // * METHODS *
       // * * * * * *
+      void Solve(VectorXcd&);
+      void BuildProblem(int,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
 
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Axx_|_Axy_| ...
@@ -665,55 +662,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             data_c.close();
          }
          else cout << "Unable to open file: " << f_name_imag << endl;
-      }
-
-      // TODO...?
-      // use the relaxation method and Anderson Acceleration to solve
-      void Solve(VectorXcd& guess)
-      {
-         VectorXcd f = guess, df(guess.size()); // initialize vectors
-
-         // TODO: change this...it will be different with all the
-         //       op-components in the vector
-         // the elements that we don't want changed in the acceleration method
-         vector<int> no_update;
-         no_update.push_back(1);
-         no_update.push_back(guess.size()-2);
-         no_update.push_back(guess.size()-1);
-
-         // use LU decomposition to solve the system
-         SparseLU<SparseMatrix<complex<double>>, COLAMDOrdering<int> > solver;
-         solver.analyzePattern(A); // TODO: check to see if needed
-         solver.factorize(A);
-
-         // check to see if the solver failed
-         if (solver.info() == Eigen::Success) cout << "Solver: success" << endl;
-         else if (solver.info() == Eigen::NumericalIssue) cout << "Solver: numerical issues" << endl;
-
-         // loop until f converges or until it's gone too long
-         int cts = 0; // count loops
-         double err;  // to store current error
-         VectorXcd rhs = RHS(f,cond); // the right hand side
-
-         // the acceleration object
-         converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
-
-         do { // use relaxation
-            df = solver.solve(rhs)-f; // find the change in f
-
-            // use Anderson Acceleration to converge faster
-            Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
-
-            rhs = RHS(f,cond); // update rhs
-            cts++;
-         } while(err > cond.ACCUR && cts < cond.N_loop);
-
-         if (err < cond.ACCUR) cout << "Found solution:" << endl;
-         cout << "   iterations = " << cts << endl;
-         cout << "   relative error = " << err << endl;
-
-         solution = f;
-         // return f; // return the last value for f
       }
 
       // read in the conditions from the file
@@ -858,6 +806,85 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
 
    }; // GL_solver class
+
+// derived, multi-component GL solver class
+   template<class Container_type>
+   class MultiComponent_GL_Solver : public GL_Solver<Container_type> {};
+   template<>
+   class MultiComponent_GL_Solver<VectorXcd> : public GL_Solver<VectorXcd>
+   {
+      public:
+      MultiComponent_GL_Solver(string conditions_file)
+      {
+         ReadConditions(conditions_file);
+         size = cond.SIZEu*cond.SIZEv;
+      }
+
+      void BuildProblem(int n, Bound_Cond Axx, Bound_Cond Axz,
+                        Bound_Cond Ayy, Bound_Cond Azx,
+                        Bound_Cond Azz)
+      {
+         Build_D_Matrices();
+         cout << "Du2 =\n" << Du2.real() << endl;
+         cout << "Dv2 =\n" << Dv2.real() << endl;
+         cout << "Duv =\n" << Duv.real() << endl;
+
+         this->op_matrix.initialize(n,n*size,n*size);
+         A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
+      }
+
+      // TODO...?
+      // use the relaxation method and Anderson Acceleration to solve
+      void Solve(VectorXcd& guess)
+      {
+         VectorXcd f = guess, df(guess.size()); // initialize vectors
+
+         // TODO: change this...it will be different with all the
+         //       op-components in the vector
+         // the elements that we don't want changed in the acceleration method
+         vector<int> no_update;
+         no_update.push_back(1);
+         no_update.push_back(guess.size()-2);
+         no_update.push_back(guess.size()-1);
+
+         // use LU decomposition to solve the system
+         SparseLU<SparseMatrix<complex<double>>, COLAMDOrdering<int> > solver;
+         solver.analyzePattern(A); // TODO: check to see if needed
+         solver.factorize(A);
+
+         // check to see if the solver failed
+         if (solver.info() == Eigen::Success) cout << "Solver: success" << endl;
+         else if (solver.info() == Eigen::NumericalIssue) cout << "Solver: numerical issues" << endl;
+
+         // loop until f converges or until it's gone too long
+         int cts = 0; // count loops
+         double err;  // to store current error
+         VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
+
+         // the acceleration object
+         converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
+
+         do { // use relaxation
+            df = solver.solve(rhs)-f; // find the change in f
+
+            // use Anderson Acceleration to converge faster
+            Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
+
+            rhs = op_matrix.RHS_He3Defect(gl); // update rhs
+            cts++;
+         } while(err > cond.ACCUR && cts < cond.N_loop);
+
+         if (err < cond.ACCUR) cout << "Found solution:" << endl;
+         cout << "   iterations = " << cts << endl;
+         cout << "   relative error = " << err << endl;
+
+         solution = f;
+         // return f; // return the last value for f
+      }
+
+      private:
+      MultiComponent_OP_Matrix<VectorXcd> op_matrix;
+   };
 // ===============================
 
 #endif
