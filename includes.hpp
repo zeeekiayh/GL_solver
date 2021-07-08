@@ -230,7 +230,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
 
       // derivative matrix methods
-      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double h, double bL, double bR) const
+      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>> Du2, double h, Bound_Cond BC) const
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Du2_copy = Du2;
@@ -247,17 +247,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
 
             // set the values at these indexes using the ghost points
-            Du2_copy.insert(id0,id0) = -2. -2.*h/bL;
+            Du2_copy.insert(id0,id0) = -2. -2.*h/BC.bL;
             Du2_copy.insert(id0,id0_connect) = 2.;
 
-            Du2_copy.insert(idN,idN) = -2. -2.*h/bR; // TODO: is it -2h... or +2h... ?
+            Du2_copy.insert(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
             Du2_copy.insert(idN,idN_connect) = 2.;
          }
 
          return Du2_copy;
       }
       
-      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Dv2, double h, double bB, double bT) const
+      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>> Dv2, double h, Bound_Cond BC) const
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Dv2_copy = Dv2;
@@ -274,17 +274,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                idN_connect = ID(size[0]*size[1], n_u, size[0], size[0]-2, 0);
 
             // set the values at these indexes using the ghost points
-            Dv2_copy.insert(id0,id0) = -2. -2.*h/bB;
+            Dv2_copy.insert(id0,id0) = -2. -2.*h/BC.bB;
             Dv2_copy.insert(id0,id0_connect) = 2.;
 
-            Dv2_copy.insert(idN,idN) = -2. -2.*h/bT; // TODO: is it -2h... or +2h... ?
+            Dv2_copy.insert(idN,idN) = -2. -2.*h/BC.bT; // TODO: is it -2h... or +2h... ?
             Dv2_copy.insert(idN,idN_connect) = 2.;
          }
 
          return Dv2_copy;
       }
       
-      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Duv, double h, double bB, double bT, double bL, double bR) const
+      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>> Duv, double h, Bound_Cond BC) const
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
@@ -312,12 +312,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
             // set the values at these indexes using the ghost points
             Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy.insert(id0,id0_connectT) = h/(2.*bL);
-            Duv_copy.insert(id0,id0_connectB) = -h/(2.*bL);
+            Duv_copy.insert(id0,id0_connectT) = h/(2.*BC.bL);
+            Duv_copy.insert(id0,id0_connectB) = -h/(2.*BC.bL);
 
             Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy.insert(idN,idN_connectT) = h/(2.*bR);
-            Duv_copy.insert(idN,idN_connectB) = -h/(2.*bR);
+            Duv_copy.insert(idN,idN_connectT) = h/(2.*BC.bR);
+            Duv_copy.insert(idN,idN_connectB) = -h/(2.*BC.bR);
 
             // disconnect from default connections
             Duv_copy.insert(id0,id0_disconnectB) = 0.;
@@ -345,12 +345,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
             // set the values at these indexes using the ghost points
             Duv_copy.insert(id0,id0) = 0.; // disconnect from the point itself
-            Duv_copy.insert(id0,id0_connectR) = h/(2.*bB);
-            Duv_copy.insert(id0,id0_connectL) = -h/(2.*bB);
+            Duv_copy.insert(id0,id0_connectR) = h/(2.*BC.bB);
+            Duv_copy.insert(id0,id0_connectL) = -h/(2.*BC.bB);
 
             Duv_copy.insert(idN,idN) = 0.; // disconnect from the point itself
-            Duv_copy.insert(idN,idN_connectR) = h/(2.*bT);
-            Duv_copy.insert(idN,idN_connectL) = -h/(2.*bT);
+            Duv_copy.insert(idN,idN_connectR) = h/(2.*BC.bT);
+            Duv_copy.insert(idN,idN_connectL) = -h/(2.*BC.bT);
 
             // disconnect from default connections
             Duv_copy.insert(id0,id0_disconnectL) = 0.;
@@ -365,25 +365,25 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // Top left
          id =            ID(sz,0,size[0],size[1]-1,0);
          id_disconnect = ID(sz,1,size[0],size[1]-2,0);
-         Duv_copy.insert(id,id)            = h*h/(bL*bT);
+         Duv_copy.insert(id,id)            = h*h/(BC.bL*BC.bT);
          Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Top right
          id =            ID(sz,size[0]-1,size[0],size[1]-1,0);
          id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
-         Duv_copy.insert(id,id)            = h*h/(bR*bT);
+         Duv_copy.insert(id,id)            = h*h/(BC.bR*BC.bT);
          Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Bottom left
          id =            ID(sz,0,size[0],0,0);
          id_disconnect = ID(sz,1,size[0],1,0);
-         Duv_copy.insert(id,id)            = h*h/(bL*bB);
+         Duv_copy.insert(id,id)            = h*h/(BC.bL*BC.bB);
          Duv_copy.insert(id,id_disconnect) = 0.;
 
          // Bottom right
          id =            ID(sz,size[0]-1,size[0],0,0);
          id_disconnect = ID(sz,size[0]-2,size[0],1,0);
-         Duv_copy.insert(id,id)            = h*h/(bR*bB);
+         Duv_copy.insert(id,id)            = h*h/(BC.bR*BC.bB);
          Duv_copy.insert(id,id_disconnect) = 0.;
 
          return Duv_copy;
@@ -456,15 +456,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       zero.setZero(); // make sure it's zero
 
       // define each non-zero 'element'
-      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx.bL,Axx.bR)+gl.K1*Dv2_BD(Dv2,h,Axx.bB,Axx.bT),
-                elem_10 = K23*Duv_BD(Duv,h,Axx.bB,Axx.bT,Axx.bL,Axx.bR),
-                elem_01 = K23*Duv_BD(Duv,h,Axz.bB,Axz.bT,Axz.bL,Axz.bR),
-                elem_11 = K123*Duv_BD(Duv,h,Axz.bB,Axz.bT,Axz.bL,Axz.bR)+gl.K1*Du2_BD(Du2,h,Axz.bL,Axz.bR),
-                elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy.bL,Ayy.bR)+Dv2_BD(Dv2,h,Ayy.bB,Ayy.bT)),
-                elem_33 = K123*Du2_BD(Du2,h,Azx.bL,Azx.bR)+gl.K1*Dv2_BD(Dv2,h,Azx.bB,Azx.bT),
-                elem_43 = K23*Duv_BD(Duv,h,Azx.bB,Azx.bT,Azx.bL,Azx.bR),
-                elem_34 = K23*Duv_BD(Duv,h,Azz.bB,Azz.bT,Azz.bL,Azz.bR),
-                elem_44 = K123*Duv_BD(Duv,h,Azz.bB,Azz.bT,Azz.bL,Azz.bR)+gl.K1*Du2_BD(Du2,h,Azz.bL,Azz.bR);
+      MatrixXcd elem_00 = K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx),
+                elem_10 = K23*Duv_BD(Duv,h,Axx),
+                elem_01 = K23*Duv_BD(Duv,h,Axz),
+                elem_11 = K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz),
+                elem_22 = gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)),
+                elem_33 = K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx),
+                elem_43 = K23*Duv_BD(Duv,h,Azx),
+                elem_34 = K23*Duv_BD(Duv,h,Azz),
+                elem_44 = K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz);
 
       // use the comma initializer to build the matrix
       SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
