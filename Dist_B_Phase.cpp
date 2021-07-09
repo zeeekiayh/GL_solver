@@ -86,6 +86,29 @@ int main()
     Azz.typeL = string("Dirichlet");
     Azz.typeR = string("Dirichlet");
 
+    cout << "here" << endl;    
+
     MultiComponent_GL_Solver<VectorXcd> gls("conditions.txt");
     gls.BuildProblem(5,Axx,Axz,Ayy,Azx,Azz);
+
+    cout << "here" << endl;
+
+    // make a guess
+    int size = gls.getSolverMatrixSize();
+    in_conditions c = gls.getConditions();
+    int midPoint = c.SIZEu/2;
+    
+    VectorXcd guess(size);
+    for (int i = 0; i < size; i += 5)
+    {
+        guess(i)   = Axx.bB;
+        guess(i+1) = Axx.bB;
+        guess(i+2) = Ayy.bB;
+        guess(i+3) = Azx.bB;
+        if (i%c.SIZEu < midPoint) guess(i+4) = Azz.bL;
+        else guess(i+4) = Azz.bR;
+    }
+
+    gls.Solve(guess);
+    VectorXcd solution = gls.getSolution();
 }

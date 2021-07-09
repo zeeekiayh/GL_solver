@@ -448,6 +448,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    class MultiComponent_OP_Matrix<VectorXcd>: public OP_Matrix<VectorXcd>
    {
       public:
+      MultiComponent_OP_Matrix()
+      {
+         //
+      }
+
       // User-defined methods to build the solver matrix and the rhs vector
       SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param gl,
                                                            SparseMatrix<complex<double>>& Du2,
@@ -490,16 +495,22 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd RHS_He3Defect(GL_param gl)
       {
+         cout << "in RHS_He3" << endl;
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
 
+         cout << "starting loops" << endl;
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
+            cout << "\tvi = " << vi << endl;
             for (int row = 0; row < size[0]; row++) {
+               cout << "\t\trow = " << row << endl;
                for (int col = 0; col < size[1]; col++) {
+                  cout << "\t\t\tcol = " << col << endl;
                   complex<double> A_mui = vector(ID(size[0]*size[1],row,size[0],col,vi));
                   
                   A = matrix(row,col).GetMatrixForm_He3Defect();
+                  cout << "after 'matrix(row,col)'" << endl;
                   A_T = A.transpose();
                   A_dag = A.adjoint();
                   A_conj = A.conjugate();
@@ -665,6 +676,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // * * * * * *
       void Solve(VectorXcd&);
       void BuildProblem(int,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond,Bound_Cond);
+
+      int getSolverMatrixSize() const { return A.cols(); }
+      in_conditions getConditions() const { return cond; }
+      VectorXcd getSolution() const { return solution; }
 
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Axx_|_Axy_| ...
@@ -841,17 +856,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                         Bound_Cond Azz)
       {
          Build_D_Matrices();
-         // cout << "Du2 =\n" << Du2.real() << endl;
-         cout << "Dv2 =\n" << Dv2.real() << endl;
-         // cout << "Duv =\n" << Duv.real() << endl;
 
          this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv);
          A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
-         cout << "A.rows() = " << A.rows() << endl;
-         cout << "A.cols() = " << A.cols() << endl;
       }
 
-      // TODO...?
       // use the relaxation method and Anderson Acceleration to solve
       void Solve(VectorXcd& guess)
       {
@@ -879,11 +888,18 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          double err;  // to store current error
          VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
 
+         cout << "here 1" << endl;
+
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
+         cout << "here 2" << endl;
+
          do { // use relaxation
             df = solver.solve(rhs)-f; // find the change in f
+
+            cout << "\there 3" << endl;
+            cout << "\tcts = " << cts << endl;
 
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
