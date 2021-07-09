@@ -88,6 +88,7 @@ int main()
 
     cout << "here" << endl;    
 
+    std::vector<int> no_update;
     MultiComponent_GL_Solver<VectorXcd> gls("conditions.txt");
     gls.BuildProblem(5,Axx,Axz,Ayy,Azx,Azz);
 
@@ -109,7 +110,7 @@ int main()
         else guess(i+4) = Azz.bR;
     }
 
-    gls.Solve(guess);
+    gls.Solve(guess,no_update);
     VectorXcd solution = gls.getSolution();
     // cout << "solution =\n" << solution << endl;
 }

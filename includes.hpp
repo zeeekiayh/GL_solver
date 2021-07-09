@@ -7,6 +7,7 @@
 #include "math.h"
 #include <complex>
 #include <vector>
+#include <algorithm>
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
 #include "ConvergenceAccelerator.hpp"
@@ -42,7 +43,6 @@ struct in_conditions
           bRight,//   "   "   on right side
           bTop,  //   "   "   on top side
           bBott; //   "   "   on bottom side
-   // string BC0;   // boundary conditions at 0: "specular" or "diffuse"
 };
 
 void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
@@ -177,10 +177,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       public:
       OP_Matrix() {}
       // for multi-component OP's
-      OP_Matrix(int n, int nRows, int nCols) { initialize(n, nRows, nCols); }
+      OP_Matrix(int n, int nRows, int nCols, std::vector<int> v) { initialize(n, nRows, nCols,v); }
       // OP_Matrix(int n, int nRows, int nCols, int s3) {}
 
-      void initialize(int n, int nRows, int nCols)
+      void initialize(int n, int nRows, int nCols, std::vector<int> v)
       {
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
@@ -198,6 +198,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          // make the vector form available
          setVectorForm();
+
+         no_update = v;
       }
 
       // derivative matrix methods
@@ -289,6 +291,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       
       SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC, int op_elem_num)
       {
+         // We actually will not need to add anything to the no_update vector
+         //   because we have already gone through all the boundary points.
+         //   /
+
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
 
@@ -335,11 +341,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectT) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectB) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectT) = 0.;
-
-            // // add the index of componenets of the guess/solution vector that
-            // //   we already know, i.e. we don't need to update them
-            // no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
-            // no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
          }
          for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
@@ -381,11 +382,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectR) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectL) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
-
-            // // add the index of componenets of the guess/solution vector that
-            // //   we already know, i.e. we don't need to update them
-            // no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
-            // no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
          }
 
          // special case for the corners
@@ -473,13 +469,24 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    {
       public:
       MultiComponent_OP_Matrix() {}
-      MultiComponent_OP_Matrix(int n, int nRows, int nCols) { initialize(n,nRows,nCols); }
+      MultiComponent_OP_Matrix(int n, int nRows, int nCols, std::vector<int> v,
+                              double h, Bound_Cond Axx, Bound_Cond Axz,
+                              Bound_Cond Ayy, Bound_Cond Azx, Bound_Cond Azz)
+      { initialize(n,nRows,nCols,v,h,Axx,Axz,Ayy,Azx,Azz); }
 
-      void initialize(int n, int nRows, int nCols)
+      void initialize(int n, int nRows, int nCols, std::vector<int> v,
+                     double h, Bound_Cond Axx, Bound_Cond Axz,
+                     Bound_Cond Ayy, Bound_Cond Azx, Bound_Cond Azz)
       {
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
          OP_size = n; // number of OP components
+         step_size = h;
+         this->Axx = Axx;
+         this->Axz = Axz;
+         this->Ayy = Ayy;
+         this->Azx = Azx;
+         this->Azz = Azz;
 
          matrix.resize(size[0],size[1]); // initialize matrix
          vector.resize(size[0]*size[1]*OP_size); // initialize vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
@@ -493,16 +500,13 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          // make the vector form available
          setVectorForm();
+
+         no_update = v;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
-      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param gl,
-                                                           SparseMatrix<complex<double>>& Du2,
-                                                           SparseMatrix<complex<double>>& Dv2,
-                                                           SparseMatrix<complex<double>>& Duv,
-                                                           double h, Bound_Cond Axx,
-                                                           Bound_Cond Axz, Bound_Cond Ayy,
-                                                           Bound_Cond Azx, Bound_Cond Azz)
+      SparseMatrix<complex<double>> SolverMatrix_He3Defect(GL_param gl, SparseMatrix<complex<double>>& Du2,
+                                                           SparseMatrix<complex<double>>& Dv2, SparseMatrix<complex<double>>& Duv)
       {
          // to make the code cleaner, define some constants
          double K123 = gl.K1+gl.K2+gl.K3,
@@ -514,15 +518,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          zero.setZero(); // make sure it's zero
 
          // define each non-zero 'element'
-         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx,0)+gl.K1*Dv2_BD(Dv2,h,Axx,0)),
-                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx,0)),
-                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz,1)),
-                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz,1)+gl.K1*Du2_BD(Du2,h,Axz,1)),
-                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy,2)+Dv2_BD(Dv2,h,Ayy,2))),
-                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx,3)+gl.K1*Dv2_BD(Dv2,h,Azx,3)),
-                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx,3)),
-                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz,4)),
-                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz,4)+gl.K1*Du2_BD(Du2,h,Azz,4));
+         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,step_size,Axx,0)+gl.K1*Dv2_BD(Dv2,step_size,Axx,0)),
+                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,step_size,Axx,0)),
+                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,step_size,Axz,1)),
+                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,step_size,Axz,1)+gl.K1*Du2_BD(Du2,step_size,Axz,1)),
+                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,step_size,Ayy,2)+Dv2_BD(Dv2,step_size,Ayy,2))),
+                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,step_size,Azx,3)+gl.K1*Dv2_BD(Dv2,step_size,Azx,3)),
+                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,step_size,Azx,3)),
+                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,step_size,Azz,4)),
+                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,step_size,Azz,4)+gl.K1*Du2_BD(Du2,step_size,Azz,4));
 
          // use the comma initializer to build the matrix
          SolverMatrix << elem_00, elem_01, zero,    zero,    zero,
@@ -535,7 +539,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return SolverMatrix.sparseView(1,pow(10,-8));
       }
 
-      VectorXcd RHS_He3Defect(GL_param gl)
+      VectorXcd RHS_He3Defect(GL_param gl, std::vector<int>& noUpdate)
       {
          // cout << "in RHS_He3" << endl;
          Matrix3cd A, A_T, A_dag, A_conj;
@@ -549,27 +553,63 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                // cout << "\t\trow = " << row << endl;
                for (int col = 0; col < size[1]; col++) {
                   // cout << "\t\t\tcol = " << col << endl;
-                  complex<double> A_mui = vector(ID(size[0]*size[1],row,size[0],col,vi));
-                  
-                  A = matrix(row,col).GetMatrixForm_He3Defect();
-                  // cout << "after 'matrix(row,col)'" << endl;
-                  A_T = A.transpose();
-                  A_dag = A.adjoint();
-                  A_conj = A.conjugate();
 
-                  complex<double> val = 2*gl.B1*(A*A_T).trace()*conj(A_mui)
-                                       +2*gl.B2*(A*A_dag).trace()*A_mui
-                                       +2*gl.B3*(A*A_T*A_conj)(floor(2*vi/3),(2*vi)%3)
-                                       +2*gl.B4*(A*A_dag*A)(floor(2*vi/3),(2*vi)%3)
-                                       +2*gl.B5*(A_conj*A_T*A)(floor(2*vi/3),(2*vi)%3)
-                                       +gl.A*A_mui;
-                  // Where (floor(2*vi/3),(2*vi)%3) gives us (row#, col#) in the
-                  //   OP matrix, given a value for vi: the # of element in the
-                  //   vector. This is specific to this one case with 5 OP components
-                  //   that are arranged in the corners and center.
+                  int id = ID(size[0]*size[1],row,size[0],col,vi);
+                  complex<double> val;
+
+                  if (row == 0 || row == size[0]-1 || col == 0 || col == size[1]-1) // if we're on a boundary, set to the value we know
+                  {
+                     // decide what the value is
+                     switch (vi)
+                     {
+                     case 0: // Axx
+                        val = 0.;
+                        break;
+                     case 1: // Axz
+                        val = 0.;
+                        break;
+                     case 2: // Ayy
+                        val = 0.;
+                        break;
+                     case 3: // Azx
+                        val = 0.;
+                        break;
+                     case 4: // Azz
+                        val = 0.;
+                        break;
+                     default:
+                        cout << "RHS ERROR: OP index out of bounds." << endl;
+                        break;
+                     }
+
+
+                     // This way of getting values is specific only to this
+                     //   arrangement of order parameter
+                  }
+                  else // calculate the RHS using the GL equation
+                  {
+                     complex<double> A_mui = vector(id);
+                     
+                     A = matrix(row,col).GetMatrixForm_He3Defect();
+                     // cout << "after 'matrix(row,col)'" << endl;
+                     A_T = A.transpose();
+                     A_dag = A.adjoint();
+                     A_conj = A.conjugate();
+
+                     val = 2*gl.B1*(A*A_T).trace()*conj(A_mui)
+                           +2*gl.B2*(A*A_dag).trace()*A_mui
+                           +2*gl.B3*(A*A_T*A_conj)(floor(2*vi/3),(2*vi)%3)
+                           +2*gl.B4*(A*A_dag*A)(floor(2*vi/3),(2*vi)%3)
+                           +2*gl.B5*(A_conj*A_T*A)(floor(2*vi/3),(2*vi)%3)
+                           +gl.A*A_mui;
+                     // Where (floor(2*vi/3),(2*vi)%3) gives us (row#, col#) in the
+                     //   OP matrix, given a value for vi: the # of element in the
+                     //   vector. This is specific to this one case with 5 OP components
+                     //   that are arranged in the corners and center.
+                  }
 
                   // add val to rhs, in the matching location
-                  rhs(ID(size[0]*size[1],row,size[0],col,vi)) = val;
+                  rhs(id) = val;
                }
             }
          }
@@ -579,13 +619,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // Convert the OP matrix into a vector
       void setVectorForm()
       {
-         // cout << "setting vector form" << endl;
          for (int vi = 0; vi < OP_size; vi++) {
-            // cout << "\tvi = " << vi << endl;
             for (int row = 0; row < size[0]; row++) {
-               // cout << "\t\trow = " << row << endl;
                for (int col = 0; col < size[1]; col++) {
-                  // cout << "\t\t\tcol = " << col << endl;
                   vector(ID(size[0]*size[1],row,size[0],col,vi)) = matrix(row,col)(vi);
                }
             }
@@ -594,6 +630,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       private:
       Matrix<MultiComponentOrderParam<VectorXcd>,-1,-1> matrix;
+      double step_size;
+      Bound_Cond Axx,Axz,Ayy,Azx,Azz;
    };
 // ================================================================
 
@@ -713,7 +751,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       GL_param gl; // temperature-dependent parameters for the GL equation
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       VectorXcd solution; // to store the solution to the GL equ. (in the single vector form)
-
+      vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       SparseMatrix<complex<double>> A; // solver matrix
       SparseMatrix<complex<double>> Du2, Dv2, Duv; // derivative matrices
 
@@ -913,22 +951,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                         Bound_Cond Ayy, Bound_Cond Azx,
                         Bound_Cond Azz)
       {
-         // cout << "in buildPoblem()" << endl;
          Build_D_Matrices();
-         // cout << "D's built" << endl;
 
-         this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv);
-         // cout << "making SolverMatrix" << endl;
-         A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
+         this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv,no_update,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
+         A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv);
       }
 
       // use the relaxation method and Anderson Acceleration to solve
-      void Solve(VectorXcd& guess)
+      void Solve(VectorXcd& guess, std::vector<int>& noUpdate)
       {
          VectorXcd f = guess, df(guess.size()); // initialize vectors
-         
+
          // the elements that we don't want changed in the acceleration method
-         vector<int> no_update = op_matrix.getNoUpdate();
+         no_update = op_matrix.getNoUpdate();
 
          // use LU decomposition to solve the system
          SparseLU<SparseMatrix<complex<double>>, COLAMDOrdering<int> > solver;
@@ -942,27 +977,20 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // loop until f converges or until it's gone too long
          int cts = 0; // count loops
          double err;  // to store current error
-         VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
+         VectorXcd rhs = op_matrix.RHS_He3Defect(gl,noUpdate); // the right hand side
 
          cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
-
-         // cout << "here 1" << endl;
 
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
-         // cout << "here 2" << endl;
-
          do { // use relaxation
             df = solver.solve(rhs)-f; // find the change in f
-
-            // cout << "\there 3" << endl;
-            // cout << "\tcts = " << cts << endl;
 
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
 
-            rhs = op_matrix.RHS_He3Defect(gl); // update rhs
+            rhs = op_matrix.RHS_He3Defect(gl,noUpdate); // update rhs
             cts++;
          } while(err > cond.ACCUR && cts < cond.N_loop);
 
