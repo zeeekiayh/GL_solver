@@ -207,13 +207,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // derivative matrix methods
       SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC)
       {
-         cout << "in Du2_BD()" << endl;
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Du2_copy = Du2;
-
-         cout << "size[0] = " << size[0] << endl;
-         cout << "size[1] = " << size[1] << endl;
-
+         
          // loop through just the left and right boundary points of the mesh
          for (int n_v = 0; n_v < size[1]; n_v++)
          {
@@ -224,11 +220,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             // indexes for the right side
             int idN =         ID(size[0]*size[1], size[0]-1, size[0], n_v, 0),
                 idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
-            
-            cout << "id0         = " << id0 << endl;
-            cout << "id0_connect = " << id0_connect << endl;
-            cout << "idN         = " << idN << endl;
-            cout << "idN_connect = " << idN_connect << endl;
 
             // set the values at these indexes using the ghost points
             if (BC.typeL == string("Neumann"))
@@ -259,13 +250,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       
       SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC)
       {
-         cout << "in Dv2_BD()" << endl;
-
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Dv2_copy = Dv2;
-
-         cout << "size[0] = " << size[0] << endl;
-         cout << "size[1] = " << size[1] << endl;
 
          // loop through just the top and bottom boundary points of the mesh
          for (int n_u = 0; n_u < size[0]; n_u++)
@@ -277,11 +263,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             // indexes for the top side
             int idN =         ID(size[0]*size[1], n_u, size[0], size[1]-1, 0),
                 idN_connect = ID(size[0]*size[1], n_u, size[0], size[1]-2, 0);
-            
-            cout << "id0         = " << id0 << endl;
-            cout << "id0_connect = " << id0_connect << endl;
-            cout << "idN         = " << idN << endl;
-            cout << "idN_connect = " << idN_connect << endl;
 
             // set the values at these indexes using the ghost points
             if (BC.typeB == string("Neumann"))
@@ -304,6 +285,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       
       SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC)
       {
+         cout << "in Duv_BD()" << endl;
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
 
@@ -393,40 +375,50 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
          }
 
+         cout << "finished for-loops" << endl;
+
          // special case for the corners
          int id, id_disconnect;
 
          // Top left
          id_disconnect = ID(sz,1,size[0],size[1]-2,0);
-         Duv_copy.coeffRef(id,id_disconnect) = 0.;
          id = ID(sz,0,size[0],size[1]-1,0);
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bT);
          else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.;
                // TODO: determine if this assumption is correct, that
                //    if the function value is given for one side, we
                //    don't have to worry about the derivative condition.
                //    (x4, below)
+         
+         cout << "here 1" << endl;
 
          // Top right
          id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
-         Duv_copy.coeffRef(id,id_disconnect) = 0.;
          id = ID(sz,size[0]-1,size[0],size[1]-1,0);
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bT);
          else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; // here...
 
+         cout << "here 2" << endl;
+
          // Bottom left
          id_disconnect = ID(sz,1,size[0],1,0);
-         Duv_copy.coeffRef(id,id_disconnect) = 0.;
          id = ID(sz,0,size[0],0,0);
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bB);
          else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...here...
 
+         cout << "here 3" << endl;
+
          // Bottom right
          id_disconnect = ID(sz,size[0]-2,size[0],1,0);
-         Duv_copy.coeffRef(id,id_disconnect) = 0.;
          id = ID(sz,size[0]-1,size[0],0,0);
+         Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...and here
+
+         cout << "here 4" << endl;
 
          return Duv_copy;
       }
@@ -456,7 +448,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       protected:
       int OP_size; // number of components in a single OP
-      int size[2]; // to hold the possible 2 sizes
+      int size[2]; // to hold the 2 sizes, in each orthogonal direction along the mesh
       // int size[3]; // to hold the possible 3 sizes
 
       // to hold the OP at each point on the mesh
@@ -794,31 +786,20 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             for (int n_v = 0; n_v < cond.SIZEv; n_v++)
             {
                int id = ID(size,n_u,cond.SIZEu,n_v,0);
-
-               // We only need to calculate the derivative matrices if the
-               //   mesh is more than one element long in a given direction
-
-               if (cond.SIZEu > 1) // the Du2
-               {
-                  InsertCoeff_Du2(id, n_u,   n_v, -2., coeffs_x2);
-                  InsertCoeff_Du2(id, n_u-1, n_v,  1., coeffs_x2);
-                  InsertCoeff_Du2(id, n_u+1, n_v,  1., coeffs_x2);
-               }
-
-               if (cond.SIZEu > 1) // the Dv2
-               {
-                  InsertCoeff_Dv2(id, n_u, n_v,  -2., coeffs_z2);
-                  InsertCoeff_Dv2(id, n_u, n_v-1, 1., coeffs_z2);
-                  InsertCoeff_Dv2(id, n_u, n_v+1, 1., coeffs_z2);
-               }
-
-               if (cond.SIZEv > 1 && cond.SIZEu > 1) // the Duv
-               {
-                  InsertCoeff_Duv(id, n_u-1, n_v-1, 1./4., coeffs_xz);
-                  InsertCoeff_Duv(id, n_u+1, n_v-1,-1./4., coeffs_xz);
-                  InsertCoeff_Duv(id, n_u-1, n_v+1,-1./4., coeffs_xz);
-                  InsertCoeff_Duv(id, n_u+1, n_v+1, 1./4., coeffs_xz);
-               }
+               
+               InsertCoeff_Du2(id, n_u,   n_v, -2., coeffs_x2);
+               InsertCoeff_Du2(id, n_u-1, n_v,  1., coeffs_x2);
+               InsertCoeff_Du2(id, n_u+1, n_v,  1., coeffs_x2);
+               
+               InsertCoeff_Dv2(id, n_u, n_v,  -2., coeffs_z2);
+               InsertCoeff_Dv2(id, n_u, n_v-1, 1., coeffs_z2);
+               InsertCoeff_Dv2(id, n_u, n_v+1, 1., coeffs_z2);
+               
+               InsertCoeff_Duv(id, n_u-1, n_v-1, 1./4., coeffs_xz);
+               InsertCoeff_Duv(id, n_u+1, n_v-1,-1./4., coeffs_xz);
+               InsertCoeff_Duv(id, n_u-1, n_v+1,-1./4., coeffs_xz);
+               InsertCoeff_Duv(id, n_u+1, n_v+1, 1./4., coeffs_xz);
+               
             }
          } // end for's
 
@@ -840,7 +821,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
-            if (u == -1 || u == cond.SIZEu);  // would add boundary conditions here, but we use ghost points, so do nothing
+         if (u == -1 || u == cond.SIZEu);  // would add boundary conditions here, but we'll use ghost points, so do nothing
          // we'll just insert default values, filling the spaces, but they will be modified later for each OP-component
          else coeffs.push_back(Tr(id,id1,weight));
       }
@@ -852,7 +833,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
-         if (v == -1 || v == cond.SIZEv);  // would add boundary conditions here,//  but we use ghost points, so do nothing
+         if (v == -1 || v == cond.SIZEv);  // would add boundary conditions here, but we'll use ghost points, so do nothing
          else coeffs.push_back(Tr(id,id1,weight));
       }
 
@@ -863,8 +844,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
-            if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
-         else if (v == -1 || v == cond.SIZEv); //  but we use ghost points, so do nothing
+              if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
+         else if (v == -1 || v == cond.SIZEv); //  but we'll use ghost points, so do nothing
          else coeffs.push_back(Tr(id,id1,weight));
       }
 
@@ -892,7 +873,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          cout << "Dv2 =\n" << Dv2.real() << endl;
          // cout << "Duv =\n" << Duv.real() << endl;
 
-         this->op_matrix.initialize(n,size,size);
+         this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv);
          cout << "initialized op_matrix" << endl;
          A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
          cout << "got SolverMatrix_He3Defect" << endl;
