@@ -181,15 +181,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       void initialize(int n, int nRows, int nCols)
       {
-         cout << "in OP_Martix::initialize()" << endl;
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
          OP_size = n; // number of OP components
-         cout << "member variables initialized" << endl;
 
          matrix.resize(size[0],size[1]); // initialize matrix
          vector.resize(size[0]*size[1]*OP_size); // initialize vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
-         cout << "this->matrix and this->vector resized" << endl;
 
          // initialize elements in 'matrix'
          for (int i = 0; i < size[0]; i++) {
@@ -197,11 +194,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                matrix(i,j).initialize(OP_size);
             }
          }
-         cout << "all matrix elements successfully initialized" << endl;
 
          // make the vector form available
          setVectorForm();
-         cout << "made vector form available" << endl;
       }
 
       // derivative matrix methods
@@ -285,7 +280,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       
       SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC)
       {
-         cout << "in Duv_BD()" << endl;
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
 
@@ -375,8 +369,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
          }
 
-         cout << "finished for-loops" << endl;
-
          // special case for the corners
          int id, id_disconnect;
 
@@ -390,8 +382,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                //    if the function value is given for one side, we
                //    don't have to worry about the derivative condition.
                //    (x4, below)
-         
-         cout << "here 1" << endl;
 
          // Top right
          id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
@@ -400,8 +390,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
               if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bT);
          else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; // here...
 
-         cout << "here 2" << endl;
-
          // Bottom left
          id_disconnect = ID(sz,1,size[0],1,0);
          id = ID(sz,0,size[0],0,0);
@@ -409,16 +397,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
               if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bB);
          else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...here...
 
-         cout << "here 3" << endl;
-
          // Bottom right
          id_disconnect = ID(sz,size[0]-2,size[0],1,0);
          id = ID(sz,size[0]-1,size[0],0,0);
          Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...and here
-
-         cout << "here 4" << endl;
 
          return Duv_copy;
       }
@@ -473,7 +457,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                                                            Bound_Cond Axz, Bound_Cond Ayy,
                                                            Bound_Cond Azx, Bound_Cond Azz)
       {
-         cout << "building SolverMatrix_He3Defect" << endl;
          // to make the code cleaner, define some constants
          double K123 = gl.K1+gl.K2+gl.K3,
                 K23  = gl.K2+gl.K3;
@@ -482,27 +465,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5); // the matrix to be used by the solver
          MatrixXcd zero(Du2.rows(),Du2.cols()); // a zero matrix to fill in the spaces with the comma initializer
          zero.setZero(); // make sure it's zero
-         cout << "matrices prepared" << endl;
 
          // define each non-zero 'element'
          MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx));
-            cout << "elem_00 initialized" << endl;
          MatrixXcd elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx));
-            cout << "elem_10 initialized" << endl;
          MatrixXcd elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz));
-            cout << "elem_01 initialized" << endl;
          MatrixXcd elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz));
-            cout << "elem_11 initialized" << endl;
          MatrixXcd elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)));
-            cout << "elem_22 initialized" << endl;
          MatrixXcd elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx));
-            cout << "elem_33 initialized" << endl;
          MatrixXcd elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx));
-            cout << "elem_43 initialized" << endl;
          MatrixXcd elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz));
-            cout << "elem_34 initialized" << endl;
          MatrixXcd elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz));
-         cout << "matrix elements defined" << endl;
 
          // use the comma initializer to build the matrix
          SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
@@ -510,7 +483,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                          zero,    zero,    elem_22, zero,    zero,
                          zero,    zero,    zero,    elem_33, elem_34,                          
                          zero,    zero,    zero,    elem_43, elem_44;
-         cout << "comma initializer success for SolverMatrix" << endl;
 
          // turn the matrix into a sparse matrix
          return SolverMatrix.sparseView(1,pow(10,-8));
@@ -874,9 +846,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // cout << "Duv =\n" << Duv.real() << endl;
 
          this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv);
-         cout << "initialized op_matrix" << endl;
          A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
-         cout << "got SolverMatrix_He3Defect" << endl;
+         cout << "A.rows() = " << A.rows() << endl;
+         cout << "A.cols() = " << A.cols() << endl;
       }
 
       // TODO...?
