@@ -201,66 +201,69 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
 
       // derivative matrix methods
-      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC)
+      SparseMatrix<complex<double>> Du2_BD(SparseMatrix<complex<double>>& Du2, double h, Bound_Cond BC, int op_elem_num)
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Du2_copy = Du2;
+
+         int sz = size[0]*size[1]; // size of D matrix (num of mesh points)
          
          // loop through just the left and right boundary points of the mesh
          for (int n_v = 0; n_v < size[1]; n_v++)
          {
             // indexes for the left side
-            int id0 =         ID(size[0]*size[1], 0, size[0], n_v, 0),
-                id0_connect = ID(size[0]*size[1], 1, size[0], n_v, 0);
+            int id0 =         ID(sz, 0, size[0], n_v, 0),
+                id0_connect = ID(sz, 1, size[0], n_v, 0);
             
             // indexes for the right side
-            int idN =         ID(size[0]*size[1], size[0]-1, size[0], n_v, 0),
-                idN_connect = ID(size[0]*size[1], size[0]-2, size[0], n_v, 0);
+            int idN =         ID(sz, size[0]-1, size[0], n_v, 0),
+                idN_connect = ID(sz, size[0]-2, size[0], n_v, 0);
 
             // set the values at these indexes using the ghost points
+            //   and depending on what kind of BC we have there
             if (BC.typeL == string("Neumann"))
             {
                Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bL;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeL == string("Dirichlet"))
-            {
-               cout << "";
-               Du2_copy.coeffRef(id0,id0) = 1.;
-            }
+            else if (BC.typeL == string("Dirichlet")) Du2_copy.coeffRef(id0,id0) = 1.;
 
             if (BC.typeR == string("Neumann"))
             {
                Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeR == string("Dirichlet"))
-            {
-               cout << "";
-               Du2_copy.coeffRef(idN,idN) = 1.;
-            }
+            else if (BC.typeR == string("Dirichlet")) Du2_copy.coeffRef(idN,idN) = 1.;
+            
+            // add the index of componenets of the guess/solution vector that
+            //   we already know, i.e. we don't need to update them
+            no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
+            no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
          }
 
          return Du2_copy;
       }
       
-      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC)
+      SparseMatrix<complex<double>> Dv2_BD(SparseMatrix<complex<double>>& Dv2, double h, Bound_Cond BC, int op_elem_num)
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Dv2_copy = Dv2;
+
+         int sz = size[0]*size[1]; // size of D matrix (num of mesh points)
 
          // loop through just the top and bottom boundary points of the mesh
          for (int n_u = 0; n_u < size[0]; n_u++)
          {
             // indexes for the bottom side
-            int id0 =         ID(size[0]*size[1], n_u, size[0], 0, 0),
-                id0_connect = ID(size[0]*size[1], n_u, size[0], 1, 0);
+            int id0 =         ID(sz, n_u, size[0], 0, 0),
+                id0_connect = ID(sz, n_u, size[0], 1, 0);
             
             // indexes for the top side
-            int idN =         ID(size[0]*size[1], n_u, size[0], size[1]-1, 0),
-                idN_connect = ID(size[0]*size[1], n_u, size[0], size[1]-2, 0);
+            int idN =         ID(sz, n_u, size[0], size[1]-1, 0),
+                idN_connect = ID(sz, n_u, size[0], size[1]-2, 0);
 
-            // set the values at these indexes using the ghost points
+            // set the values at these indexes using the ghost points,
+            //   and depending on what kind of BC we have there
             if (BC.typeB == string("Neumann"))
             {
                Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bB;
@@ -274,12 +277,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                Dv2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeT == string("Dirichlet")) Dv2_copy.coeffRef(idN,idN) = 1.;
+            
+            // add the index of componenets of the guess/solution vector that
+            //   we already know, i.e. we don't need to update them
+            no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
+            no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
          }
 
          return Dv2_copy;
       }
       
-      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC)
+      SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC, int op_elem_num)
       {
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
@@ -327,6 +335,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectT) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectB) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectT) = 0.;
+
+            // // add the index of componenets of the guess/solution vector that
+            // //   we already know, i.e. we don't need to update them
+            // no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
+            // no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
          }
          for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
@@ -368,6 +381,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectR) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectL) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
+
+            // // add the index of componenets of the guess/solution vector that
+            // //   we already know, i.e. we don't need to update them
+            // no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
+            // no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
          }
 
          // special case for the corners
@@ -409,11 +427,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       }
       
       // Convert the OP matrix into a vector
-      // This functions may need to be used repeatedly
-      //   as the guess is updated...or we could just
-      //   use the &getVector() method to change it directly
       void setVectorForm()
       {
+         // This functions may need to be used repeatedly
+         //   as the guess is updated...or we could just
+         //   use the &getVector() method to change it directly
          for (int vi = 0; vi < OP_size; vi++) {
             for (int row = 0; row < size[0]; row++) {
                for (int col = 0; col < size[1]; col++) {
@@ -425,6 +443,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd getVector() const { return vector; }
       VectorXcd& getVector()      { return vector; }
+      std::vector<int> getNoUpdate() const { return no_update; }
 
       // free-energy functions
       complex<double> f_bulk();
@@ -441,6 +460,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       // the vector form of matrix
       VectorXcd vector;
+
+      // the vector that says what elements in the guess vector, the
+      //   itereted guesses, or the solution, should NOT be updated
+      std::vector<int> no_update;
    };
 
    template <typename Container_type>
@@ -491,18 +514,18 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          zero.setZero(); // make sure it's zero
 
          // define each non-zero 'element'
-         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx)),
-                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx)),
-                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz)),
-                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz)),
-                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy))),
-                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx)),
-                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx)),
-                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz)),
-                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz));
+         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx,0)+gl.K1*Dv2_BD(Dv2,h,Axx,0)),
+                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx,0)),
+                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz,1)),
+                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz,1)+gl.K1*Du2_BD(Du2,h,Axz,1)),
+                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy,2)+Dv2_BD(Dv2,h,Ayy,2))),
+                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx,3)+gl.K1*Dv2_BD(Dv2,h,Azx,3)),
+                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx,3)),
+                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz,4)),
+                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz,4)+gl.K1*Du2_BD(Du2,h,Azz,4));
 
          // use the comma initializer to build the matrix
-         SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
+         SolverMatrix << elem_00, elem_01, zero,    zero,    zero,
                          elem_10, elem_11, zero,    zero,    zero,
                          zero,    zero,    elem_22, zero,    zero,
                          zero,    zero,    zero,    elem_33, elem_34,                          
@@ -903,14 +926,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       void Solve(VectorXcd& guess)
       {
          VectorXcd f = guess, df(guess.size()); // initialize vectors
-
-         // TODO: change this...it will be different with all the
-         //       op-components in the vector
+         
          // the elements that we don't want changed in the acceleration method
-         vector<int> no_update;
-         no_update.push_back(1);
-         no_update.push_back(guess.size()-2);
-         no_update.push_back(guess.size()-1);
+         vector<int> no_update = op_matrix.getNoUpdate();
 
          // use LU decomposition to solve the system
          SparseLU<SparseMatrix<complex<double>>, COLAMDOrdering<int> > solver;
@@ -925,6 +943,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          int cts = 0; // count loops
          double err;  // to store current error
          VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
+
+         cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
 
          // cout << "here 1" << endl;
 

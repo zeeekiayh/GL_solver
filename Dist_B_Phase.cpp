@@ -111,4 +111,5 @@ int main()
 
     gls.Solve(guess);
     VectorXcd solution = gls.getSolution();
+    // cout << "solution =\n" << solution << endl;
 }
