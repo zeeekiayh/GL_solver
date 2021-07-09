@@ -8,12 +8,13 @@ begins with "#". All other text will be ignored.
    0.00001  the desired accuracy or relative error
 #h
    0.02     the step size
-#B
-   1        the variable parameter
 #num loops
    1500     the maximum number of loops allowed
 #rel_p
    0.005    the relaxation parameter
+
+These boundary values should probably be placed in their own file, since
+we will end up having many of them: 4 for each OP component
 #bLeft
    1        the left slip length
 #bRight
