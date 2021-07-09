@@ -539,7 +539,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return SolverMatrix.sparseView(1,pow(10,-8));
       }
 
-      VectorXcd RHS_He3Defect(GL_param gl, std::vector<int>& noUpdate)
+      VectorXcd RHS_He3Defect(GL_param gl)
       {
          // cout << "in RHS_He3" << endl;
          Matrix3cd A, A_T, A_dag, A_conj;
@@ -559,32 +559,45 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
                   if (row == 0 || row == size[0]-1 || col == 0 || col == size[1]-1) // if we're on a boundary, set to the value we know
                   {
-                     // decide what the value is
-                     switch (vi)
+                     // This way of getting values is specific only to this
+                     //   arrangement of order parameter
+                     Bound_Cond temp_BC;
+                     switch (vi) // decide which BC to use
                      {
                      case 0: // Axx
-                        val = 0.;
+                        temp_BC = Axx;
                         break;
                      case 1: // Axz
-                        val = 0.;
+                        temp_BC = Axz;
                         break;
                      case 2: // Ayy
-                        val = 0.;
+                        temp_BC = Ayy;
                         break;
                      case 3: // Azx
-                        val = 0.;
+                        temp_BC = Azx;
                         break;
                      case 4: // Azz
-                        val = 0.;
+                        temp_BC = Azz;
                         break;
                      default:
                         cout << "RHS ERROR: OP index out of bounds." << endl;
                         break;
                      }
 
+                     if (temp_BC.typeB == string("Dirichlet") || temp_BC.typeT == string("Dirichlet") ||
+                         temp_BC.typeL == string("Dirichlet") || temp_BC.typeR == string("Dirichlet"))
+                     {
+                        if (!row)                  val = temp_BC.bB; // use bottom BC
+                        else if (row == size[0]-1) val = temp_BC.bT; // use top BC
+                        else if (!col)             val = temp_BC.bL; // use left BC
+                        else                       val = temp_BC.bR; // col == size[1]-1 // use right BC
+                     }
+                     
 
-                     // This way of getting values is specific only to this
-                     //   arrangement of order parameter
+                     // the BC using derivatives all say A'(x) = 1/b A(x)
+                     //   A'(x) - 1/b A(x) = 0, so RHS = 0
+                     if (temp_BC.typeB == string("Neumann") || temp_BC.typeT == string("Neumann") ||
+                         temp_BC.typeL == string("Neumann") || temp_BC.typeR == string("Neumann"))   val = 0.;
                   }
                   else // calculate the RHS using the GL equation
                   {
@@ -977,7 +990,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // loop until f converges or until it's gone too long
          int cts = 0; // count loops
          double err;  // to store current error
-         VectorXcd rhs = op_matrix.RHS_He3Defect(gl,noUpdate); // the right hand side
+         VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
 
          cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
 
@@ -990,7 +1003,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
 
-            rhs = op_matrix.RHS_He3Defect(gl,noUpdate); // update rhs
+            rhs = op_matrix.RHS_He3Defect(gl); // update rhs
             cts++;
          } while(err > cond.ACCUR && cts < cond.N_loop);
 
@@ -1000,6 +1013,24 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          solution = f;
          // return f; // return the last value for f
+      }
+      
+      // Write all components of the OP, all into one file, of the form:
+      //             __x__|__y__|_Axx_|_Axy_| ...
+      //              ... | ... | ... | ... | ...
+      //   separates the components from solution...storing real and imag parts ==> up to 18 files
+      void WriteToFile(string file_name)
+      {
+         std::ofstream data_r (file_name);
+         if (data_r.is_open())
+         {
+            for (int i = 0; i < solution.size(); i++)
+            {
+               int op_elem_num = floor(i/size); // which OP element we're looking at
+               //
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
       }
 
       private:
