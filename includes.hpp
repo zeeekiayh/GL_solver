@@ -127,6 +127,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    template<>
    struct MultiComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
    {
+      MultiComponentOrderParam() {}
       MultiComponentOrderParam(int n) { initialize(n); }
       void Set_OP(Matrix3cd op) // will we actually use this??
       {
@@ -448,9 +449,27 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
    class MultiComponent_OP_Matrix<VectorXcd>: public OP_Matrix<VectorXcd>
    {
       public:
-      MultiComponent_OP_Matrix()
+      MultiComponent_OP_Matrix() {}
+      MultiComponent_OP_Matrix(int n, int nRows, int nCols) { initialize(n,nRows,nCols); }
+
+      void initialize(int n, int nRows, int nCols)
       {
-         //
+         size[0] = nRows; // initialize size variables
+         size[1] = nCols;
+         OP_size = n; // number of OP components
+
+         matrix.resize(size[0],size[1]); // initialize matrix
+         vector.resize(size[0]*size[1]*OP_size); // initialize vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
+
+         // initialize elements in 'matrix'
+         for (int i = 0; i < size[0]; i++) {
+            for (int j = 0; j < size[1]; j++) {
+               matrix(i,j).initialize(OP_size);
+            }
+         }
+
+         // make the vector form available
+         setVectorForm();
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
@@ -472,15 +491,15 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          zero.setZero(); // make sure it's zero
 
          // define each non-zero 'element'
-         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx));
-         MatrixXcd elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx));
-         MatrixXcd elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz));
-         MatrixXcd elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz));
-         MatrixXcd elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy)));
-         MatrixXcd elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx));
-         MatrixXcd elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx));
-         MatrixXcd elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz));
-         MatrixXcd elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz));
+         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,h,Axx)+gl.K1*Dv2_BD(Dv2,h,Axx)),
+                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,h,Axx)),
+                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,h,Axz)),
+                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,h,Axz)+gl.K1*Du2_BD(Du2,h,Axz)),
+                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,h,Ayy)+Dv2_BD(Dv2,h,Ayy))),
+                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,h,Azx)+gl.K1*Dv2_BD(Dv2,h,Azx)),
+                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,h,Azx)),
+                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,h,Azz)),
+                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,h,Azz)+gl.K1*Du2_BD(Du2,h,Azz));
 
          // use the comma initializer to build the matrix
          SolverMatrix << elem_00, elem_10, zero,    zero,    zero,
@@ -495,22 +514,22 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd RHS_He3Defect(GL_param gl)
       {
-         cout << "in RHS_He3" << endl;
+         // cout << "in RHS_He3" << endl;
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
 
-         cout << "starting loops" << endl;
+         // cout << "starting loops" << endl;
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
-            cout << "\tvi = " << vi << endl;
+            // cout << "\tvi = " << vi << endl;
             for (int row = 0; row < size[0]; row++) {
-               cout << "\t\trow = " << row << endl;
+               // cout << "\t\trow = " << row << endl;
                for (int col = 0; col < size[1]; col++) {
-                  cout << "\t\t\tcol = " << col << endl;
+                  // cout << "\t\t\tcol = " << col << endl;
                   complex<double> A_mui = vector(ID(size[0]*size[1],row,size[0],col,vi));
                   
                   A = matrix(row,col).GetMatrixForm_He3Defect();
-                  cout << "after 'matrix(row,col)'" << endl;
+                  // cout << "after 'matrix(row,col)'" << endl;
                   A_T = A.transpose();
                   A_dag = A.adjoint();
                   A_conj = A.conjugate();
@@ -532,6 +551,22 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             }
          }
          return rhs;
+      }
+
+      // Convert the OP matrix into a vector
+      void setVectorForm()
+      {
+         // cout << "setting vector form" << endl;
+         for (int vi = 0; vi < OP_size; vi++) {
+            // cout << "\tvi = " << vi << endl;
+            for (int row = 0; row < size[0]; row++) {
+               // cout << "\t\trow = " << row << endl;
+               for (int col = 0; col < size[1]; col++) {
+                  // cout << "\t\t\tcol = " << col << endl;
+                  vector(ID(size[0]*size[1],row,size[0],col,vi)) = matrix(row,col)(vi);
+               }
+            }
+         }
       }
 
       private:
@@ -855,9 +890,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                         Bound_Cond Ayy, Bound_Cond Azx,
                         Bound_Cond Azz)
       {
+         // cout << "in buildPoblem()" << endl;
          Build_D_Matrices();
+         // cout << "D's built" << endl;
 
          this->op_matrix.initialize(n,cond.SIZEu,cond.SIZEv);
+         // cout << "making SolverMatrix" << endl;
          A = op_matrix.SolverMatrix_He3Defect(gl,Du2,Dv2,Duv,cond.STEP,Axx,Axz,Ayy,Azx,Azz);
       }
 
@@ -888,18 +926,18 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          double err;  // to store current error
          VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
 
-         cout << "here 1" << endl;
+         // cout << "here 1" << endl;
 
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
-         cout << "here 2" << endl;
+         // cout << "here 2" << endl;
 
          do { // use relaxation
             df = solver.solve(rhs)-f; // find the change in f
 
-            cout << "\there 3" << endl;
-            cout << "\tcts = " << cts << endl;
+            // cout << "\there 3" << endl;
+            // cout << "\tcts = " << cts << endl;
 
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
