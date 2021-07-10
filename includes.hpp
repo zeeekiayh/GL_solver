@@ -1032,11 +1032,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                         + to_string(col*cond.STEP) + string("\t"); // add the position components
 
                   for (int vi = 0; vi < size; vi++) {
+                     cout << "row=" << row << "\ncol=" << col << "\nvi=" << vi << endl;
                      line += to_string(solution.real()(ID(size,row,cond.SIZEu,col,vi)))  // add the real and imaginary
                            + to_string(solution.imag()(ID(size,row,cond.SIZEu,col,vi))); //   components of the solution vector
                      if (vi+1 < size) line += string("\t");
                   }
-                  
+
                   data << line;
                }
             }
