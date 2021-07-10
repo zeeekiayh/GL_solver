@@ -992,7 +992,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          double err;  // to store current error
          VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
 
-         cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
+         // cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
 
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
@@ -1021,13 +1021,24 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       //   separates the components from solution...storing real and imag parts ==> up to 18 files
       void WriteToFile(string file_name)
       {
-         std::ofstream data_r (file_name);
-         if (data_r.is_open())
+         std::ofstream data (file_name);
+         if (data.is_open())
          {
-            for (int i = 0; i < solution.size(); i++)
-            {
-               int op_elem_num = floor(i/size); // which OP element we're looking at
-               //
+            string line;
+            for (int row = 0; row < cond.SIZEu; row++) {
+               for (int col = 0; col < cond.SIZEv; col++) {
+
+                  line = to_string(row*cond.STEP) + string("\t")
+                        + to_string(col*cond.STEP) + string("\t"); // add the position components
+
+                  for (int vi = 0; vi < size; vi++) {
+                     line += to_string(solution.real()(ID(size,row,cond.SIZEu,col,vi)))  // add the real and imaginary
+                           + to_string(solution.imag()(ID(size,row,cond.SIZEu,col,vi))); //   components of the solution vector
+                     if (vi+1 < size) line += string("\t");
+                  }
+                  
+                  data << line;
+               }
             }
          }
          else cout << "Unable to open file: " << file_name << endl;

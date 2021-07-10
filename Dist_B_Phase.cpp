@@ -113,4 +113,5 @@ int main()
     gls.Solve(guess,no_update);
     VectorXcd solution = gls.getSolution();
     // cout << "solution =\n" << solution << endl;
+    gls.WriteToFile("data.txt");
 }
