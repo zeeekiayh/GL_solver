@@ -2,12 +2,12 @@
 #define _includes
 
 #include <iostream>
-#include <fstream>
+#include <fstream> // for file in/out
 #include <string>
 #include "math.h"
 #include <complex>
 #include <vector>
-#include <algorithm>
+#include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
 #include "ConvergenceAccelerator.hpp"
@@ -437,6 +437,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          }
       }
 
+      int getSize() const            { return OP_size; }
       VectorXcd getVector() const { return vector; }
       VectorXcd& getVector()      { return vector; }
       std::vector<int> getNoUpdate() const { return no_update; }
@@ -1024,21 +1025,20 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          std::ofstream data (file_name);
          if (data.is_open())
          {
-            string line;
             for (int row = 0; row < cond.SIZEu; row++) {
                for (int col = 0; col < cond.SIZEv; col++) {
 
-                  line = to_string(row*cond.STEP) + string("\t")
-                        + to_string(col*cond.STEP) + string("\t"); // add the position components
+                  string line = to_string(row*cond.STEP) + string("\t")
+                              + to_string(col*cond.STEP) + string("\t"); // add the position components
 
-                  for (int vi = 0; vi < size; vi++) {
-                     cout << "row=" << row << "\ncol=" << col << "\nvi=" << vi << endl;
-                     line += to_string(solution.real()(ID(size,row,cond.SIZEu,col,vi)))  // add the real and imaginary
-                           + to_string(solution.imag()(ID(size,row,cond.SIZEu,col,vi))); //   components of the solution vector
+                  for (int vi = 0; vi < op_matrix.getSize(); vi++) {
+                     complex<double> element = solution(ID(size,row,cond.SIZEu,col,vi));
+                     line += to_string(element.real())                 // add the real and imaginary
+                           + string("\t") + to_string(element.imag()); //   components of the solution vector
                      if (vi+1 < size) line += string("\t");
                   }
 
-                  data << line;
+                  data << line << endl;
                }
             }
          }

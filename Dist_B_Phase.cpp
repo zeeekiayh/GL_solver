@@ -84,15 +84,14 @@ int main()
     Azz.typeB = string("Neumann");
     Azz.typeT = string("Neumann");
     Azz.typeL = string("Dirichlet");
-    Azz.typeR = string("Dirichlet");
-
-    cout << "here" << endl;    
+    Azz.typeR = string("Dirichlet");  
 
     std::vector<int> no_update;
     MultiComponent_GL_Solver<VectorXcd> gls("conditions.txt");
-    gls.BuildProblem(5,Axx,Axz,Ayy,Azx,Azz);
 
-    cout << "here" << endl;
+    // start timing
+    auto start = std::chrono::system_clock::now();
+    gls.BuildProblem(5,Axx,Axz,Ayy,Azx,Azz);
 
     // make a guess
     int size = gls.getSolverMatrixSize();
@@ -114,4 +113,8 @@ int main()
     VectorXcd solution = gls.getSolution();
     // cout << "solution =\n" << solution << endl;
     gls.WriteToFile("data.txt");
+
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    cout << "Total time: " << elapsed.count() << " seconds." << endl;
 }
