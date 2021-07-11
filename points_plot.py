@@ -2,38 +2,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-fig = plt.figure(figsize=(16,8))
-gs = gridspec.GridSpec(2,2)
+# fig = plt.figure(figsize=(16,8))
+# gs = gridspec.GridSpec(2,2)
 
 conditions = []
 for line in open('conditions.txt'):
    if not line.startswith('#'):
-      try: conditions.append(float(line))
+      try: # CONTINUE HERE
+         # NEED TO CHANGE THE WAY i READ IN THE VALUES
+         num = float(line)
+         print(num)
+         conditions.append(num)
       except ValueError: continue # not a number, so disregard
 # x = np.linspace(0,conditions[0]*conditions[2],int(conditions[0]))
 
-ax = fig.add_subplot(gs[:,0])
+def unFlatten(arr):
+   # conditions[2]: size of the mesh (on a side)
+   copy_arr = []
+   counts = 0
+   sub_list = [] # hold the sub lists to add to arr
+   print(conditions[2])
+   for a in arr:
+      print('\t'+str(a)+'\tcounts = '+str(counts))
+      sub_list.append(a)
+      if (counts+1)%conditions[2] == 0:
+         copy_arr.append([sub_list])
+         sub_list = []
+      counts += 1
+   
+   return copy_arr
+      
+# ax = fig.add_subplot(gs[:,0])
+data = np.loadtxt('data.txt')
 
+Axx_real = data[:,2]
+Axx_comp = data[:,3]
 
-plt.title('Order Parameter')
-plt.xlabel(r'$z/\xi_0$')
-plt.ylabel('$\Delta/\Delta_0$')
-plt.legend()
+Axz_real = data[:,4]
+Axz_comp = data[:,5]
 
-ax = fig.add_subplot(gs[0,1])
-integ_real = np.loadtxt('integ_r.txt')
-integ_comp = np.loadtxt('integ_c.txt')
-plt.plot(np.linspace(0,conditions[0]*conditions[2],len(integ_real)),integ_real,label='real')
-plt.plot(np.linspace(0,conditions[0]*conditions[2],len(integ_comp)),integ_comp,label='imaginary')
-plt.title('Integrand')
-plt.legend()
+Ayy_real = data[:,6]
+Ayy_comp = data[:,7]
 
-ax = fig.add_subplot(gs[1,1])
-plt.title('Complex plane')
-plt.plot(points_real1,points_comp1,label='$\Delta_1$')
-plt.plot(points_real2,points_comp2,label='$\Delta_2$')
-plt.xlabel('real')
-plt.ylabel('imaginary')
-plt.legend()
+Azx_real = data[:,8]
+Azx_comp = data[:,9]
+
+Azz_real = data[:,10]
+Azz_comp = data[:,11]
+
+print(Axx_real)
+print(unFlatten(Axx_real))
 
 plt.show()

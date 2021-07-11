@@ -3,11 +3,11 @@ counditions. Each value must be directly after it's respective line that
 begins with "#". All other text will be ignored.
 
 #SIZE
-   16 16      the length, or number of points in each direction
+   16 16    the length, or number of points in each direction
 #ACCUR
    0.00001  the desired accuracy or relative error
 #h
-   0.4     the step size
+   0.1      the step size
 #num loops
    1500     the maximum number of loops allowed
 #rel_p
