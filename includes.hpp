@@ -45,27 +45,6 @@ struct in_conditions
           bBott; //   "   "   on bottom side
 };
 
-void Write_To_File(VectorXcd& f, string f_name_real, string f_name_imag)
-{
-   // the real part
-   std::ofstream data_r (f_name_real);
-   if (data_r.is_open())
-   {
-      for (int i = 0; i < f.size(); i++) data_r << f(i).real() << "\n";
-      data_r.close();
-   }
-   else cout << "Unable to open file: " << f_name_real << endl;
-
-   // the imaginary part
-   std::ofstream data_c (f_name_imag);
-   if (data_c.is_open())
-   {
-      for (int i = 0; i < f.size(); i++) data_c << f(i).imag() << "\n";
-      data_c.close();
-   }
-   else cout << "Unable to open file: " << f_name_imag << endl;
-}
-
 // returns the unique id corresponding to each op-component in the mesh.
 //    n_u: mesh index 1
 //    n_v: mesh index 2
@@ -104,17 +83,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          else return OP(i);            // otherwise, it is a vector, so return it's component
       }
    };
-
-   template<class Container_type>
-   ostream& operator<< (ostream& os, const OrderParam<Container_type>& OP)
-   {
-      for (int i = 0; i < OP.num_comp; i++)
-      {
-         os << OP.OP(i);
-         if (i+1 < OP.num_comp) os << "\t";
-      }
-      return os;
-   }
 // ==================================
 
 
@@ -178,7 +146,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       OP_Matrix() {}
       // for multi-component OP's
       OP_Matrix(int n, int nRows, int nCols, std::vector<int> v) { initialize(n, nRows, nCols,v); }
-      // OP_Matrix(int n, int nRows, int nCols, int s3) {}
 
       void initialize(int n, int nRows, int nCols, std::vector<int> v)
       {
@@ -293,7 +260,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       {
          // We actually will not need to add anything to the no_update vector
          //   because we have already gone through all the boundary points.
-         //   /
 
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<complex<double>> Duv_copy = Duv;
@@ -450,7 +416,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       protected:
       int OP_size; // number of components in a single OP
       int size[2]; // to hold the 2 sizes, in each orthogonal direction along the mesh
-      // int size[3]; // to hold the possible 3 sizes
 
       // to hold the OP at each point on the mesh
       Matrix<OrderParam<Container_type>,-1,-1> matrix;
@@ -542,18 +507,13 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd RHS_He3Defect(GL_param gl)
       {
-         // cout << "in RHS_He3" << endl;
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
 
-         // cout << "starting loops" << endl;
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
-            // cout << "\tvi = " << vi << endl;
             for (int row = 0; row < size[0]; row++) {
-               // cout << "\t\trow = " << row << endl;
                for (int col = 0; col < size[1]; col++) {
-                  // cout << "\t\t\tcol = " << col << endl;
 
                   int id = ID(size[0]*size[1],row,size[0],col,vi);
                   complex<double> val;
@@ -605,7 +565,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      complex<double> A_mui = vector(id);
                      
                      A = matrix(row,col).GetMatrixForm_He3Defect();
-                     // cout << "after 'matrix(row,col)'" << endl;
                      A_T = A.transpose();
                      A_dag = A.adjoint();
                      A_conj = A.conjugate();
@@ -794,7 +753,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Axx_|_Axy_| ...
       //              ... | ... | ... | ... | ...
-      //   separates the components from solution...storing real and imag parts ==> up to 18 files
+      // separates the components from solution...storing real and imag parts ==> up to 18 files
       void WriteToFile(string f_name_real, string f_name_imag)
       {
          // the real part
@@ -993,8 +952,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          double err;  // to store current error
          VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
 
-         // cout << "in RHS_He3... rhs =\n" << rhs.cwiseAbs().sparseView(1,pow(10,-8)) << endl;
-
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
@@ -1019,7 +976,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Axx_|_Axy_| ...
       //              ... | ... | ... | ... | ...
-      //   separates the components from solution...storing real and imag parts ==> up to 18 files
+      // separates the components from solution...storing real and imag parts ==> up to 18
       void WriteToFile(string file_name)
       {
          std::ofstream data (file_name);
