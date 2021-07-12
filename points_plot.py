@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 # from numpy.lib.function_base import copy
-fig = plt.figure(figsize=(12,9))
+fig = plt.figure(figsize=(13,10))
 gs = gridspec.GridSpec(3,4)
 
 # read in the conditions from the file
@@ -95,4 +95,5 @@ ax10.set_title("Azz_comp")
 cbar_ax = fig.add_axes([0.85,  0.1, 0.02,  0.25])
 fig.colorbar(im, cax=cbar_ax)
 
-plt.show()
+plt.savefig('He3Defect.png')
+# plt.show()
