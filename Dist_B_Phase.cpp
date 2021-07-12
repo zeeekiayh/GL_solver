@@ -12,48 +12,48 @@
 int main()
 {
     Bound_Cond Axx,Axz,Ayy,Azx,Azz;
-    Axx.bB = 1.;
-    Axx.bT = 1.;
-    Axx.bL = 1.;
-    Axx.bR = 1.;
+    Axx.bB = pow(10,-8); // a' = 0
+    Axx.bT = 1.; // a = 1
+    Axx.bL = pow(10,-8); // a' = 0
+    Axx.bR = 1.; // a = 1
     Axx.typeB = string("Neumann");
-    Axx.typeT = string("Neumann");
+    Axx.typeT = string("Dirichlet");
     Axx.typeL = string("Neumann");
-    Axx.typeR = string("Neumann");
+    Axx.typeR = string("Dirichlet");
 
-    Axz.bB = 1.;
-    Axz.bT = 1.;
-    Axz.bL = 1.;
-    Axz.bR = 1.;
+    Axz.bB = pow(10,-8); // a' = 0
+    Axz.bT = 1.; // a = 1
+    Axz.bL = pow(10,-8); // a' = 0
+    Axz.bR = 1.; // a = 1
     Axz.typeB = string("Neumann");
-    Axz.typeT = string("Neumann");
+    Axz.typeT = string("Dirichlet");
     Axz.typeL = string("Neumann");
-    Axz.typeR = string("Neumann");
+    Axz.typeR = string("Dirichlet");
 
-    Ayy.bB = 1.;
-    Ayy.bT = 1.;
-    Ayy.bL = 1.;
-    Ayy.bR = 1.;
+    Ayy.bB = pow(10,-8); // a' = 0
+    Ayy.bT = 1.; // a = 1
+    Ayy.bL = pow(10,-8); // a' = 0
+    Ayy.bR = 1.; // a = 1
     Ayy.typeB = string("Neumann");
-    Ayy.typeT = string("Neumann");
+    Ayy.typeT = string("Dirichlet");
     Ayy.typeL = string("Neumann");
-    Ayy.typeR = string("Neumann");
+    Ayy.typeR = string("Dirichlet");
 
-    Azx.bB = 1.;
-    Azx.bT = 1.;
-    Azx.bL = 1.;
-    Azx.bR = 1.;
+    Azx.bB = pow(10,-8); // a' = 0
+    Azx.bT = 1.; // a = 1
+    Azx.bL = pow(10,-8); // a' = 0
+    Azx.bR = 1.; // a = 1
     Azx.typeB = string("Neumann");
-    Azx.typeT = string("Neumann");
+    Azx.typeT = string("Dirichlet");
     Azx.typeL = string("Neumann");
-    Azx.typeR = string("Neumann");
+    Azx.typeR = string("Dirichlet");
 
-    Azz.bB = 1.;
-    Azz.bT = 1.;
-    Azz.bL = 1.;
-    Azz.bR = -1.;
+    Azz.bB = pow(10,-8); // a' = 0
+    Azz.bT = 1.; // a = 1
+    Azz.bL = 1.;  // a(L) =  1
+    Azz.bR = -1.; // a(R) = -1
     Azz.typeB = string("Neumann");
-    Azz.typeT = string("Neumann");
+    Azz.typeT = string("Dirichlet");
     Azz.typeL = string("Dirichlet");
     Azz.typeR = string("Dirichlet");  
 

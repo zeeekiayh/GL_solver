@@ -436,13 +436,13 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       public:
       MultiComponent_OP_Matrix() {}
       MultiComponent_OP_Matrix(int n, int nRows, int nCols, std::vector<int> v,
-                              double h, Bound_Cond Axx, Bound_Cond Axz,
-                              Bound_Cond Ayy, Bound_Cond Azx, Bound_Cond Azz)
+                              double h, Bound_Cond& Axx, Bound_Cond& Axz,
+                              Bound_Cond& Ayy, Bound_Cond& Azx, Bound_Cond& Azz)
       { initialize(n,nRows,nCols,v,h,Axx,Axz,Ayy,Azx,Azz); }
 
       void initialize(int n, int nRows, int nCols, std::vector<int> v,
-                     double h, Bound_Cond Axx, Bound_Cond Axz,
-                     Bound_Cond Ayy, Bound_Cond Azx, Bound_Cond Azz)
+                     double h, Bound_Cond& Axx, Bound_Cond& Axz,
+                     Bound_Cond& Ayy, Bound_Cond& Azx, Bound_Cond& Azz)
       {
          size[0] = nRows; // initialize size variables
          size[1] = nCols;
@@ -756,23 +756,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // separates the components from solution...storing real and imag parts ==> up to 18 files
       void WriteToFile(string f_name_real, string f_name_imag)
       {
-         // the real part
-         std::ofstream data_r (f_name_real);
-         if (data_r.is_open())
-         {
-            for (int i = 0; i < solution.size(); i++) data_r << solution(i).real() << "\n";
-            data_r.close();
-         }
-         else cout << "Unable to open file: " << f_name_real << endl;
-
-         // the imaginary part
-         std::ofstream data_c (f_name_imag);
-         if (data_c.is_open())
-         {
-            for (int i = 0; i < solution.size(); i++) data_c << solution(i).imag() << "\n";
-            data_c.close();
-         }
-         else cout << "Unable to open file: " << f_name_imag << endl;
       }
 
       // read in the conditions from the file
@@ -877,27 +860,26 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
-         if (u == -1 || u == cond.SIZEu);  // would add boundary conditions here, but we'll use ghost points, so do nothing
-         // we'll just insert default values, filling the spaces, but they will be modified later for each OP-component
+         // would add boundary conditions here, but we'll use ghost points, so do nothing
+         if (u == -1 || u == cond.SIZEu);
+
+         // we'll just insert default values, filling the spaces,
+         //   but they will be modified later for each OP-component
          else coeffs.push_back(Tr(id,id1,weight));
       }
 
       // insert method for the Dz^2 matrix derivatives
       void InsertCoeff_Dv2(int id, int u, int v, complex<double> weight, vector<Tr>& coeffs)
       {
-         // id is the index of the connecting element, so
-         //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
-         if (v == -1 || v == cond.SIZEv);  // would add boundary conditions here, but we'll use ghost points, so do nothing
-         else coeffs.push_back(Tr(id,id1,weight));
+         if (v == -1 || v == cond.SIZEv);  // would add boundary conditions here, but
+         else coeffs.push_back(Tr(id,id1,weight)); // we'll use ghost points, so do nothing
       }
 
       // insert method for the mixed derivative matrices
       void InsertCoeff_Duv(int id, int u, int v, complex<double> weight, vector<Tr>& coeffs)
       {
-         // id is the index of the connecting element, so
-         //   id1 is the index of the element being inserted
          int id1 = ID(size,u,cond.SIZEu,v,0);
 
               if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
@@ -945,7 +927,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          // check to see if the solver failed
          if (solver.info() == Eigen::Success) cout << "Solver: success" << endl;
-         else if (solver.info() == Eigen::NumericalIssue) cout << "Solver: numerical issues" << endl;
+         else if (solver.info() == Eigen::NumericalIssue)
+         {
+            cout << "Solver: numerical issues" << endl;
+            cout << "A =\n";
+            cout << A << endl;
+         }
 
          // loop until f converges or until it's gone too long
          int cts = 0; // count loops
