@@ -11,49 +11,53 @@
 
 int main()
 {
+    Tr triplet(1,2,3);
+    // triplet.
+
+    // these should be put into a file to read in
     Bound_Cond Axx,Axz,Ayy,Azx,Azz;
-    Axx.bB = pow(10,-8); // a' = 0
-    Axx.bT = 1.; // a = 1
-    Axx.bL = pow(10,-8); // a' = 0
-    Axx.bR = 1.; // a = 1
+    Axx.bB = 2.;         // a' = a(B)/b
+    Axx.bT = pow(10,12); // a' = 0
+    Axx.bL = pow(10,12); // a' = 0
+    Axx.bR = pow(10,12); // a' = 0
     Axx.typeB = string("Neumann");
-    Axx.typeT = string("Dirichlet");
+    Axx.typeT = string("Neumann");
     Axx.typeL = string("Neumann");
-    Axx.typeR = string("Dirichlet");
+    Axx.typeR = string("Neumann");
 
-    Axz.bB = pow(10,-8); // a' = 0
-    Axz.bT = 1.; // a = 1
-    Axz.bL = pow(10,-8); // a' = 0
-    Axz.bR = 1.; // a = 1
+    Axz.bB = 2.;         // a' = a(B)/b
+    Axz.bT = pow(10,12); // a' = 0
+    Axz.bL = pow(10,12); // a' = 0
+    Axz.bR = pow(10,12); // a' = 0
     Axz.typeB = string("Neumann");
-    Axz.typeT = string("Dirichlet");
+    Axz.typeT = string("Neumann");
     Axz.typeL = string("Neumann");
-    Axz.typeR = string("Dirichlet");
+    Axz.typeR = string("Neumann");
 
-    Ayy.bB = pow(10,-8); // a' = 0
-    Ayy.bT = 1.; // a = 1
-    Ayy.bL = pow(10,-8); // a' = 0
-    Ayy.bR = 1.; // a = 1
+    Ayy.bB = 2.;         // a' = a(B)/b
+    Ayy.bT = pow(10,12); // a' = 0
+    Ayy.bL = pow(10,12); // a' = 0
+    Ayy.bR = pow(10,12); // a' = 0
     Ayy.typeB = string("Neumann");
-    Ayy.typeT = string("Dirichlet");
+    Ayy.typeT = string("Neumann");
     Ayy.typeL = string("Neumann");
-    Ayy.typeR = string("Dirichlet");
+    Ayy.typeR = string("Neumann");
 
-    Azx.bB = pow(10,-8); // a' = 0
-    Azx.bT = 1.; // a = 1
-    Azx.bL = pow(10,-8); // a' = 0
-    Azx.bR = 1.; // a = 1
+    Azx.bB = 2.;         // a' = a(B)/b
+    Azx.bT = pow(10,12); // a' = 0
+    Azx.bL = pow(10,12); // a' = 0
+    Azx.bR = pow(10,12); // a' = 0
     Azx.typeB = string("Neumann");
-    Azx.typeT = string("Dirichlet");
+    Azx.typeT = string("Neumann");
     Azx.typeL = string("Neumann");
-    Azx.typeR = string("Dirichlet");
+    Azx.typeR = string("Neumann");
 
-    Azz.bB = pow(10,-8); // a' = 0
-    Azz.bT = 1.; // a = 1
+    Azz.bB = 0.;  // a = 0
+    Azz.bT = pow(10,12); // a' = 0
     Azz.bL = 1.;  // a(L) =  1
     Azz.bR = -1.; // a(R) = -1
-    Azz.typeB = string("Neumann");
-    Azz.typeT = string("Dirichlet");
+    Azz.typeB = string("Dirichlet");
+    Azz.typeT = string("Neumann");
     Azz.typeL = string("Dirichlet");
     Azz.typeR = string("Dirichlet");  
 

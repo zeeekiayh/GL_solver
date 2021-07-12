@@ -193,6 +193,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             if (BC.typeL == string("Neumann"))
             {
                Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bL;
+               // +(BC.bL >= pow(10,-7) ? -2.*h/BC.bL : 0);
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
             else if (BC.typeL == string("Dirichlet")) Du2_copy.coeffRef(id0,id0) = 1.;
@@ -200,6 +201,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             if (BC.typeR == string("Neumann"))
             {
                Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
+               // +(BC.bR >= pow(10,-7) ? -2.*h/BC.bR : 0);
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeR == string("Dirichlet")) Du2_copy.coeffRef(idN,idN) = 1.;
@@ -236,6 +238,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             if (BC.typeB == string("Neumann"))
             {
                Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.bB;
+               // +(BC.bB >= pow(10,-7) ? -2.*h/BC.bB : 0);
                Dv2_copy.coeffRef(id0,id0_connect) = 2.;
             }
             else if (BC.typeB == string("Dirichlet")) Dv2_copy.coeffRef(id0,id0) = 1.;
@@ -243,6 +246,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             if (BC.typeT == string("Neumann"))
             {
                Dv2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bT; // TODO: is it -2h... or +2h... ?
+               // +(BC.bT >= pow(10,-7) ? -2.*h/BC.bT : 0);
                Dv2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeT == string("Dirichlet")) Dv2_copy.coeffRef(idN,idN) = 1.;
@@ -290,6 +294,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             {
                Duv_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
                Duv_copy.coeffRef(id0,id0_connectT) = h/(2.*BC.bL);
+               // Duv_copy.coeffRef(id0,id0_connectT) = h/(2.*BC.bL) (BC.bL >= pow(10,-7) ? h/(2.*BC.bL) : 0);
                Duv_copy.coeffRef(id0,id0_connectB) = -h/(2.*BC.bL);
             }
             else if (BC.typeL == string("Dirichlet")) Duv_copy.coeffRef(id0,id0) = 1.;
@@ -505,7 +510,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          return SolverMatrix.sparseView(1,pow(10,-8));
       }
 
-      VectorXcd RHS_He3Defect(GL_param gl)
+      VectorXcd RHS_He3Defect(GL_param gl, double h)
       {
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
@@ -579,6 +584,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      //   OP matrix, given a value for vi: the # of element in the
                      //   vector. This is specific to this one case with 5 OP components
                      //   that are arranged in the corners and center.
+                     
+                     val *= h*h; // because we multiplied the matrix by h^2
                   }
 
                   // add val to rhs, in the matching location
@@ -937,7 +944,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          // loop until f converges or until it's gone too long
          int cts = 0; // count loops
          double err;  // to store current error
-         VectorXcd rhs = op_matrix.RHS_He3Defect(gl); // the right hand side
+         VectorXcd rhs = op_matrix.RHS_He3Defect(gl,cond.STEP); // the right hand side
 
          // the acceleration object
          converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
@@ -948,7 +955,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
 
-            rhs = op_matrix.RHS_He3Defect(gl); // update rhs
+            rhs = op_matrix.RHS_He3Defect(gl,cond.STEP); // update rhs
             cts++;
          } while(err > cond.ACCUR && cts < cond.N_loop);
 
