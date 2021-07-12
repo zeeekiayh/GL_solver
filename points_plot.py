@@ -3,9 +3,9 @@ import math as m
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from numpy.lib.function_base import copy
-# fig = plt.figure(figsize=(16,8))
-# gs = gridspec.GridSpec(2,2)
+# from numpy.lib.function_base import copy
+fig = plt.figure(figsize=(12,9))
+gs = gridspec.GridSpec(3,4)
 
 # read in the conditions from the file
 conditions = []
@@ -36,24 +36,63 @@ def unFlatten(arr):
       
    return new_arr
       
-# ax = fig.add_subplot(gs[:,0])
 data = np.loadtxt('data.txt')
 
 # convert all the OP components to 2D arrays
+# and plot them in a grid of plots
+ax1 = fig.add_subplot(gs[0,0])
 Axx_real = unFlatten(data[:,2])
+im = plt.imshow(Axx_real,vmin=-1,vmax=1)
+ax1.set_title("Axx_real")
+
+ax2 = fig.add_subplot(gs[0,1])
 Axx_comp = unFlatten(data[:,3])
+plt.imshow(Axx_comp,vmin=-1,vmax=1)
+ax2.set_title("Axx_comp")
 
+ax3 = fig.add_subplot(gs[0,2])
 Axz_real = unFlatten(data[:,4])
+plt.imshow(Axz_real,vmin=-1,vmax=1)
+ax3.set_title("Axz_real")
+
+ax4 = fig.add_subplot(gs[0,3])
 Axz_comp = unFlatten(data[:,5])
+plt.imshow(Axz_comp,vmin=-1,vmax=1)
+ax4.set_title("Axz_comp")
 
+ax5 = fig.add_subplot(gs[1,0])
 Ayy_real = unFlatten(data[:,6])
+plt.imshow(Ayy_real,vmin=-1,vmax=1)
+ax5.set_title("Ayy_real")
+
+ax6 = fig.add_subplot(gs[1,1])
 Ayy_comp = unFlatten(data[:,7])
+plt.imshow(Ayy_comp,vmin=-1,vmax=1)
+ax6.set_title("Ayy_comp")
 
+ax7 = fig.add_subplot(gs[1,2])
 Azx_real = unFlatten(data[:,8])
+plt.imshow(Azx_real,vmin=-1,vmax=1)
+ax7.set_title("Azx_real")
+
+ax8 = fig.add_subplot(gs[1,3])
 Azx_comp = unFlatten(data[:,9])
+plt.imshow(Azx_comp,vmin=-1,vmax=1)
+ax8.set_title("Azx_comp")
 
+ax9 = fig.add_subplot(gs[2,0])
 Azz_real = unFlatten(data[:,10])
-Azz_comp = unFlatten(data[:,11])
+plt.imshow(Azz_real,vmin=-1,vmax=1)
+ax9.set_title("Azz_real")
 
-plt.imshow(Axx_real)
+ax10 = fig.add_subplot(gs[2,1])
+Azz_comp = unFlatten(data[:,11])
+plt.imshow(Azz_comp,vmin=-1,vmax=1)
+ax10.set_title("Azz_comp")
+
+# colorbar placement and size:
+#                       x_pos, y_pos width, height
+cbar_ax = fig.add_axes([0.85,  0.1, 0.02,  0.25])
+fig.colorbar(im, cax=cbar_ax)
+
 plt.show()
