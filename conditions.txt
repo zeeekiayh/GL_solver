@@ -3,7 +3,7 @@ counditions. Each value must be directly after it's respective line that
 begins with "#". All other text will be ignored.
 
 #SIZE
-   16 16
+   18 18
    the length, or number of points in each direction
 
 #ACCUR
