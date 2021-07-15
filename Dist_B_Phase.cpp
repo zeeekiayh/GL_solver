@@ -84,11 +84,15 @@ int main()
         else guess(i+4) = Azz.bR;
     }
 
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    cout << "Problem built; time: " << elapsed.count() << " seconds." << endl;
+
     gls.Solve(guess,no_update);
     VectorXcd solution = gls.getSolution();
     gls.WriteToFile("data.txt");
 
-    auto end = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    end = std::chrono::system_clock::now();
+    elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
     cout << "Total time: " << elapsed.count() << " seconds." << endl;
 }

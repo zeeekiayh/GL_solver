@@ -953,6 +953,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       // use the relaxation method and Anderson Acceleration to solve
       void Solve(VectorXcd& guess, std::vector<int>& noUpdate)
       {
+         auto start = std::chrono::system_clock::now();
          VectorXcd f = guess, df(guess.size()); // initialize vectors
 
          // the elements that we don't want changed in the acceleration method
@@ -960,7 +961,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          // use LU decomposition to solve the system
          SparseLU<SparseMatrix<complex<double>>, COLAMDOrdering<int> > solver;
-         solver.analyzePattern(A); // TODO: check to see if needed
+         solver.analyzePattern(A); // without this, Eigen throws: Eigen::Matrix<int, -1, 1>; ... Assertion `index >= 0 && index < size()' failed.
          solver.factorize(A);
 
          // check to see if the solver failed
@@ -975,6 +976,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             cout << "\nsize of A: (" << A.rows() << "," << A.cols() << ")" << endl;
             return;
          }
+
+
+         auto end = std::chrono::system_clock::now();
+         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+         cout << "time: " << elapsed.count() << " seconds." << endl;
 
          // prepare the matrix for RHS
          op_matrix.updateMatrix(f);
