@@ -3,7 +3,7 @@ counditions. Each value must be directly after it's respective line that
 begins with "#". All other text will be ignored.
 
 #SIZE
-   18 18
+   50 50
    the length, or number of points in each direction
 
 #ACCUR
@@ -15,7 +15,7 @@ begins with "#". All other text will be ignored.
    the step size
 
 #num loops
-   1500
+   5000
    the maximum number of loops allowed
 
 #rel_p

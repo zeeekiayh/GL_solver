@@ -537,40 +537,42 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      Bound_Cond temp_BC;
                      switch (vi) // decide which BC to use
                      {
-                     case 0: // Axx
-                        temp_BC = Axx;
-                        break;
-                     case 1: // Axz
-                        temp_BC = Axz;
-                        break;
-                     case 2: // Ayy
-                        temp_BC = Ayy;
-                        break;
-                     case 3: // Azx
-                        temp_BC = Azx;
-                        break;
-                     case 4: // Azz
-                        temp_BC = Azz;
-                        break;
-                     default:
-                        cout << "RHS ERROR: OP index out of bounds." << endl;
-                        break;
+                        case 0:
+                           temp_BC = Axx;
+                           break;
+                        case 1:
+                           temp_BC = Axz;
+                           break;
+                        case 2:
+                           temp_BC = Ayy;
+                           break;
+                        case 3:
+                           temp_BC = Azx;
+                           break;
+                        case 4:
+                           temp_BC = Azz;
+                           break;
+                        default:
+                           cout << "RHS ERROR: OP index out of bounds." << endl;
+                           break;
                      }
 
-                     if (temp_BC.typeB == string("Dirichlet") || temp_BC.typeT == string("Dirichlet") ||
-                         temp_BC.typeL == string("Dirichlet") || temp_BC.typeR == string("Dirichlet"))
-                     {
-                        if (!row)                  val = temp_BC.bB; // use bottom BC
-                        else if (row == size[0]-1) val = temp_BC.bT; // use top BC
-                        else if (!col)             val = temp_BC.bL; // use left BC
-                        else                       val = temp_BC.bR; // col == size[1]-1 // use right BC
-                     }
+                     if (temp_BC.typeB == string("Dirichlet") && !row)
+                        val = temp_BC.bB; // use bottom BC
+                     else if (temp_BC.typeB == string("Neumann")) // the BC using derivatives all say A'(x) = 1/b A(x)
+                        val = 0.;                                 //   A'(x) - 1/b A(x) = 0, so RHS = 0
                      
+                     if (temp_BC.typeT == string("Dirichlet") && row == size[0]-1)
+                        val = temp_BC.bT; // use top BC
+                     else if (temp_BC.typeT == string("Neumann")) val = 0.;
 
-                     // the BC using derivatives all say A'(x) = 1/b A(x)
-                     //   A'(x) - 1/b A(x) = 0, so RHS = 0
-                     if (temp_BC.typeB == string("Neumann") || temp_BC.typeT == string("Neumann") ||
-                         temp_BC.typeL == string("Neumann") || temp_BC.typeR == string("Neumann"))   val = 0.;
+                     if (temp_BC.typeL == string("Dirichlet") && !col)
+                        val = temp_BC.bL; // use left BC
+                     else if (temp_BC.typeL == string("Neumann")) val = 0.;
+
+                     if (temp_BC.typeR == string("Dirichlet") && col == size[1]-1)
+                        val = temp_BC.bR; // use right BC
+                     else if (temp_BC.typeR == string("Neumann")) val = 0.;
                   }
                   else // calculate the RHS using the GL equation
                   {
