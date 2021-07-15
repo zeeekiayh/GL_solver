@@ -10,6 +10,7 @@
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product
 #include "ConvergenceAccelerator.hpp"
 
 using std::cout;
@@ -484,30 +485,43 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                 K23  = gl.K2+gl.K3;
 
          // define matrices to use, with their sizes
-         MatrixXcd SolverMatrix(Du2.rows()*5,Du2.cols()*5); // the matrix to be used by the solver
-         MatrixXcd zero(Du2.rows(),Du2.cols()); // a zero matrix to fill in the spaces with the comma initializer
-         zero.setZero(); // make sure it's zero
+         SparseMatrix<complex<double>> SolverMatrix(Du2.rows()*5,Du2.cols()*5); // the matrix to be used by the solver
+         // SparseMatrix<complex<double>> zero(Du2.rows(),Du2.cols()); // a zero matrix to fill in the spaces with the comma initializer
+         // zero.setZero(); // make sure it's zero
 
-         // define each non-zero 'element'
-         MatrixXcd elem_00 = MatrixXcd(K123*Du2_BD(Du2,step_size,Axx,0)+gl.K1*Dv2_BD(Dv2,step_size,Axx,0)),
-                   elem_10 = MatrixXcd(K23*Duv_BD(Duv,step_size,Axx,0)),
-                   elem_01 = MatrixXcd(K23*Duv_BD(Duv,step_size,Axz,1)),
-                   elem_11 = MatrixXcd(K123*Duv_BD(Duv,step_size,Axz,1)+gl.K1*Du2_BD(Du2,step_size,Axz,1)),
-                   elem_22 = MatrixXcd(gl.K1*(Du2_BD(Du2,step_size,Ayy,2)+Dv2_BD(Dv2,step_size,Ayy,2))),
-                   elem_33 = MatrixXcd(K123*Du2_BD(Du2,step_size,Azx,3)+gl.K1*Dv2_BD(Dv2,step_size,Azx,3)),
-                   elem_43 = MatrixXcd(K23*Duv_BD(Duv,step_size,Azx,3)),
-                   elem_34 = MatrixXcd(K23*Duv_BD(Duv,step_size,Azz,4)),
-                   elem_44 = MatrixXcd(K123*Duv_BD(Duv,step_size,Azz,4)+gl.K1*Du2_BD(Du2,step_size,Azz,4));
+         // initialize each non-zero 'element'
+         SparseMatrix<complex<double>> elem_00 = K123*Du2_BD(Du2,step_size,Axx,0)+gl.K1*Dv2_BD(Dv2,step_size,Axx,0),
+                                       elem_01 = K23*Duv_BD(Duv,step_size,Axx,0),
+                                       elem_10 = K23*Duv_BD(Duv,step_size,Axz,1),
+                                       elem_11 = K123*Duv_BD(Duv,step_size,Axz,1)+gl.K1*Du2_BD(Du2,step_size,Axz,1),
+                                       elem_22 = gl.K1*(Du2_BD(Du2,step_size,Ayy,2)+Dv2_BD(Dv2,step_size,Ayy,2)),
+                                       elem_33 = K123*Du2_BD(Du2,step_size,Azx,3)+gl.K1*Dv2_BD(Dv2,step_size,Azx,3),
+                                       elem_34 = K23*Duv_BD(Duv,step_size,Azx,3),
+                                       elem_43 = K23*Duv_BD(Duv,step_size,Azz,4),
+                                       elem_44 = K123*Duv_BD(Duv,step_size,Azz,4)+gl.K1*Du2_BD(Du2,step_size,Azz,4);
+         
+         // matrices for placement of each non-zero 'element'
+         SparseMatrix<complex<double>> M00(5,5), M01(5,5), M10(5,5), M11(5,5), M22(5,5), M33(5,5), M34(5,5), M43(5,5), M44(5,5);
+         M00.insert(0,0) = 1.; M10.insert(1,0) = 1.;
+         M01.insert(0,1) = 1.; M11.insert(1,1) = 1.;
+         M22.insert(2,2) = 1.; M33.insert(3,3) = 1.;
+         M43.insert(4,3) = 1.; M34.insert(3,4) = 1.;
+         M44.insert(4,4) = 1.;
+         
+         // 'place' them using the Kronecker product
+         SparseMatrix<complex<double>> el_00 = kroneckerProduct( M00, elem_00 ),
+                                       el_10 = kroneckerProduct( M10, elem_10 ),
+                                       el_01 = kroneckerProduct( M01, elem_01 ),
+                                       el_11 = kroneckerProduct( M11, elem_11 ),
+                                       el_22 = kroneckerProduct( M22, elem_22 ),
+                                       el_33 = kroneckerProduct( M33, elem_33 ),
+                                       el_43 = kroneckerProduct( M43, elem_43 ),
+                                       el_34 = kroneckerProduct( M34, elem_34 ),
+                                       el_44 = kroneckerProduct( M44, elem_44 );
 
-         // use the comma initializer to build the matrix
-         SolverMatrix << elem_00, elem_01, zero,    zero,    zero,
-                         elem_10, elem_11, zero,    zero,    zero,
-                         zero,    zero,    elem_22, zero,    zero,
-                         zero,    zero,    zero,    elem_33, elem_34,                          
-                         zero,    zero,    zero,    elem_43, elem_44;
+         SolverMatrix = el_00 + el_01 + el_10 + el_11 + el_22 + el_33 + el_34 + el_43 + el_44;
 
-         // turn the matrix into a sparse matrix
-         return SolverMatrix.sparseView(1,pow(10,-8));
+         return SolverMatrix;
       }
 
       VectorXcd RHS_He3Defect(GL_param gl, double h)
