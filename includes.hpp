@@ -72,17 +72,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          num_comp = n;
          if (num_comp > 1) OP.resize(num_comp);
       }
-      complex<double>& operator() (int i)
-      {
-         if (i > num_comp-1) // check the range first
-         {
-            cout << "ERROR: index out of range OrderParam::operator()" << endl;
-            // return 0.;
-         }
-         // will these all have to be specialized??
-         // if (num_comp == 1) return OP; // if it's just one-component OP, return that value
-         else return OP(i);            // otherwise, it is a vector, so return it's component
-      }
+      // complex<double>& operator() (int i)
+      // {
+      //    // will these all have to be specialized??
+      // }
    };
 // ==================================
 
@@ -122,6 +115,12 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
               0.,    OP(2), 0.,
               OP(3), 0.,    OP(4);
          return A;
+      }
+      complex<double>& operator() (int i)
+      {
+         if (i > num_comp-1) // check the range first
+            throw "ERROR: index out of range OrderParam::operator()\n";
+         return OP(i); // it's component
       }
    };
 // ======================================================
@@ -519,6 +518,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd RHS_He3Defect(GL_param gl, double h)
       {
+         cout << "in RHS()" << endl;
+         int cts = 0;
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
 
@@ -593,6 +594,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      //   OP matrix, given a value for vi: the # of element in the
                      //   vector. This is specific to this one case with 5 OP components
                      //   that are arranged in the corners and center.
+
+                     if (cts < 1) cout << "\tval = " << val << endl;
+                     cts++;
                      
                      val *= h*h; // because we multiplied the matrix by h^2
                   }
@@ -615,6 +619,24 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                }
             }
          }
+      }
+
+      // given the next guess, update the op at all points on the mesh
+      //   and make it available in it's vector form.
+      void updateMatrix(VectorXcd& new_guess)
+      {
+         for (int n_u = 0; n_u < size[0]; n_u++)
+         {
+            for (int n_v = 0; n_v < size[1]; n_v++)
+            {
+               Matrix3cd op;
+               op << new_guess(ID(size[0]*size[1],n_u,size[0],n_v,0)), 0.,                                               new_guess(ID(size[0]*size[1],n_u,size[0],n_v,1)),
+                     0.,                                               new_guess(ID(size[0]*size[1],n_u,size[0],n_v,2)), 0.,
+                     new_guess(ID(size[0]*size[1],n_u,size[0],n_v,3)), 0.,                                               new_guess(ID(size[0]*size[1],n_u,size[0],n_v,4));
+               matrix(n_u,n_v).Set_OP(op);
+            }
+         }
+         setVectorForm();
       }
 
       private:
@@ -954,6 +976,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             return;
          }
 
+         // prepare the matrix for RHS
+         op_matrix.updateMatrix(f);
+
          // loop until f converges or until it's gone too long
          int cts = 0; // count loops
          double err;  // to store current error
@@ -967,6 +992,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
             // use Anderson Acceleration to converge faster
             Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
+
+            // update the matrix for RHS
+            op_matrix.updateMatrix(f);
 
             rhs = op_matrix.RHS_He3Defect(gl,cond.STEP); // update rhs
             cts++;

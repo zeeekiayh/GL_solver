@@ -3,7 +3,7 @@ counditions. Each value must be directly after it's respective line that
 begins with "#". All other text will be ignored.
 
 #SIZE
-   50 50
+   150 150
    the length, or number of points in each direction
 
 #ACCUR
@@ -11,15 +11,15 @@ begins with "#". All other text will be ignored.
    the desired accuracy or relative error
 
 #h
-   0.1  
+   0.04
    the step size
 
 #num loops
-   5000
+   1500
    the maximum number of loops allowed
 
 #rel_p
-   0.005
+   0.003
    the relaxation parameter
    
 These boundary values should probably be placed in their own file, since
@@ -41,7 +41,7 @@ we will end up having many of them: 4 for each OP component
    the bottom slip length
 
 #maxStore
-   5
+   6
    the maximum number of previous vectors to be stored in the acceleration method
 
 #wait
