@@ -409,7 +409,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          }
       }
 
-      int getSize() const            { return OP_size; }
+      int getSize() const         { return OP_size; }
       VectorXcd getVector() const { return vector; }
       VectorXcd& getVector()      { return vector; }
       std::vector<int> getNoUpdate() const { return no_update; }
@@ -446,7 +446,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                               Bound_Cond& Ayy, Bound_Cond& Azx, Bound_Cond& Azz)
       { initialize(n,nRows,nCols,v,h,Axx,Axz,Ayy,Azx,Azz); }
 
-      void initialize(int n, int nRows, int nCols, std::vector<int> v,
+      void initialize(int n, int nRows, int nCols, std::vector<int> no_update_vec,
                      double h, Bound_Cond& Axx, Bound_Cond& Axz,
                      Bound_Cond& Ayy, Bound_Cond& Azx, Bound_Cond& Azz)
       {
@@ -459,6 +459,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          this->Ayy = Ayy;
          this->Azx = Azx;
          this->Azz = Azz;
+         no_update = no_update_vec;
 
          matrix.resize(size[0],size[1]); // initialize matrix
          vector.resize(size[0]*size[1]*OP_size); // initialize vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
@@ -472,8 +473,6 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
          // make the vector form available
          setVectorForm();
-
-         no_update = v;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
@@ -947,6 +946,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             cout << "Solver: numerical issues" << endl;
             cout << "A =\n";
             cout << A << endl;
+            // cout << "non-zero indeces of A:\n";
+            // for (int k=0; k < A.outerSize(); ++k) for (SparseMatrix<complex<double>>::InnerIterator it(A,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
+            cout << "\nsize of A: (" << A.rows() << "," << A.cols() << ")" << endl;
+            return;
          }
 
          // loop until f converges or until it's gone too long
