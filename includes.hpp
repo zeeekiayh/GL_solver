@@ -581,7 +581,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      
                      A = matrix(row,col).GetMatrixForm_He3Defect();
                      A_T = A.transpose();
-                     A_dag = A.adjoint();
+                     A_dag = A_T.conjugate();
                      A_conj = A.conjugate();
 
                      val = 2*gl.B1*(A*A_T).trace()*conj(A_mui)

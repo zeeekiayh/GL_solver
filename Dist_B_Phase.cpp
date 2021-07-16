@@ -59,7 +59,7 @@ int main()
     Azz.typeB = string("Dirichlet");
     Azz.typeT = string("Neumann");
     Azz.typeL = string("Dirichlet");
-    Azz.typeR = string("Dirichlet");  
+    Azz.typeR = string("Dirichlet");
 
     std::vector<int> no_update;
     MultiComponent_GL_Solver<VectorXcd> gls("conditions.txt");
