@@ -3,7 +3,7 @@ counditions. Each value must be directly after it's respective line that
 begins with "#". All other text will be ignored.
 
 #SIZE
-   15 15
+   50 50
    the length, or number of points in each direction
 
 #ACCUR
@@ -11,45 +11,27 @@ begins with "#". All other text will be ignored.
    the desired accuracy or relative error
 
 #h
-   0.01
+   0.08
    the step size
 
 #num loops
-   1500
+   151
    the maximum number of loops allowed
 
 #rel_p
    0.001
    the relaxation parameter
-   
-These boundary values should probably be placed in their own file, since
-we will end up having many of them: 4 for each OP component
-#bLeft
-   1
-   the left slip length
-
-#bRight
-   1
-   the right slip length
-
-#bTop
-   1
-   the top slip length
-
-#bBott
-   1
-   the bottom slip length
 
 #maxStore
    4
    the maximum number of previous vectors to be stored in the acceleration method
 
 #wait
-   3
+   2
    the number of iterations to wait before applying the acceleration
       it will be using normal relaxation until then
 #betas
-   1 2 -2 -2 2
+   1 -2 -2 -2 2
    all of the beta coefficients, 1-5, in order
 #alpha
    -0.005

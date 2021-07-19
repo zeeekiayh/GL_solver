@@ -200,16 +200,16 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
             if (BC.typeR == string("Neumann"))
             {
-               Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bR; // TODO: is it -2h... or +2h... ?
+               Du2_copy.coeffRef(idN,idN) = -2. +2.*h/BC.bR;
                // +(BC.bR >= pow(10,-7) ? -2.*h/BC.bR : 0);
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeR == string("Dirichlet")) Du2_copy.coeffRef(idN,idN) = 1.;
             
-            // add the index of componenets of the guess/solution vector that
-            //   we already know, i.e. we don't need to update them
-            no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
-            no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (BC.typeL == string("Dirichlet")) no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
+            if (BC.typeR == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
          }
 
          return Du2_copy;
@@ -245,16 +245,16 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
             if (BC.typeT == string("Neumann"))
             {
-               Dv2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.bT; // TODO: is it -2h... or +2h... ?
+               Dv2_copy.coeffRef(idN,idN) = -2. +2.*h/BC.bT;
                // +(BC.bT >= pow(10,-7) ? -2.*h/BC.bT : 0);
                Dv2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeT == string("Dirichlet")) Dv2_copy.coeffRef(idN,idN) = 1.;
             
-            // add the index of componenets of the guess/solution vector that
-            //   we already know, i.e. we don't need to update them
-            no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
-            no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
+            if (BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
          }
 
          return Dv2_copy;
@@ -262,7 +262,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
       
       SparseMatrix<complex<double>> Duv_BD(SparseMatrix<complex<double>>& Duv, double h, Bound_Cond BC, int op_elem_num)
       {
-         // We actually will not need to add anything to the no_update vector
+         // ?? We actually will not need to add anything to the no_update vector
          //   because we have already gone through all the boundary points.
 
          // the matrix that we will edit and return to not modify the original
@@ -312,6 +312,11 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectT) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectB) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectT) = 0.;
+
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (BC.typeL == string("Dirichlet")) no_update.push_back(ID(sz,0,size[0],n_v,op_elem_num));
+            if (BC.typeR == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,size[0],n_v,op_elem_num));
          }
          for (int n_u = 1; n_u < size[0]-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
@@ -353,14 +358,19 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             Duv_copy.coeffRef(id0,id0_disconnectR) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectL) = 0.;
             Duv_copy.coeffRef(idN,idN_disconnectR) = 0.;
+
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,n_u,size[0],0,op_elem_num));
+            if (BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,n_u,size[0],size[1]-1,op_elem_num));
          }
 
          // special case for the corners
          int id, id_disconnect;
 
          // Top left
-         id_disconnect = ID(sz,1,size[0],size[1]-2,0);
          id = ID(sz,0,size[0],size[1]-1,0);
+         id_disconnect = ID(sz,1,size[0],size[1]-2,0);
          Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bT);
          else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.;
@@ -370,25 +380,32 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                //    (x4, below)
 
          // Top right
-         id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
          id = ID(sz,size[0]-1,size[0],size[1]-1,0);
+         id_disconnect = ID(sz,size[0]-2,size[0],size[1]-2,0);
          Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bT);
          else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; // here...
 
          // Bottom left
-         id_disconnect = ID(sz,1,size[0],1,0);
          id = ID(sz,0,size[0],0,0);
+         id_disconnect = ID(sz,1,size[0],1,0);
          Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bL*BC.bB);
          else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...here...
 
          // Bottom right
-         id_disconnect = ID(sz,size[0]-2,size[0],1,0);
          id = ID(sz,size[0]-1,size[0],0,0);
+         id_disconnect = ID(sz,size[0]-2,size[0],1,0);
          Duv_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duv_copy.coeffRef(id,id) = h*h/(BC.bR*BC.bB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duv_copy.coeffRef(id,id) = 1.; //...and here
+
+         // If we know the VALUE at the point, add the index of it of the guess/solution
+         //   vector that we already know, i.e. we don't need to update them
+         if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        size[0],size[1]-1,op_elem_num));
+         if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,size[0],size[1]-1,op_elem_num));
+         if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        size[0],0,        op_elem_num));
+         if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,size[0],0,        op_elem_num));
 
          return Duv_copy;
       }
@@ -518,7 +535,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 
       VectorXcd RHS_He3Defect(GL_param gl, double h)
       {
-         cout << "in RHS()" << endl;
+         // cout << "in RHS()" << endl;
          int cts = 0;
          Matrix3cd A, A_T, A_dag, A_conj;
          VectorXcd rhs(vector.size());
@@ -595,7 +612,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      //   vector. This is specific to this one case with 5 OP components
                      //   that are arranged in the corners and center.
 
-                     if (cts < 1) cout << "\tval = " << val << endl;
+                     // if (cts < 1) cout << "\tval = " << val << endl;
                      cts++;
                      
                      val *= h*h; // because we multiplied the matrix by h^2

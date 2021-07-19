@@ -1,0 +1,17 @@
+These boundary values should probably be placed in their own file, since
+we will end up having many of them: 4 for each OP component
+#bLeft
+   1
+   the left slip length
+
+#bRight
+   1
+   the right slip length
+
+#bTop
+   1
+   the top slip length
+
+#bBott
+   1
+   the bottom slip length

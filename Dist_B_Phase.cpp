@@ -11,9 +11,6 @@
 
 int main()
 {
-    Tr triplet(1,2,3);
-    // triplet.
-
     // these should be put into a file to read in
     Bound_Cond Axx,Axz,Ayy,Azx,Azz;
     Axx.bB = 2.;         // a' = a(B)/b
@@ -71,17 +68,35 @@ int main()
     // make a guess
     int size = gls.getSolverMatrixSize();
     in_conditions c = gls.getConditions();
-    int midPoint = c.SIZEu/2;
+    int comp_length = size/5; // the length of each component in guess
+    int num;
     
     VectorXcd guess(size);
-    for (int i = 0; i < size; i += 5)
+    for (int i = 0; i < size; i++)
     {
-        guess(i)   = Axx.bB;
-        guess(i+1) = Axx.bB;
-        guess(i+2) = Ayy.bB;
-        guess(i+3) = Azx.bB;
-        if (i%c.SIZEu < midPoint) guess(i+4) = Azz.bL;
-        else guess(i+4) = Azz.bR;
+        num = floor(i/comp_length);
+        switch (num)
+        {
+        case 0:
+            guess(i) = 1.;
+            break;
+        case 1:
+            guess(i) = 1.;
+            break;
+        case 2:
+            guess(i) = 1.;
+            break;
+        case 3:
+            guess(i) = 1.;
+            break;
+        case 4:
+            guess(i) = ((i-4*comp_length)%c.SIZEu)/2 ? 1. : -1.; // if on the left half, put +1, otherwise put -1
+            if (i < 4*comp_length + c.SIZEu) guess(i) = Azz.bB;  // set the bottom to its boundary value
+            break;
+        
+        default:
+            break;
+        }
     }
 
     auto end = std::chrono::system_clock::now();
