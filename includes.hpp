@@ -601,6 +601,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                      A_dag = A_T.conjugate();
                      A_conj = A.conjugate();
 
+                     // check for sign error
                      val = 2*gl.B1*(A*A_T).trace()*conj(A_mui)
                            +2*gl.B2*(A*A_dag).trace()*A_mui
                            +2*gl.B3*(A*A_T*A_conj)(floor(2*vi/3),(2*vi)%3)
