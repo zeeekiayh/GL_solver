@@ -39,7 +39,7 @@ struct in_conditions
        wait;     // iterations to wait before using acceleration
    double ACCUR, // the minimum desired accuracy
           STEP,  // step size
-          rel_p  // relaxation param
+          rel_p; // relaxation param
 //           bLeft, // slip length on left side
 //           bRight,//   "   "   on right side
 //           bTop,  //   "   "   on top side
