@@ -40,10 +40,10 @@ struct in_conditions
    double ACCUR, // the minimum desired accuracy
           STEP,  // step size
           rel_p, // relaxation param
-          bLeft, // slip length on left side
-          bRight,//   "   "   on right side
-          bTop,  //   "   "   on top side
-          bBott; //   "   "   on bottom side
+//           bLeft, // slip length on left side
+//           bRight,//   "   "   on right side
+//           bTop,  //   "   "   on top side
+//           bBott; //   "   "   on bottom side
 };
 
 // returns the unique id corresponding to each op-component in the mesh.
@@ -840,10 +840,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
                   else if (ls == string("rel_p"))     conditions >> cond.rel_p;
                   else if (ls == string("maxStore"))  conditions >> cond.maxStore;
                   else if (ls == string("wait"))      conditions >> cond.wait;
-                  else if (ls == string("bLeft"))     conditions >> cond.bLeft;
-                  else if (ls == string("bRight"))    conditions >> cond.bRight;
-                  else if (ls == string("bTop"))      conditions >> cond.bTop;
-                  else if (ls == string("bBott"))     conditions >> cond.bBott;
+//                   else if (ls == string("bLeft"))     conditions >> cond.bLeft;
+//                   else if (ls == string("bRight"))    conditions >> cond.bRight;
+//                   else if (ls == string("bTop"))      conditions >> cond.bTop;
+//                   else if (ls == string("bBott"))     conditions >> cond.bBott;
                   else if (ls == string("betas"))
                   {
                      conditions >> gl.B1;
@@ -864,6 +864,46 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             conditions.close();
          }
          else cout << "Unable to open file:" << conditions_file << endl;
+         
+//          std::ifstream BCs(boundary_conditions_file);
+
+//          // get boundary conditions from the file
+//          if (BCs.is_open()) {
+//             while (line != "#OP size") getline(BCs,line) // find the line with the size
+//             int OP_size;
+//             BCs >> OP_size;
+
+//             while (!BCs.eof()) {
+//                getline(BCs,line);
+//                if (line[0] == "A") // looking at the OP component name
+//                if (line[0] == '#') // looking at the variable name
+//                {
+//                   string ls = line.substr(1);
+//                   if (ls == string("bLeft"))
+//                   {
+//                      BCs >> cond.bLeft;
+//                      getline(BCs,line);
+//                   }
+//                   else if (ls == string("bRight"))
+//                   {
+//                      BCs >> cond.bRight;
+//                      getline(BCs,line);
+//                   }
+//                   else if (ls == string("bTop"))
+//                   {
+//                      BCs >> cond.bTop;
+//                      getline(BCs,line);
+//                   }
+//                   else if (ls == string("bBott"))
+//                   {
+//                      BCs >> cond.bBott;
+//                      getline(BCs,line);
+//                   }
+//                }
+//             }
+//             BCs.close();
+//          }
+//          else cout << "Unable to open file:" << boundary_conditions_file << endl;
       }
 
       // Build the derivative matrices
@@ -988,7 +1028,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
          {
             cout << "Solver: numerical issues" << endl;
             cout << "A =\n";
-            cout << A << endl;
+            // cout << A << endl;
             // cout << "non-zero indeces of A:\n";
             // for (int k=0; k < A.outerSize(); ++k) for (SparseMatrix<complex<double>>::InnerIterator it(A,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
             cout << "\nsize of A: (" << A.rows() << "," << A.cols() << ")" << endl;
@@ -1015,7 +1055,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
             df = solver.solve(rhs)-f; // find the change in f
 
             // use Anderson Acceleration to converge faster
-            Con_Acc.next_vector<Matrix<dcomplex,-1,-1>>(f,df,err);
+            Con_Acc.next_vector<MatrixXcd>(f,df,err);
 
             // update the matrix for RHS
             op_matrix.updateMatrix(f);
