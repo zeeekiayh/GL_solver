@@ -1,17 +1,26 @@
-These boundary values should probably be placed in their own file, since
-we will end up having many of them: 4 for each OP component
-#bLeft
-   1
-   the left slip length
+boundary:      value OR slip length
+type:      Dirichlet OR Neumann
 
-#bRight
-   1
-   the right slip length
+#OP size
+   3
 
-#bTop
-   1
-   the top slip length
+#Axx bTop
+   1e10
+   Neumann
+#Axx bBott
+   10
+   Neumann
 
-#bBott
-   1
-   the bottom slip length
+#Ayy bTop
+   1e10
+   Neumann
+#Ayy bBott
+   10
+   Neumann
+
+#Azz bTop
+   1e10
+   Neumann
+#Azz bBott
+   0
+   Dirichlet
