@@ -92,7 +92,6 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 // to allow for the specialized class, define a derived template
    template<typename Container_type, typename Scalar_type>
    class Three_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-
 // This class is specific to the OP form with Axx, Ayy, Azz along the main diagonal
    template<typename Scalar_type>
    class Three_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
@@ -136,6 +135,61 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          mat << OP(0), 0.,    0.,
                 0.,    OP(1), 0.,
                 0.,    0.,    OP(2);
+         return mat;
+      }
+
+      Scalar_type& operator() (int i)
+      {
+         if (i > this->num_comp-1) // check the range first
+            throw "ERROR: index out of range OrderParam::operator()\n";
+         return OP(i); // it's component
+      }
+   };
+
+   template<typename Container_type, typename Scalar_type>
+   class Five_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
+   template<typename Scalar_type>
+   class Five_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
+   {
+      private:
+      Matrix<Scalar_type,-1,1> OP;
+
+      public:
+      Five_ComponentOrderParam() {}
+      Five_ComponentOrderParam(int n) { this->initialize(n); }
+
+      void initialize(int n)
+      {
+         this->num_comp = n;
+         if (this->num_comp > 1) OP.resize(this->num_comp);
+      }
+      
+      // get the op components into a vector form from a 3x3 matrix
+      void Set_OP(Matrix<Scalar_type,3,3> op)
+      {
+         // // flatten the matrix (row major)
+         // int i = 0; // count the values put into the vector OP
+
+         // for (int a = 0; a < 3; a++) {          // For each spin index...
+         //    for (int j = 0; j < 3; j++) {       //   go across all orbital indexes
+         //       if (abs(op(a,j)) > pow(10,-8)) { // If not effectively 0
+         //          if (i > this->num_comp) cout << "WARNING: more elements in matrix than specified by this->num_comp." << endl;
+         //          else {
+         //             this->OP(i) = op(a,j);
+         //             i++;
+         //          }
+         //       }
+         //    }
+         // } // for's
+      }
+
+      // gives the 3x3 form of the op for this special form
+      Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
+      {
+         Matrix<Scalar_type,3,3> mat;
+         mat << OP(0), 0.,    OP(1),
+                0.,    OP(2), 0.,
+                OP(3), 0.,    OP(4);
          return mat;
       }
 
@@ -658,6 +712,9 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 
    template <class Container_type, class Scalar_type>
    class Three_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
+
+   template <class Container_type, class Scalar_type>
+   class Five_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
 // ==================================================
 
 // Now include the real and comples class header files,
