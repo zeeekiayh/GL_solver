@@ -64,13 +64,16 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    }
 }
 
-// ==================================
+// ========================================================
+// A class for the Order Parameter component; just at one 
+//    point on the mesh. 'Container_type' can be something
+//    like double or VectorXcd; Scalar_type must match it,
+//    in a way (e.g. VectorXd and double). If your order
+//    parameter is a matrix, it will be flattened as a
+//    VectorXcd in 'Set_OP()'.
    template <typename Container_type, typename Scalar_type>
    class OrderParam
    {
-      // Container_type can be something like double or Vector3cd
-      // If your order parameter is a matrix, it must be flattened as a Vector3cd
-
       protected:
       // store it as a vector; the OP at one point
       int num_comp = 1; // we'll assume it's 1, unless in the derived class
@@ -79,11 +82,10 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       Container_type OP;
 
       public:
-
       OrderParam() {}
-      OrderParam(int n): num_comp(n) {  }
+      OrderParam(int n): num_comp(n) {}
       void Set_OP(Container_type op) { OP = op; }
-      void initialize(int n);
+      void initialize(int);
       Scalar_type& operator() (int);
    };
 
@@ -91,6 +93,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    template<typename Container_type, typename Scalar_type>
    class Three_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
 
+// This class is specific to the OP form with Axx, Ayy, Azz along the main diagonal
    template<typename Scalar_type>
    class Three_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
    {
@@ -143,7 +146,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          return OP(i); // it's component
       }
    };
-// ======================================================
+// ========================================================
 
 
 // ===========================================
@@ -254,7 +257,10 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 //                   //  is a product of 2 derivatives, but we have double step size
 // }
 
-// ===============================
+// ====================================================
+// A class that holds the mesh of OP components, builds
+//    the whole problem (matrices, rhs vector), and
+//    solves the system using (accelerated) relaxation
    template <class Container_type, class Scalar_type>
    class GL_Solver
    {
@@ -287,6 +293,8 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       // ~GL_Solver() {};
 
       // METHODS
+
+      // functions to be defined in specialized derived classes
       void setVectorForm();
       void Solve(Matrix<Scalar_type,-1,1>&);
       void initialize_OP_matrix();
@@ -650,7 +658,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 
    template <class Container_type, class Scalar_type>
    class Three_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
-// ===============================
+// ==================================================
 
 // Now include the real and comples class header files,
 //   since the parent class are defined

@@ -4,7 +4,7 @@
 // just to keep all the "errors" out while in VS Codes
 #include "includes.hpp"
 
-// derived, 3-component GL solver class
+// derived, complex 3-component GL solver class
    template<>
    class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd, dcomplex>
    {
