@@ -66,4 +66,6 @@ int main()
     VectorXcd solution_cplx = gls_cplx.getSolution();
     gls_cplx.WriteToFile(solution_cplx,"cplx_data.txt");
     //*/
+
+    return 0;
 }

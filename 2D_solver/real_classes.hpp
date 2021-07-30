@@ -4,47 +4,7 @@
 // just to keep all the "errors" out while in VS Codes
 #include "includes.hpp"
 
-// // a structure specialized for real-valued multi-component order parameters
-//    template<>
-//    struct Three_ComponentOrderParam<VectorXd, double> : public OrderParam<VectorXd, double>
-//    {
-//       Three_ComponentOrderParam() {}
-//       Three_ComponentOrderParam(int n) { initialize(n); }
-//       // get the op components into a vector form from a 3x3 matrix
-//       void Set_OP(Matrix3d op)
-//       {
-//          // flatten the matrix (row major)
-//          int i = 0; // count the values put into the vector OP
-//          for (int a = 0; a < 3; a++) {    // for each spin index...
-//             for (int j = 0; j < 3; j++) { // go across all orbital indexes
-//                if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
-//                   if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
-//                   else {
-//                      this->OP(i) = op(a,j);
-//                      i++;
-//                   }
-//                }
-//             }
-//          } // for's
-//       }
-//       // gives the 3x3 form of the op for this special form
-//       Matrix3d GetMatrixForm_He3Defect() // this function is specific to one OP structure
-//       {
-//          Matrix3d mat;
-//          mat << OP(0), 0.,    0.,
-//                 0.,    OP(1), 0.,
-//                 0.,    0.,    OP(2);
-//          return mat;
-//       }
-//       double& operator() (int i)
-//       {
-//          if (i > num_comp-1) // check the range first
-//             throw "ERROR: index out of range OrderParam::operator()\n";
-//          return OP(i); // it's component
-//       }
-//    };
-
-// derived, multi-component GL solver class
+// derived, 3-component GL solver class
    template<>
    class Three_Component_GL_Solver<VectorXd, double> : public GL_Solver<VectorXd, double>
    {

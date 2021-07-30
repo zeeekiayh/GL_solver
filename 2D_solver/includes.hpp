@@ -84,7 +84,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       OrderParam(int n): num_comp(n) {  }
       void Set_OP(Container_type op) { OP = op; }
       void initialize(int n);
-      Scalar_type& operator() (int); // will these all have to be specialized??
+      Scalar_type& operator() (int);
    };
 
 // to allow for the specialized class, define a derived template
