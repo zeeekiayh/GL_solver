@@ -1,0 +1,26 @@
+boundary:      value OR slip length
+type:      Dirichlet OR Neumann
+
+#OP size
+   3
+
+#Axx bTop
+   1e10
+   Neumann
+#Axx bBott
+   10
+   Neumann
+
+#Ayy bTop
+   1e10
+   Neumann
+#Ayy bBott
+   10
+   Neumann
+
+#Azz bTop
+   1e10
+   Neumann
+#Azz bBott
+   0
+   Dirichlet
