@@ -83,11 +83,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       OrderParam() {}
       OrderParam(int n): num_comp(n) {  }
       void Set_OP(Container_type op) { OP = op; }
-      void initialize(int n)
-      {
-         num_comp = n;
-         if (num_comp > 1) OP.resize(num_comp);
-      }
+      void initialize(int n);
       Scalar_type& operator() (int); // will these all have to be specialized??
    };
 
@@ -104,6 +100,12 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       public:
       Three_ComponentOrderParam() {}
       Three_ComponentOrderParam(int n) { this->initialize(n); }
+
+      void initialize(int n)
+      {
+         this->num_comp = n;
+         if (this->num_comp > 1) OP.resize(this->num_comp);
+      }
       
       // get the op components into a vector form from a 3x3 matrix
       void Set_OP(Matrix<Scalar_type,3,3> op)
