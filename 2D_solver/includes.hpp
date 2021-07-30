@@ -24,7 +24,9 @@ using namespace Eigen;
 // using namespace std::complex_literals; // for easy comlpex notation
 
 typedef Triplet<double> Tr;
-typedef Triplet<complex<double>> cTr;
+typedef SparseMatrix<double> SpMat_d;
+typedef Triplet<dcomplex> cTr;
+typedef SparseMatrix<dcomplex> SpMat_cd;
 
 // constants used in the GL equations
 struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
@@ -51,7 +53,7 @@ struct in_conditions
 int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max*n_v + n_u; }
 
 // To see a small portion of a (sparse) matrix; for debugging
-void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, int height)
+void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 {
    for (int h = 0; h < height; h++) {
       for (int w = 0; w < width; w++) {
@@ -90,94 +92,6 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
 // to allow for the specialized struct, define a template
    template<typename Container_type>
    struct Three_ComponentOrderParam : public OrderParam<Container_type> {};
-
-// a structure specialized for real-valued multi-component order parameters
-   template<>
-   struct Three_ComponentOrderParam<VectorXd> : public OrderParam<VectorXd>
-   {
-      Three_ComponentOrderParam() {}
-      Three_ComponentOrderParam(int n) { initialize(n); }
-      
-      // get the op components into a vector form from a 3x3 matrix
-      void Set_OP(Matrix3d op)
-      {
-         // flatten the matrix (row major)
-         int i = 0; // count the values put into the vector OP
-
-         for (int a = 0; a < 3; a++) {    // for each spin index...
-            for (int j = 0; j < 3; j++) { // go across all orbital indexes
-               if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
-                  if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
-                  else {
-                     this->OP(i) = op(a,j);
-                     i++;
-                  }
-               }
-            }
-         } // for's
-      }
-
-      // gives the 3x3 form of the op for this special form
-      Matrix3d GetMatrixForm_He3Defect() // this function is specific to one OP structure
-      {
-         Matrix3d mat;
-         mat << OP(0), 0.,    0.,
-                0.,    OP(1), 0.,
-                0.,    0.,    OP(2);
-         return mat;
-      }
-
-      double& operator() (int i)
-      {
-         if (i > num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
-      }
-   };
-
-// a structure specialized for complex multi-component order parameters
-   template<>
-   struct Three_ComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
-   {
-      Three_ComponentOrderParam() {}
-      Three_ComponentOrderParam(int n) { initialize(n); }
-      
-      // get the op components into a vector form from a 3x3 matrix
-      void Set_OP(Matrix3cd op)
-      {
-         // flatten the matrix (row major)
-         int i = 0; // count the values put into the vector OP
-
-         for (int a = 0; a < 3; a++) {    // for each spin index...
-            for (int j = 0; j < 3; j++) { // go across all orbital indexes
-               if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
-                  if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
-                  else {
-                     this->OP(i) = op(a,j);
-                     i++;
-                  }
-               }
-            }
-         } // for's
-      }
-
-      // gives the 3x3 form of the op for this special form
-      Matrix3cd GetMatrixForm_He3Defect() // this function is specific to one OP structure
-      {
-         Matrix3cd mat;
-         mat << OP(0), 0.,    0.,
-                0.,    OP(1), 0.,
-                0.,    0.,    OP(2);
-         return mat;
-      }
-
-      complex<double>& operator() (int i)
-      {
-         if (i > num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
-      }
-   };
 // ======================================================
 
 
@@ -290,7 +204,7 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
 // }
 
 // ===============================
-   template <class Container_type>
+   template <class Container_type, class Scalar_type>
    class GL_Solver
    {
       // VARIABLES
@@ -305,11 +219,11 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
       GL_param gl; // temperature-dependent parameters for the GL equation
       string method; // if Solve will use normal relaxtion or the accelerated
       in_conditions cond; // struct of all the BC's and other parameters for the methods
-      VectorXd solution; // to store the solution to the GL equ. (in the single vector form)
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       Bound_Cond Axx,Axz,Ayy,Azx,Azz; // boundary conditions for OP components
-      SparseMatrix<double> SolverMatrix; // solver matrix
-      SparseMatrix<double> Du2, Dv2, Duv; // derivative matrices
+      Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
+      SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
+      SparseMatrix<Scalar_type> Du2, Dv2, Duv; // derivative matrices
 
       public:
       // CONSTRUCTORS & DECSTRUCTOR
@@ -323,14 +237,14 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
 
       // METHODS
       void setVectorForm();
-      void Solve(VectorXd&);
+      void Solve(Matrix<Scalar_type,-1,1>&);
       void initialize_OP_matrix();
-      VectorXd makeGuess(VectorXd&);
+      Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&);
       void ReadBoundaryConditions(string);
       void BuildProblem(int,Bound_Cond,Bound_Cond);
       void WriteToFile(string); // Write all components of the OP, all into one file
 
-      VectorXd getSolution() const { return solution; }
+      Matrix<Scalar_type,-1,1> getSolution() const { return solution; }
       int getSolverMatrixSize() const { return SolverMatrix.cols(); }
       in_conditions getConditions() const { return cond; }
 
@@ -454,10 +368,10 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
       //    else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
       // }
    
-      // SparseMatrix<double> Du2_BD(Bound_Cond BC, int op_elem_num)
+      // SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num)
       // {
       //    // the matrix that we will edit and return to not modify the original
-      //    SparseMatrix<double> Du2_copy = Du2;
+      //    SparseMatrix<Scalar_type> Du2_copy = Du2;
       //    int sz = cond.SIZEu*cond.SIZEv; // size of D matrix (num of mesh points)
       //    // loop through just the left and right boundary points of the mesh
       //    for (int n_v = 0; n_v < cond.SIZEv; n_v++)
@@ -493,10 +407,10 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
       // }
 
       // derivative matrix methods
-      SparseMatrix<double> Dv2_BD(Bound_Cond BC, int op_elem_num)
+      SparseMatrix<Scalar_type> Dv2_BD(Bound_Cond BC, int op_elem_num)
       {
          vector<int> indexes_to_visit; // vector for debugging
-         SparseMatrix<double> Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
+         SparseMatrix<Scalar_type> Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
 
          int sz = cond.SIZEu*cond.SIZEv; // size of D matrix (num of mesh points)
 
@@ -551,12 +465,12 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
          return Dv2_copy;
       }
 
-      // SparseMatrix<double> Duv_BD(SparseMatrix<double>& Duv, double h, Bound_Cond BC, int op_elem_num)
+      // SparseMatrix<Scalar_type> Duv_BD(SparseMatrix<Scalar_type>& Duv, double h, Bound_Cond BC, int op_elem_num)
       // {
       //    // ?? We actually will not need to add anything to the no_update vector
       //    //   because we have already gone through all the boundary points.
       //    // the matrix that we will edit and return to not modify the original
-      //    SparseMatrix<double> Duv_copy = Duv;
+      //    SparseMatrix<Scalar_type> Duv_copy = Duv;
       //    int sz = cond.SIZEu*cond.SIZEv; // size of D matrix (num of mesh points)
       //    // loop through just the boundary points of the mesh
       //    for (int n_v = 1; n_v < cond.SIZEv-1; n_v++) // loop through the left and right boundary points of the mesh
@@ -683,322 +597,13 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
    
    }; // GL_solver class
 
-// derived, multi-component GL solver class
-   template<class Container_type>
-   class Three_Component_GL_Solver : public GL_Solver<Container_type> {};
-   template<>
-   class Three_Component_GL_Solver<VectorXd> : public GL_Solver<VectorXd>
-   {
-      public:
-      Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
-      {
-         ReadConditions(conditions_file);
-         ReadBoundaryConditions(boundary_conditions_file);
-         size = cond.SIZEu*cond.SIZEv;
-      }
-
-      void BuildProblem()
-      {
-         Build_D_Matrices();
-         initialize_OP_matrix();
-         SolverMatrix = SolverMatrix_He3Defect(Dv2);
-      }
-
-      void initialize_OP_matrix()
-      {
-         op_matrix.resize(cond.SIZEv,cond.SIZEu); // initialize matrix
-         op_vector.resize(cond.SIZEu*cond.SIZEv*OP_size); // initialize op_vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
-
-         // initialize elements in 'matrix'
-         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               op_matrix(n_v,n_u).initialize(OP_size);
-            }
-         }
-
-         setVectorForm();// make the vector form available
-      }
-
-      // Convert the OP matrix, at all mesh points, into a vector
-      void setVectorForm()
-      {
-         for (int vi = 0; vi < OP_size; vi++) {
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-                  op_vector(ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi)) = op_matrix(n_v,n_u)(vi);
-               }
-            }
-         }
-      }
-
-      // User-defined methods to build the solver matrix and the rhs vector
-      SparseMatrix<double> SolverMatrix_He3Defect(SparseMatrix<double>& Dv2)
-      {
-         // to make the code cleaner, define some constants
-         double K123 = gl.K1+gl.K2+gl.K3,
-                K23  = gl.K2+gl.K3;
-
-         // the matrix to be used by the solver
-         SparseMatrix<double> solver_mat(Dv2.rows()*OP_size,Dv2.cols()*OP_size);
-
-         // initialize each non-zero 'element'
-         SparseMatrix<double> elem_00 = Dv2_BD(Axx,0),
-                              elem_11 = Dv2_BD(Ayy,1),
-                              elem_22 = 3.*Dv2_BD(Azz,2);
-
-         // matrices for placement of each non-zero 'element'
-         SparseMatrix<double> M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
-         
-         // add a single 1 to each matrix to place the elem_.. matrices in the correct spot
-         M00.insert(0,0) = 1.; M11.insert(1,1) = 1.; M22.insert(2,2) = 1.;
-         
-         // 'place' them using the Kronecker product
-         solver_mat = kroneckerProduct( M00, elem_00 ) + kroneckerProduct( M11, elem_11 ) + kroneckerProduct( M22, elem_22 );
-
-         return solver_mat;
-      }
-      
-      VectorXd RHS_He3Defect()
-      {
-         int cts = 0;
-         Matrix3d op, op_T, op_dag, op_conj;
-         VectorXd rhs(op_vector.size());
-         double Beta_bulk = 6*(gl.B1+gl.B2)+2*(gl.B3+gl.B4+gl.B5);
-         Bound_Cond temp_BC;
-
-         // loop through all the OP components in the mesh
-         for (int vi = 0; vi < OP_size; vi++) {
-            // decide which BC to use
-                 if (vi == 0) temp_BC = Axx;
-            else if (vi == 1) temp_BC = Ayy;
-            else if (vi == 2) temp_BC = Azz;
-            else cout << "RHS ERROR: OP index out of bounds." << endl;
-
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-                  int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
-                  double val;
-
-                  if (temp_BC.typeB == string("Dirichlet") && !n_v) val = temp_BC.bB;
-                  else if (temp_BC.typeB == string("Neumann") && !n_v) val = 0.;
-                  else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
-                  else if (temp_BC.typeT == string("Neumann") && n_v == cond.SIZEv-1) val = 0.;
-                  else
-                  {
-                     auto axx = op_matrix(n_v,n_u)(0);
-                     auto azz = op_matrix(n_v,n_u)(2);
-
-                     // assuming all components are real, so a* = a
-                     // the Azz: perpendicular
-                     if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                     // the Axx or Ayy: parallel
-                     else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
-
-                     val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
-                  }
-
-                  // insert val in rhs, in the matching location
-                  rhs(id) = val;
-               }
-            }
-         }
-         return rhs;
-      }
-
-      // given the next guess, update the op at all points on the mesh
-      //   and make it available in it's vector form.
-      void updateMatrix(VectorXd& new_guess)
-      {
-         int sz = cond.SIZEu*cond.SIZEv;
-         for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-            for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-               Matrix3d op;
-               op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     0.,
-                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)), 0.,
-                     0.,                                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2));
-               op_matrix(n_v,n_u).Set_OP(op);
-            }
-         }
-         setVectorForm();
-      }
-
-      // use the relaxation method and Anderson Acceleration to solve
-      void Solve(VectorXd& guess)
-      {
-         cout << "solving..." << endl;
-         auto start = std::chrono::system_clock::now();
-         VectorXd f = makeGuess(guess), df(guess.size()); // initialize vectors
-
-         if (no_update.size()) cout << "using no_update" << endl;
-
-         // use LU decomposition to solve the system
-         SparseLU<SparseMatrix<double>, COLAMDOrdering<int> > solver;
-         solver.analyzePattern(SolverMatrix); // without this, Eigen throws: Eigen::Matrix<int, -1, 1>; ... Assertion `index >= 0 && index < size()' failed.
-         solver.factorize(SolverMatrix);
-
-         // check to see if the solver failed
-         if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
-         else if (solver.info() == Eigen::NumericalIssue) // for debugging non-invertable matrices
-         {
-            cout << "Solver: numerical issues" << endl;
-            // cout << "non-zero indeces of SolverMatrix:\n";
-            // for (int k=0; k < SolverMatrix.outerSize(); ++k) for (SparseMatrix<double>::InnerIterator it(SolverMatrix,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
-            return;
-         }
-
-         // time to prepare solving method
-         auto end = std::chrono::system_clock::now();
-         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-         cout << "\ttime: " << elapsed.count() << " seconds." << endl << endl;
-
-         updateMatrix(f); // prepare the matrix for RHS
-
-         int cts = 0; // count loops
-         double err;  // to store current error
-         VectorXd rhs = RHS_He3Defect(); // the right hand side
-
-         // the acceleration object
-         converg_acceler<VectorXd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
-
-         // loop until f converges or until it's gone too long
-         do { // use relaxation
-
-            df = solver.solve(rhs)-f; // find the change in f
-
-            if (method == string("acceleration")) Con_Acc.next_vector<MatrixXd>(f,df,err); // use Anderson Acceleration to converge faster
-            else if (method == string("relaxation")) // use normal relaxation
-            {
-               f += cond.rel_p*df;
-               err = df.norm()/f.norm();
-            }
-            else { cout << "ERROR: Unknown method type given." << endl; return; }
-
-            updateMatrix(f);       // update the matrix for RHS
-            rhs = RHS_He3Defect(); // update rhs
-            cts++;                 // increment counter
-
-            // for debugging: to see if the solution is oscillating rather than converging
-            // for (int i = 0; i < f.size(); i++) if ((i+1)%cond.SIZEu==0) cout << "\tf(" << i << ") = " << f(i) << endl;
-
-            // output approx. percent completed
-            cout << "\033[A\33[2K\r" << "estimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
-
-         } while(err > cond.ACCUR && cts < cond.N_loop);
-
-         if (err < cond.ACCUR) cout << "Found solution:" << endl;
-         else cout << "Result did not converge satifactorily:" << endl;
-         cout << "\titerations = " << cts << endl;
-         cout << "\trelative error = " << err << endl;
-
-         solution = f;
-      }
-
-      // make an educated guess using the boundary conditions
-      VectorXd makeGuess(VectorXd& g)
-      {
-         if (Axx.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx.bB;
-         }
-         if (Axx.typeT == string("Dirichlet")) {
-            for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx.bT;
-         }
-         
-         if (Ayy.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy.bB;
-         }
-         if (Ayy.typeT == string("Dirichlet")) {
-            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy.bT;
-         }
-         
-         if (Azz.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz.bB;
-         }
-         if (Azz.typeT == string("Dirichlet")) {
-            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz.bT;
-         } return g;
-      }
-
-      void ReadBoundaryConditions(string boundary_conditions_file)
-      {
-         string line;
-         std::ifstream BCs(boundary_conditions_file);
-
-         // get boundary conditions from the file
-         if (BCs.is_open()) {
-
-            while (line != "#OP size") getline(BCs,line); // find the line with the size
-            BCs >> OP_size;
-            Bound_Cond bc;
-            
-            while (!BCs.eof()) {
-               getline(BCs,line);
-               if (line[0] == '#') {           // any good way for error handling here?
-                  string ls = line.substr(1);
-                  if (ls == string("Axx bTop")) {
-                     BCs >> Axx.bT;
-                     BCs >> Axx.typeT;
-                  } else if (ls == string("Axx bBott")) {
-                     BCs >> Axx.bB;
-                     BCs >> Axx.typeB;
-                  }
-
-                  // Ayy
-                  else if (ls == string("Ayy bTop")) {
-                     BCs >> Ayy.bT;
-                     BCs >> Ayy.typeT;
-                  } else if (ls == string("Ayy bBott")) {
-                     BCs >> Ayy.bB;
-                     BCs >> Ayy.typeB;
-                  }
-
-                  // Azz
-                  else if (ls == string("Azz bTop")) {
-                     BCs >> Azz.bT;
-                     BCs >> Azz.typeT;
-                  } else if (ls == string("Azz bBott")) {
-                     BCs >> Azz.bB;
-                     BCs >> Azz.typeB;
-                  }
-               }
-            }
-
-            BCs.close();
-         }
-         else cout << "Unable to open file:" << boundary_conditions_file << endl;
-      }
-      
-      // Write all components of the OP, all into one file, of the form:
-      //             __x__|__y__|_Axx_|_Axy_| ...
-      //              ... | ... | ... | ... | ...
-      // separates the components from solution...storing real and imag parts ==> up to 18
-      void WriteToFile(VectorXd& vec, string file_name)
-      {
-         std::ofstream data (file_name);
-         if (data.is_open())
-         {
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-
-                  string line = to_string(n_u*cond.STEP) + string("\t")
-                              + to_string(n_v*cond.STEP) + string("\t"); // add the position components
-
-                  for (int vi = 0; vi < OP_size; vi++) {
-                     double element = vec(ID(size,n_u,cond.SIZEu,n_v,vi));
-                     line += to_string(element); // add the components of the solution vector
-                     if (vi+1 < size) line += string("\t");
-                  }
-
-                  data << line << endl;
-               }
-            }
-         }
-         else cout << "Unable to open file: " << file_name << endl;
-      }
-
-      private:
-      Matrix<Three_ComponentOrderParam<VectorXd>,-1,-1> op_matrix;
-      VectorXd op_vector;
-   };
+   template <class Container_type, class Scalar_type>
+   class Three_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
 // ===============================
+
+// Now include the real and comples class header files,
+//   since the parent class are defined
+#include "real_classes.hpp"
+#include "complex_classes.hpp"
 
 #endif
