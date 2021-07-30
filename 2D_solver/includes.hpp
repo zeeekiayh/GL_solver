@@ -87,6 +87,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       void Set_OP(Container_type op) { OP = op; }
       void initialize(int);
       Scalar_type& operator() (int);
+      dcomplex F_Bulk();
    };
 
 // to allow for the specialized class, define a derived template
@@ -143,6 +144,25 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          if (i > this->num_comp-1) // check the range first
             throw "ERROR: index out of range OrderParam::operator()\n";
          return OP(i); // it's component
+      }
+
+      dcomplex F_Bulk(GL_param gl)
+      {
+         // calculate the used forms of A
+         auto A = this->GetMatrixForm_He3Defect();
+         auto A_tran = A.transpose();
+         auto A_conj = A.conjugate();
+         auto A_dag  = A.adjoint();
+
+         double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.; // the bulk beta value
+
+         return -( gl.B1*pow( abs((A * AT).trace()), 2)
+                  +gl.B2*pow( (A * A_dag).trace(), 2)
+                  +gl.B3*(A * AT * A_conj * A_dag).trace()
+                  +gl.B4*(A * A_dag * A * A_dag).trace()
+                  +gl.B5*(A * A_dag * A_conj * AT).trace()
+                  )/(Beta_B * 9.)
+                  +2./3.*(A * A_dag).trace();
       }
    };
 
@@ -356,6 +376,9 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       void ReadBoundaryConditions(string);
       void BuildProblem(int,Bound_Cond,Bound_Cond);
       void WriteToFile(string); // Write all components of the OP, all into one file
+      // Scalar_type f_bulk();
+      Scalar_type F_Grad();
+      double free_energy();
 
       Matrix<Scalar_type,-1,1> getSolution() const { return solution; }
       int getSolverMatrixSize() const { return SolverMatrix.cols(); }

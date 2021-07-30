@@ -286,6 +286,59 @@
          else cout << "Unable to open file:" << boundary_conditions_file << endl;
       }
       
+      double free_energy()
+      {
+         if (!solution.size())
+         {
+            cout << "ERROR: cannot calculate free-energy without a solution." << endl;
+            return 0.;
+         }
+
+         complex<double> I = 0; // start the integral sum at 0
+         complex<double> f_bulk, f_bulk_prev = 0.;
+         complex<double> f_grad, f_grad_prev = 0.;
+         MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
+
+         // loop through all OP's in the mesh
+         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+               //
+            }
+         }
+
+         // // calculate the first step
+         // f_bulk = F_Bulk(0);
+         // f_grad = F_Grad(0,1);
+         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
+         // for (int i = 1; i <= size-2; i++)
+         // {
+         //    // set the previous values
+         //    f_bulk_prev = f_bulk;
+         //    f_grad_prev = f_grad;
+         //    f_bulk = F_Bulk(i);
+         //    // calculate the gradient term
+         //    f_grad = F_Grad(i-1,i+1);
+         //    // use a rectangular integral approximation, centered at the midpoints
+         //    I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
+         //    integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
+         // }
+
+         // // calculate the last step
+         // f_bulk = F_Bulk(size-1);
+         // f_grad = F_Grad(size-2,size-1);
+         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
+         // // save the integrand vector to plot and inspect
+         // WriteToFile(integ,"integrand.txt"); // using the non-member function
+
+         cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
+         if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
+
+         return I.real();
+      }
+
+
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Axx_|_Axy_| ...
       //              ... | ... | ... | ... | ...

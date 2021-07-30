@@ -680,6 +680,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 // =============================================
 
 // TODO: modify the grad terms to calculate it based on the mesh
+
+
 // Calculate the free-energy loss by the integral of the energy density
 // This value has been normalized because the deltas were calculated as
 //    normalized. Dividing f by (alpha(T) * delta_0^2) and simplifying.
@@ -691,14 +693,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //       cout << "ERROR: cannot calculate free-energy without a solution." << endl;
 //       return 0.;
 //    }
+
 //    complex<double> I = 0; // start the integral sum at 0
 //    complex<double> f_bulk, f_bulk_prev = 0.;
 //    complex<double> f_grad, f_grad_prev = 0.;
 //    VectorXcd integ(size-2); // value of the integral over distance--to plot
+
 //    // calculate the first step
 //    f_bulk = F_Bulk(0);
 //    f_grad = F_Grad(0,1);
 //    I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
 //    for (int i = 1; i <= size-2; i++)
 //    {
 //       // set the previous values
@@ -711,16 +716,22 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //       I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
 //       integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
 //    }
+
 //    // calculate the last step
 //    f_bulk = F_Bulk(size-1);
 //    f_grad = F_Grad(size-2,size-1);
 //    I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
 //    // save the integrand vector to plot and inspect
 //    Write_To_File(integ,"integ_c.txt","integ_r.txt"); // using the non-member function
+
 //    cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
 //    if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
+
 //    return I.real();
 // }
+
+
 // calculate the normalized bulk free-energy density
 // complex<double> F_Bulk(int i)
 // {
@@ -729,7 +740,9 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //                               AT = A.transpose(),
 //                               A_dag = A.adjoint(),
 //                               A_conj = A.conjugate();
+
 //    double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
+
 //    return -( gl.B1*pow( abs((A * AT).trace()), 2)
 //             +gl.B2*pow( (A * A_dag).trace(), 2)
 //             +gl.B3*(A * AT * A_conj * A_dag).trace()
@@ -738,6 +751,8 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //          )/(Beta_B*9.)
 //          +2./3.*(A * A_dag).trace();
 // }
+
+
 // TODO: make it calculate the gradient using the central difference
 //       derivative for each internal point on the mesh...do we pass
 //       in the mesh? or just pass in the relating indexes?
@@ -746,8 +761,10 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 // {
 //    if (m < 0) { cout << "ERROR: F_Grad 'm' must be >= 0." << endl; return 0.0; }
 //    complex<double> k1 = 0., k2 = 0., k3 = 0.; // grad term sums
+
 //    // used center difference derivatives
 //    Matrix<complex<double>,3,3> A_next = M_index(OP,n), A_prev = M_index(OP,m);
+
 //    for (int a = 0; a < 3; a++)
 //    {
 //       for (int k = 0; k < 3; k++)
@@ -761,6 +778,7 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 //          }
 //       }
 //    }
+
 //    return -2./3.*(k1+k2+k3)/(pow(2*cond.STEP,2)); // divide by (2h)^2 becasue there
 //                   //  is a product of 2 derivatives, but we have double step size
 // }
