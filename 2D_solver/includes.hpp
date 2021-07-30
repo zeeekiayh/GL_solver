@@ -16,7 +16,7 @@
 using std::cout;
 using std::endl;
 using std::cin;
-// using std::complex;
+using std::complex;
 using std::ostream;
 using std::vector;
 using std::string;
@@ -24,6 +24,7 @@ using namespace Eigen;
 // using namespace std::complex_literals; // for easy comlpex notation
 
 typedef Triplet<double> Tr;
+typedef Triplet<complex<double>> cTr;
 
 // constants used in the GL equations
 struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
@@ -88,13 +89,14 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
 
 // to allow for the specialized struct, define a template
    template<typename Container_type>
-   struct MultiComponentOrderParam : public OrderParam<Container_type> {};
-// a structure specialized for multi-component order parameters
+   struct Three_ComponentOrderParam : public OrderParam<Container_type> {};
+
+// a structure specialized for real-valued multi-component order parameters
    template<>
-   struct MultiComponentOrderParam<VectorXd> : public OrderParam<VectorXd>
+   struct Three_ComponentOrderParam<VectorXd> : public OrderParam<VectorXd>
    {
-      MultiComponentOrderParam() {}
-      MultiComponentOrderParam(int n) { initialize(n); }
+      Three_ComponentOrderParam() {}
+      Three_ComponentOrderParam(int n) { initialize(n); }
       
       // get the op components into a vector form from a 3x3 matrix
       void Set_OP(Matrix3d op)
@@ -126,6 +128,50 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
       }
 
       double& operator() (int i)
+      {
+         if (i > num_comp-1) // check the range first
+            throw "ERROR: index out of range OrderParam::operator()\n";
+         return OP(i); // it's component
+      }
+   };
+
+// a structure specialized for complex multi-component order parameters
+   template<>
+   struct Three_ComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
+   {
+      Three_ComponentOrderParam() {}
+      Three_ComponentOrderParam(int n) { initialize(n); }
+      
+      // get the op components into a vector form from a 3x3 matrix
+      void Set_OP(Matrix3cd op)
+      {
+         // flatten the matrix (row major)
+         int i = 0; // count the values put into the vector OP
+
+         for (int a = 0; a < 3; a++) {    // for each spin index...
+            for (int j = 0; j < 3; j++) { // go across all orbital indexes
+               if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
+                  if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
+                  else {
+                     this->OP(i) = op(a,j);
+                     i++;
+                  }
+               }
+            }
+         } // for's
+      }
+
+      // gives the 3x3 form of the op for this special form
+      Matrix3cd GetMatrixForm_He3Defect() // this function is specific to one OP structure
+      {
+         Matrix3cd mat;
+         mat << OP(0), 0.,    0.,
+                0.,    OP(1), 0.,
+                0.,    0.,    OP(2);
+         return mat;
+      }
+
+      complex<double>& operator() (int i)
       {
          if (i > num_comp-1) // check the range first
             throw "ERROR: index out of range OrderParam::operator()\n";
@@ -490,17 +536,17 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
                Dv2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            // debugging (for a large matrix):
-            if (!(n_u%21-2)) indexes_to_visit.push_back(id0);
+            // // debugging (for a large matrix):
+            // if (!(n_u%21-2)) indexes_to_visit.push_back(id0);
          }
 
-         // debugging (for a large matrix):
-         cout << endl << "ouside loop:";
-         for (auto it = indexes_to_visit.begin(); it != indexes_to_visit.end(); it++)
-         {
-            cout << endl << "mini view:" << endl;
-            Matrix_SubView(Dv2_copy,*it-2,*it-2,7,7);
-         }
+         // // debugging (for a large matrix):
+         // cout << endl << "ouside loop:";
+         // for (auto it = indexes_to_visit.begin(); it != indexes_to_visit.end(); it++)
+         // {
+         //    cout << endl << "mini view:" << endl;
+         //    Matrix_SubView(Dv2_copy,*it-2,*it-2,7,7);
+         // }
 
          return Dv2_copy;
       }
@@ -639,12 +685,12 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
 
 // derived, multi-component GL solver class
    template<class Container_type>
-   class MultiComponent_GL_Solver : public GL_Solver<Container_type> {};
+   class Three_Component_GL_Solver : public GL_Solver<Container_type> {};
    template<>
-   class MultiComponent_GL_Solver<VectorXd> : public GL_Solver<VectorXd>
+   class Three_Component_GL_Solver<VectorXd> : public GL_Solver<VectorXd>
    {
       public:
-      MultiComponent_GL_Solver(string conditions_file, string boundary_conditions_file)
+      Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
       {
          ReadConditions(conditions_file);
          ReadBoundaryConditions(boundary_conditions_file);
@@ -733,10 +779,10 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
                   int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                   double val;
 
-                  if (temp_BC.typeB == string("Dirichlet") && n_u == cond.SIZEu-1) val = temp_BC.bB;
-                  else if (temp_BC.typeB == string("Neumann") && n_u == cond.SIZEu-1) val = 0.;
-                  else if (temp_BC.typeT == string("Dirichlet") && !n_u) val = temp_BC.bT;
-                  else if (temp_BC.typeT == string("Neumann") && !n_u) val = 0.;
+                  if (temp_BC.typeB == string("Dirichlet") && !n_v) val = temp_BC.bB;
+                  else if (temp_BC.typeB == string("Neumann") && !n_v) val = 0.;
+                  else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
+                  else if (temp_BC.typeT == string("Neumann") && n_v == cond.SIZEv-1) val = 0.;
                   else
                   {
                      auto axx = op_matrix(n_v,n_u)(0);
@@ -950,7 +996,7 @@ void Matrix_SubView(SparseMatrix<double> matrix, int n_u, int n_v, int width, in
       }
 
       private:
-      Matrix<MultiComponentOrderParam<VectorXd>,-1,-1> op_matrix;
+      Matrix<Three_ComponentOrderParam<VectorXd>,-1,-1> op_matrix;
       VectorXd op_vector;
    };
 // ===============================

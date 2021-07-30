@@ -9,7 +9,7 @@
 int main()
 {
     std::vector<int> no_update;
-    MultiComponent_GL_Solver<VectorXd> gls("conditions.txt","boundary_conditions.txt");
+    Three_Component_GL_Solver<VectorXd> gls("conditions.txt","boundary_conditions.txt");
     cout << "Initialized GL Solver" << endl;
 
     // start timing
