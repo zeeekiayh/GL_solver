@@ -1,55 +1,50 @@
 #ifndef _complex_includes
 #define _complex_includes
 
-// #include "includes.hpp"
+// just to keep all the "errors" out while in VS Codes
+#include "includes.hpp"
 
-// a structure specialized for complex multi-component order parameters
-   template<>
-   struct Three_ComponentOrderParam<VectorXcd> : public OrderParam<VectorXcd>
-   {
-      Three_ComponentOrderParam() {}
-      Three_ComponentOrderParam(int n) { initialize(n); }
-      
-      // get the op components into a vector form from a 3x3 matrix
-      void Set_OP(Matrix3cd op)
-      {
-         // flatten the matrix (row major)
-         int i = 0; // count the values put into the vector OP
-
-         for (int a = 0; a < 3; a++) {    // for each spin index...
-            for (int j = 0; j < 3; j++) { // go across all orbital indexes
-               if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
-                  if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
-                  else {
-                     this->OP(i) = op(a,j);
-                     i++;
-                  }
-               }
-            }
-         } // for's
-      }
-
-      // gives the 3x3 form of the op for this special form
-      Matrix3cd GetMatrixForm_He3Defect() // this function is specific to one OP structure
-      {
-         Matrix3cd mat;
-         mat << OP(0), 0.,    0.,
-                0.,    OP(1), 0.,
-                0.,    0.,    OP(2);
-         return mat;
-      }
-
-      dcomplex& operator() (int i)
-      {
-         if (i > num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
-      }
-   };
+// // a structure specialized for complex multi-component order parameters
+//    template<>
+//    struct Three_ComponentOrderParam<VectorXcd, dcomplex> : public OrderParam<VectorXcd, dcomplex>
+//    {
+//       Three_ComponentOrderParam() {}
+//       Three_ComponentOrderParam(int n) { initialize(n); }
+//       // get the op components into a vector form from a 3x3 matrix
+//       void Set_OP(Matrix3cd op)
+//       {
+//          // flatten the matrix (row major)
+//          int i = 0; // count the values put into the vector OP
+//          for (int a = 0; a < 3; a++) {    // for each spin index...
+//             for (int j = 0; j < 3; j++) { // go across all orbital indexes
+//                if (abs(op(a,j)) > pow(10,-8)) { // if not effectively 0
+//                   if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
+//                   else {
+//                      this->OP(i) = op(a,j);
+//                      i++;
+//                   }
+//                }
+//             }
+//          } // for's
+//       }
+//       // gives the 3x3 form of the op for this special form
+//       Matrix3cd GetMatrixForm_He3Defect() // this function is specific to one OP structure
+//       {
+//          Matrix3cd mat;
+//          mat << OP(0), 0.,    0.,
+//                 0.,    OP(1), 0.,
+//                 0.,    0.,    OP(2);
+//          return mat;
+//       }
+//       dcomplex& operator() (int i)
+//       {
+//          if (i > num_comp-1) // check the range first
+//             throw "ERROR: index out of range OrderParam::operator()\n";
+//          return OP(i); // it's component
+//       }
+//    };
 
 // derived, multi-component GL solver class
-   // template<class Container_type>
-   // class Three_Component_GL_Solver : public GL_Solver<Container_type> {};
    template<>
    class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd, dcomplex>
    {
@@ -360,7 +355,7 @@
       }
 
       private:
-      Matrix<Three_ComponentOrderParam<VectorXcd>,-1,-1> op_matrix;
+      Matrix<Three_ComponentOrderParam<VectorXcd, dcomplex>,-1,-1> op_matrix;
       VectorXcd op_vector;
    };
 
