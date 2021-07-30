@@ -4,6 +4,8 @@ int main()
 {
     VectorXd guess;
     std::vector<int> no_update;
+
+    // real-valued GL solver
     Three_Component_GL_Solver<VectorXd,double> gls("conditions.txt","boundary_conditions.txt");
     cout << "Initialized GL Solver" << endl;
 
@@ -34,7 +36,7 @@ int main()
     VectorXd solution = gls.getSolution();
     gls.WriteToFile(solution,"data.txt");
 
-    //*
+    //* Complex-valued GL solver
     VectorXcd guess_cplx;
     Three_Component_GL_Solver<VectorXcd,dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
     cout << endl << endl << "Initialized complex GL Solver" << endl;
@@ -47,8 +49,6 @@ int main()
     cout << "done" << endl;
 
     // make a guess
-    int size = gls_cplx.getSolverMatrixSize(); // the number of columns in the matrix
-    in_conditions c = gls_cplx.getConditions();
     guess_cplx.resize(size);
     p = gls_cplx.getConditions();
     for (int i = 0; i < size; i++) guess_cplx(i) = 1.; // i < p.SIZEu ? 0. : 1.
