@@ -340,8 +340,8 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    {
       // VARIABLES
       private:
-      Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
-      Matrix<Container_type,-1,1> op_vector; // the vector form of the op_matrix
+      // Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
+      // Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
 
       protected:
       int size; // number of mesh points (size of the D matrices or OP-component vectors)
@@ -353,8 +353,10 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       Bound_Cond Axx,Axz,Ayy,Azx,Azz; // boundary conditions for OP components
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
+      Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dv2, Duv; // derivative matrices
+      Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
       // CONSTRUCTORS & DECSTRUCTOR
@@ -376,13 +378,81 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       void ReadBoundaryConditions(string);
       void BuildProblem(int,Bound_Cond,Bound_Cond);
       void WriteToFile(string); // Write all components of the OP, all into one file
-      // Scalar_type f_bulk();
-      Scalar_type F_Grad();
-      double free_energy();
 
       Matrix<Scalar_type,-1,1> getSolution() const { return solution; }
       int getSolverMatrixSize() const { return SolverMatrix.cols(); }
       in_conditions getConditions() const { return cond; }
+
+      // Scalar_type f_bulk();
+      Scalar_type F_Grad();
+
+      double free_energy()
+      {
+         if (!solution.size())
+         {
+            cout << "ERROR: cannot calculate free-energy without a solution." << endl;
+            return 0.;
+         }
+
+         complex<double> I = 0; // start the integral sum at 0
+         complex<double> f_bulk, f_bulk_prev = 0.;
+         complex<double> f_grad, f_grad_prev = 0.;
+         complex<double> k1, k2, k3; //the 3 derivative values
+         MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
+
+         // loop through all OP's in the mesh
+         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+
+               // if we're not at a boundary,
+               if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1)
+               {
+                  // calculate the gradient at each point:
+                  //   loop through the OP at the point
+                  for (int a = 0; a < 3; a++) {       // spin index
+                     for (int j = 0; j < 3; j++) {    // orbital/derivative index
+                        for (int k = 0; k < 3; k++) { // orbital/derivative index
+                           // ... p. 57
+                        }
+                     }
+                  }
+               }
+               
+               //
+            }
+         }
+
+         // // calculate the first step
+         // f_bulk = F_Bulk(0);
+         // f_grad = F_Grad(0,1);
+         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
+         // for (int i = 1; i <= size-2; i++)
+         // {
+         //    // set the previous values
+         //    f_bulk_prev = f_bulk;
+         //    f_grad_prev = f_grad;
+         //    f_bulk = F_Bulk(i);
+         //    // calculate the gradient term
+         //    f_grad = F_Grad(i-1,i+1);
+         //    // use a rectangular integral approximation, centered at the midpoints
+         //    I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
+         //    integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
+         // }
+
+         // // calculate the last step
+         // f_bulk = F_Bulk(size-1);
+         // f_grad = F_Grad(size-2,size-1);
+         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
+
+         // // save the integrand vector to plot and inspect
+         // WriteToFile(integ,"integrand.txt"); // using the non-member function
+
+         // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
+         if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
+
+         return I.real();
+      }
 
       // read in the conditions from the file
       void ReadConditions(string conditions_file)
