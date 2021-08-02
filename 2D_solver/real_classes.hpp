@@ -320,71 +320,118 @@
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
 
+               // calculate all the needed forms of A
                A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
                A_tran = A.transpose();
                A_conj = A.conjugate();
                A_dag = A.adjoint();
 
+               k1 = 0., k2 = 0., k3 = 0.; // start them all at 0 for each OP
+
                // if we're not at a boundary,
                if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1)
                {
+                  // get all the needed neighbors of A
                   A_prev_x = op_matrix(n_v,n_u-1);
                   A_next_x = op_matrix(n_v,n_u+1);
                   A_prev_z = op_matrix(n_v-1,n_u);
                   A_next_z = op_matrix(n_v+1,n_u);
-
-                  k1 = 0., k2 = 0., k3 = 0.;
 
                   // calculate the gradient at each point:
                   //   loop through the OP at the point
                   for (int a = 0; a < 3; a++) {       // spin index
                      for (int j = 0; j < 3; j++) {    // orbital/derivative index
                         for (int k = 0; k < 3; k++) { // orbital/derivative index
-                           // ... p. 57
-                           // f_grad = gl.K1*(().conjugate());
-                           
 
-                           switch (j) {
-                              case 0:
-                                 // x-derivative
-                                 Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                                 Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
-                                 break;
-                              // case 1:
-                              //    // y-derivative
-                              //    k2 = 0.; k3 = 0.;
-                              //    break;
-                              case 2:
-                                 // z-derivative
-                                 break;
-                              default:
-                                 k1 = 0.; k2 = 0.; k3 = 0.;
-                                 break;
+                           // calculate the derivatives depending on the index
+                           if (j ==0) { // x-derivative
+                              Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                              Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
                            }
-                           switch (k) {
-                              case 0:
-                                 // x-derivative
-                                 Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                                 Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
-                                 break;
-                              // case 1:
-                              //    // y-derivative
-                              //    k2 = 0.; k3 = 0.;
-                              //    break;
-                              case 2:
-                                 // z-derivative
-                                 break;
-                              default:
-                                 k1 = 0.; k2 = 0.; k3 = 0.;
-                                 break;
+                           // if (j ==1) // y-derivative
+                           if (j ==2) { // z-derivative
+                              Aajj = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
+                              Aakj = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
                            }
 
-                           
-                        }
-                     }
-                  }
+                           if (k == 0) { // x-derivative
+                              Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                              Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                           }
+                           // if (k == 1) // y-derivative
+                           if (k == 2) { // z-derivative
+                              Aajk = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
+                              Aakk = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                           }
+
+                           // sum up over the indexes
+                           k1 += abs2(Aajk);
+                           k2 += conj(Aajj)*Aakk;
+                           k3 += conj(Aajk)*Aakj;
+                        } // for k
+                     } // for j
+                  } // for a
+
+                  // add them all together to get the gradient term for this OP
+                  f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
 
                } // if not @ bd
+               else { // we're at a boundary
+                  // get all the needed neighbors of A, but modify them if at a boundary.
+                  // Right now, we only use a step of h, so it is less stable...is
+                  //    there a way to work around that?
+                  if (!n_u) { // if at left...
+                     A_prev_x = op_matrix(n_v,n_u);
+                     A_next_x = op_matrix(n_v,n_u+1);
+                  }
+                  if (n_u == cond.SIZEu-1) { // if at right...
+                     A_next_x = op_matrix(n_v,n_u);
+                     A_prev_x = op_matrix(n_v,n_u-1);
+                  }
+                  if (!n_v) { // if at bottom...
+                     A_prev_z = op_matrix(n_v,n_u);
+                     A_next_z = op_matrix(n_v+1,n_u);
+                  }
+                  if (n_v == cond.SIZEv-1) { // if at top...
+                     A_next_z = op_matrix(n_v,n_u);
+                     A_prev_z = op_matrix(n_v-1,n_u);
+                  }
+
+                  // calculate the gradient at each point:
+                  //   loop through the OP at the point
+                  for (int a = 0; a < 3; a++) {       // spin index
+                     for (int j = 0; j < 3; j++) {    // orbital/derivative index
+                        for (int k = 0; k < 3; k++) { // orbital/derivative index
+
+                           if (j ==0) { // x-derivative
+                              Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                              Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                           }
+                           // if (j ==1) // y-derivative
+                           if (j ==2) { // z-derivative
+                              Aajj = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
+                              Aakj = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                           }
+
+                           if (k == 0) { // x-derivative
+                              Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                              Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                           }
+                           // if (k == 1) // y-derivative
+                           if (k == 2) { // z-derivative
+                              Aajk = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
+                              Aakk = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                           }
+
+                           k1 += abs2(Aajk);
+                           k2 += conj(Aajj)*Aakk;
+                           k3 += conj(Aajk)*Aakj;
+                        } // for k
+                     } // for j
+                  } // for a
+
+                  f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
+               }
                
                f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
                //
