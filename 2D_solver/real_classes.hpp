@@ -313,8 +313,9 @@
          dcomplex k1, k2, k3; // the 3 derivative values
          Matrix3d A, A_tran, A_dag, A_conj;
          Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
-         dcomplex Aajk, Aakj, Aajj, Aakk;
+         dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
          MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
+         Bound_Cond temp_bc_j, temp_bc_k;
 
          // loop through all OP's in the mesh
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
@@ -327,9 +328,8 @@
                A_dag = A.adjoint();
 
                k1 = 0., k2 = 0., k3 = 0.; // start them all at 0 for each OP
-
-               // if we're not at a boundary,
-               if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1)
+               
+               if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1) // if we're not at a boundary,
                {
                   // get all the needed neighbors of A
                   A_prev_x = op_matrix(n_v,n_u-1);
@@ -368,80 +368,97 @@
                            k1 += abs2(Aajk);
                            k2 += conj(Aajj)*Aakk;
                            k3 += conj(Aajk)*Aakj;
+
+                           // reset
+                           Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
                         } // for k
                      } // for j
                   } // for a
-
-                  // add them all together to get the gradient term for this OP
-                  f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
-
                } // if not @ bd
                else { // we're at a boundary
-                  // get all the needed neighbors of A, but modify them if at a boundary.
-                  // Right now, we only use a step of h, so it is less stable...is
-                  //    there a way to work around that?
-                  if (!n_u) { // if at left...
-                     A_prev_x = op_matrix(n_v,n_u);
-                     A_next_x = op_matrix(n_v,n_u+1);
-                  }
-                  if (n_u == cond.SIZEu-1) { // if at right...
-                     A_next_x = op_matrix(n_v,n_u);
-                     A_prev_x = op_matrix(n_v,n_u-1);
-                  }
-                  if (!n_v) { // if at bottom...
-                     A_prev_z = op_matrix(n_v,n_u);
-                     A_next_z = op_matrix(n_v+1,n_u);
-                  }
-                  if (n_v == cond.SIZEv-1) { // if at top...
-                     A_next_z = op_matrix(n_v,n_u);
-                     A_prev_z = op_matrix(n_v-1,n_u);
-                  }
 
                   // calculate the gradient at each point:
                   //   loop through the OP at the point
-                  for (int a = 0; a < 3; a++) {       // spin index
-                     for (int j = 0; j < 3; j++) {    // orbital/derivative index
-                        for (int k = 0; k < 3; k++) { // orbital/derivative index
+                  for (int a = 0; a < 3; a++) {    // spin index
+                     for (int j = 0; j < 3; j++) { // orbital/derivative index
+                        if (j == 0) temp_bc_j = Axx; // choose BC for the j index
+                        if (j == 1) temp_bc_j = Ayy;
+                        if (j == 2) temp_bc_j = Azz;
 
-                           if (j ==0) { // x-derivative
-                              Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                              Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                        for (int k = 0; k < 3; k++) { // orbital/derivative index
+                           if (k == 0) temp_bc_k = Axx; // choose BC for the k index
+                           if (k == 1) temp_bc_k = Ayy;
+                           if (k == 2) temp_bc_k = Azz;
+
+                           // Right now, we only use a step of h, so it is less stable...
+                           //    is there a way to work around that?
+                           // use BC values to calculate the gradient terms
+                           if (j == 0) { // x-derivative
+                              if (temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
+                              if (temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
+                              if (temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
+                              if (temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
+
+                              if (temp_bc_j.typeL == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeL == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (temp_bc_j.typeR == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeR == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
                            }
-                           // if (j ==1) // y-derivative
-                           if (j ==2) { // z-derivative
-                              Aajj = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
-                              Aakj = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                           // if (j == 1) // y derivative
+                           if (j == 2) { // z-derivative
+                              if (temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
+                              if (temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
+                              if (temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
+                              if (temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
+
+                              if (temp_bc_j.typeB == string("Dirichlet")) Aajj = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeB == string("Dirichlet")) Aakj = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (temp_bc_j.typeT == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeT == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
                            }
 
                            if (k == 0) { // x-derivative
-                              Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                              Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                              if (temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
+                              if (temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
+                              if (temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
+                              if (temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
+
+                              if (temp_bc_j.typeL == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeL == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (temp_bc_j.typeR == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeR == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
                            }
-                           // if (k == 1) // y-derivative
+                           // if (k == 1) // y derivative
                            if (k == 2) { // z-derivative
-                              Aajk = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
-                              Aakk = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                              if (temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
+                              if (temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
+                              if (temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
+                              if (temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
+
+                              if (temp_bc_j.typeB == string("Dirichlet")) Aajk = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeB == string("Dirichlet")) Aakk = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (temp_bc_j.typeT == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
+                              if (temp_bc_k.typeT == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
                            }
 
                            k1 += abs2(Aajk);
                            k2 += conj(Aajj)*Aakk;
                            k3 += conj(Aajk)*Aakj;
+
+                           // reset
+                           Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
                         } // for k
                      } // for j
                   } // for a
-
-                  f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
                }
+
+               // add them all together to get the gradient term for this OP
+               f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
                
                f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
                //
             }
          }
-
-         // // calculate the first step
-         // f_bulk = F_Bulk(0);
-         // f_grad = F_Grad(0,1);
-         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
 
          // for (int i = 1; i <= size-2; i++)
          // {
@@ -456,16 +473,11 @@
          //    integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
          // }
 
-         // // calculate the last step
-         // f_bulk = F_Bulk(size-1);
-         // f_grad = F_Grad(size-2,size-1);
-         // I += ( f_bulk + f_grad - 1. )*cond.STEP;
-
          // // save the integrand vector to plot and inspect
          // WriteToFile(integ,"integrand.txt"); // using the non-member function
 
          // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
-         if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
+         if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero:" << I.imag() << endl;
 
          return I.real();
       }
