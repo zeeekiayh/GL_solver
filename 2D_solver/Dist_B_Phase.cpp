@@ -36,7 +36,7 @@ int main()
     VectorXd solution = gls.getSolution();
     gls.WriteToFile(solution,"data.txt");
 
-    //* Complex-valued GL solver
+    /* Complex-valued GL solver
     VectorXcd guess_cplx;
     Three_Component_GL_Solver<VectorXcd,dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
     cout << endl << endl << "Initialized complex GL Solver" << endl;
