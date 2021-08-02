@@ -113,6 +113,13 @@
                      // the Axx or Ayy: parallel
                      else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
+                     // auto A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
+                     // auto A_tran = A.transpose();
+                     // auto A_conj = A.conjugate();
+                     // auto A_dag = A.adjoint();
+
+                     // val = 2.*gl.B1*(A*A_tran).trace()*A(vi,vi) + 2.*gl.B2*(A*A_dag).trace()*A(vi,vi) + 2.*gl.B3*(A*A_tran*A_conj)(vi,vi) + 2.*gl.B4*(A*A_dag*A)(vi,vi) + 2.*gl.B5*(A_conj*A_tran*A)(vi,vi) + gl.alpha*(A*A_dag).trace();
+
                      val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                   }
 
@@ -286,6 +293,12 @@
          else cout << "Unable to open file:" << boundary_conditions_file << endl;
       }
       
+      // Scalar_type f_bulk();
+      dcomplex F_Grad(int a, int j, int k)
+      {
+         //
+      }
+
       double free_energy()
       {
          if (!solution.size())
@@ -294,14 +307,86 @@
             return 0.;
          }
 
-         complex<double> I = 0; // start the integral sum at 0
-         complex<double> f_bulk, f_bulk_prev = 0.;
-         complex<double> f_grad, f_grad_prev = 0.;
+         dcomplex I = 0; // start the integral sum at 0
+         dcomplex f_bulk, f_bulk_prev = 0., f_bulk_next = 0.;
+         dcomplex f_grad, f_grad_prev = 0., f_grad_next = 0.;
+         dcomplex k1, k2, k3; // the 3 derivative values
+         Matrix3d A, A_tran, A_dag, A_conj;
+         Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
+         dcomplex Aajk, Aakj, Aajj, Aakk;
          MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
 
          // loop through all OP's in the mesh
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+
+               A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
+               A_tran = A.transpose();
+               A_conj = A.conjugate();
+               A_dag = A.adjoint();
+
+               // if we're not at a boundary,
+               if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1)
+               {
+                  A_prev_x = op_matrix(n_v,n_u-1);
+                  A_next_x = op_matrix(n_v,n_u+1);
+                  A_prev_z = op_matrix(n_v-1,n_u);
+                  A_next_z = op_matrix(n_v+1,n_u);
+
+                  k1 = 0., k2 = 0., k3 = 0.;
+
+                  // calculate the gradient at each point:
+                  //   loop through the OP at the point
+                  for (int a = 0; a < 3; a++) {       // spin index
+                     for (int j = 0; j < 3; j++) {    // orbital/derivative index
+                        for (int k = 0; k < 3; k++) { // orbital/derivative index
+                           // ... p. 57
+                           // f_grad = gl.K1*(().conjugate());
+                           
+
+                           switch (j) {
+                              case 0:
+                                 // x-derivative
+                                 Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                                 Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                                 break;
+                              // case 1:
+                              //    // y-derivative
+                              //    k2 = 0.; k3 = 0.;
+                              //    break;
+                              case 2:
+                                 // z-derivative
+                                 break;
+                              default:
+                                 k1 = 0.; k2 = 0.; k3 = 0.;
+                                 break;
+                           }
+                           switch (k) {
+                              case 0:
+                                 // x-derivative
+                                 Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
+                                 Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                                 break;
+                              // case 1:
+                              //    // y-derivative
+                              //    k2 = 0.; k3 = 0.;
+                              //    break;
+                              case 2:
+                                 // z-derivative
+                                 break;
+                              default:
+                                 k1 = 0.; k2 = 0.; k3 = 0.;
+                                 break;
+                           }
+
+                           
+                        }
+                     }
+                  }
+
+               } // if not @ bd
+               
+               f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
                //
             }
          }
@@ -332,7 +417,7 @@
          // // save the integrand vector to plot and inspect
          // WriteToFile(integ,"integrand.txt"); // using the non-member function
 
-         cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
+         // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
          if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
 
          return I.real();
