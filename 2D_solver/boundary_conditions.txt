@@ -5,17 +5,17 @@ type:      Dirichlet OR Neumann
    3
 
 #Axx bTop
-   1e10
-   Neumann
+   1
+   Dirichlet
 #Axx bBott
-   10
+   1e10
    Neumann
 
 #Ayy bTop
-   1e10
-   Neumann
+   1
+   Dirichlet
 #Ayy bBott
-   10
+   1e10
    Neumann
 
 #Azz bTop
