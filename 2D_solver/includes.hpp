@@ -107,6 +107,14 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       Three_ComponentOrderParam() {}
       Three_ComponentOrderParam(int n) { this->initialize(n); }
 
+      Three_ComponentOrderParam& operator=(Three_ComponentOrderParam& rhs)
+      {
+         this->OP = rhs.OP;
+         this->num_comp = rhs.num_comp;
+
+         return *this;
+      }
+
       void initialize(int n)
       {
          this->num_comp = n;

@@ -292,15 +292,10 @@
          }
          else cout << "Unable to open file:" << boundary_conditions_file << endl;
       }
-      
-      // Scalar_type f_bulk();
-      dcomplex F_Grad(int a, int j, int k)
-      {
-         //
-      }
 
       double free_energy()
       {
+         cout << "free-energy..." << endl;
          if (!solution.size())
          {
             cout << "ERROR: cannot calculate free-energy without a solution." << endl;
@@ -308,14 +303,20 @@
          }
 
          dcomplex I = 0; // start the integral sum at 0
-         dcomplex f_bulk, f_bulk_prev = 0., f_bulk_next = 0.;
-         dcomplex f_grad, f_grad_prev = 0., f_grad_next = 0.;
+         dcomplex f_bulk, f_bulk_prev = 0.;
+         dcomplex f_grad, f_grad_prev = 0.;
          dcomplex k1, k2, k3; // the 3 derivative values
          Matrix3d A, A_tran, A_dag, A_conj;
+
          Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
+         cout << "initialized" << endl;
+
          dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
-         MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
+         // MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
          Bound_Cond temp_bc_j, temp_bc_k;
+         int cts = 0;
+
+         cout << "starting loops..." << endl;
 
          // loop through all OP's in the mesh
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
@@ -394,51 +395,51 @@
                            //    is there a way to work around that?
                            // use BC values to calculate the gradient terms
                            if (j == 0) { // x-derivative
-                              if (temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
-                              if (temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
-                              if (temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
-                              if (temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
+                              if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
+                              if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
+                              if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
+                              if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
 
-                              if (temp_bc_j.typeL == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeL == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
-                              if (temp_bc_j.typeR == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeR == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
+                              if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
+                              if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
                            }
                            // if (j == 1) // y derivative
                            if (j == 2) { // z-derivative
-                              if (temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
-                              if (temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
-                              if (temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
-                              if (temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
+                              if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
+                              if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
+                              if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
+                              if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
 
-                              if (temp_bc_j.typeB == string("Dirichlet")) Aajj = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeB == string("Dirichlet")) Aakj = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
-                              if (temp_bc_j.typeT == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeT == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
+                              if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajj = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakj = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
+                              if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
                            }
 
                            if (k == 0) { // x-derivative
-                              if (temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
-                              if (temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
-                              if (temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
-                              if (temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
+                              if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
+                              if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
+                              if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
+                              if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
 
-                              if (temp_bc_j.typeL == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeL == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
-                              if (temp_bc_j.typeR == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeR == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
+                              if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/(cond.STEP*2);
+                              if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/(cond.STEP*2);
                            }
                            // if (k == 1) // y derivative
                            if (k == 2) { // z-derivative
-                              if (temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
-                              if (temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
-                              if (temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
-                              if (temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
+                              if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
+                              if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
+                              if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
+                              if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
 
-                              if (temp_bc_j.typeB == string("Dirichlet")) Aajk = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeB == string("Dirichlet")) Aakk = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
-                              if (temp_bc_j.typeT == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
-                              if (temp_bc_k.typeT == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
+                              if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajk = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/(cond.STEP*2);
+                              if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakk = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/(cond.STEP*2);
+                              if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/(cond.STEP*2);
+                              if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/(cond.STEP*2);
                            }
 
                            k1 += abs2(Aajk);
@@ -456,7 +457,14 @@
                f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
                
                f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
-               //
+               
+               // if (cts) 
+               I += ( (f_bulk + f_grad)/2. - 1. )*cond.STEP;
+
+               // f_bulk_prev = f_bulk;
+               // f_grad_prev = f_grad;
+
+               cts++;
             }
          }
 
