@@ -3,3 +3,4 @@ g++ Dist_B_Phase.cpp
 ./a.out
 ./points_plot.py
 ./cplx_points_plot.py
+./integrand_plot.py

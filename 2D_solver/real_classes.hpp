@@ -307,6 +307,7 @@
          dcomplex f_grad, f_grad_prev = 0.;
          dcomplex k1, k2, k3; // the 3 derivative values
          Matrix3d A, A_tran, A_dag, A_conj;
+         VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
 
          Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
          cout << "initialized" << endl;
@@ -319,8 +320,8 @@
          cout << "starting loops..." << endl;
 
          // loop through all OP's in the mesh
-         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+         for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+            for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
 
                // calculate all the needed forms of A
                A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
@@ -459,13 +460,14 @@
                f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
                
                // if (cts) 
-               I += ( (f_bulk + f_grad)/2. - 1. )*cond.STEP;
+               I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
 
                // f_bulk_prev = f_bulk;
                // f_grad_prev = f_grad;
 
                cts++;
             }
+            I_vals(n_v) = I.real();
          }
 
          // for (int i = 1; i <= size-2; i++)
@@ -481,8 +483,8 @@
          //    integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
          // }
 
-         // // save the integrand vector to plot and inspect
-         // WriteToFile(integ,"integrand.txt"); // using the non-member function
+         // save the integrand vector to plot and inspect
+         WriteToFile_single_vector(I_vals,"integrand.txt");
 
          // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
          if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero:" << I.imag() << endl;
@@ -514,6 +516,19 @@
 
                   data << line << endl;
                }
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
+      }
+
+      void WriteToFile_single_vector(VectorXd& vec, string file_name)
+      {
+         std::ofstream data (file_name);
+         if (data.is_open()) {
+            for (int i = 0; i < vec.size(); i++) {
+               string line = to_string(i*cond.STEP) + string("\t"); // add the position component
+               line += to_string(vec(i)); // add the component of the vector
+               data << line << endl;
             }
          }
          else cout << "Unable to open file: " << file_name << endl;
