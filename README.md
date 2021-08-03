@@ -12,6 +12,6 @@ Should include:
 
 Brainstorming:
  - What did we want to accomplish?
-  - We wanted to see if we could explain why the "polka-dot" phase appeared (in the experiment by Levitin et. al, 2019) when the stripped phase was predicted (by Vorontsov and Sauls).
+      - We wanted to see if we could explain why the "polka-dot" phase appeared (in the experiment by Levitin et. al, 2019) when the stripped phase was predicted (by Vorontsov and Sauls).
  - What did I do?
-  - I solved the Ginsburg-Landau Equations for Helium-3 
+      - I solved the Ginsburg-Landau Equations for Helium-3 
