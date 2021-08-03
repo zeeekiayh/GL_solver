@@ -6,7 +6,7 @@ begins with "#". All other text will be ignored.
    acceleration
    method can be "relaxation" or "acceleration"
 #SIZE
-   300 300
+   200 300
    the length, or number of points in each direction
 #ACCUR
    1e-6
