@@ -459,29 +459,13 @@
                
                f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
                
-               // if (cts) 
+               // 
                I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
-
-               // f_bulk_prev = f_bulk;
-               // f_grad_prev = f_grad;
 
                cts++;
             }
             I_vals(n_v) = I.real();
          }
-
-         // for (int i = 1; i <= size-2; i++)
-         // {
-         //    // set the previous values
-         //    f_bulk_prev = f_bulk;
-         //    f_grad_prev = f_grad;
-         //    f_bulk = F_Bulk(i);
-         //    // calculate the gradient term
-         //    f_grad = F_Grad(i-1,i+1);
-         //    // use a rectangular integral approximation, centered at the midpoints
-         //    I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
-         //    integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
-         // }
 
          // save the integrand vector to plot and inspect
          WriteToFile_single_vector(I_vals,"integrand.txt");
