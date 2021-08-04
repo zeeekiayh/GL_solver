@@ -1,7 +1,10 @@
-# GL_solver
+# Ginzburg-Landau equation solver
 
-Using FEM to solve the GL equations.
-I am open for any suggestions and help.
+Using FEM to solve the GL equations. I am open for any suggestions and help.
+
+#### Abstract
+
+The Ginzburg-Landau (GL) theory is often used to determine the stability of superfluid phases. We are interested in some phases of He-3 that that are manifest in confined geometries. We design and implement the finite element method to solve the coupled differential equations derived from the GL theory. We discuss methods for handling boundary conditions, building the matrix equation, and methods of relaxation.
 
 #### Ideas for presentation:
 
