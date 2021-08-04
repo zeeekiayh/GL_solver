@@ -19,5 +19,5 @@ step   = conditions[2][0]
 
 data = np.loadtxt('integrand.txt')
 
-plt.plot(np.linspace(0,step*size_z,len(data)),data)
+plt.plot(data[:,0],data[:,1])
 plt.show()

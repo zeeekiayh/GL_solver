@@ -295,13 +295,13 @@
 
       double free_energy()
       {
-         cout << "free-energy..." << endl;
          if (!solution.size())
          {
             cout << "ERROR: cannot calculate free-energy without a solution." << endl;
             return 0.;
          }
 
+         double beta_B = 3.*(gl.B1+gl.B2) + 6.*(gl.B3+gl.B4+gl.B5);
          dcomplex I = 0; // start the integral sum at 0
          dcomplex f_bulk, f_bulk_prev = 0.;
          dcomplex f_grad, f_grad_prev = 0.;
@@ -310,14 +310,11 @@
          VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
 
          Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
-         cout << "initialized" << endl;
 
          dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
          // MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
          Bound_Cond temp_bc_j, temp_bc_k;
          int cts = 0;
-
-         cout << "starting loops..." << endl;
 
          // loop through all OP's in the mesh
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -455,9 +452,18 @@
                }
 
                // add them all together to get the gradient term for this OP
-               f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
+               f_grad = k1 + k2 + k3;
+               // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
                
-               f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
+               // this value is not normalized, while the values put into here have been...this can only be used if the GL equations we solve are not normalized
+               // f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
+               
+               f_bulk = (gl.B1*abs2((A * A_tran).trace())
+                        +gl.B2*pow( (A * A_dag).trace(), 2)
+                        +gl.B3*(A * A_tran * A_conj * A_dag).trace()
+                        +gl.B4*(A * A_dag * A * A_dag).trace()
+                        +gl.B5*(A * A_dag * A_conj * A_tran).trace()
+                        )/beta_B + (A * A_dag).trace();
                
                // 
                I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
@@ -510,8 +516,7 @@
          std::ofstream data (file_name);
          if (data.is_open()) {
             for (int i = 0; i < vec.size(); i++) {
-               string line = to_string(i*cond.STEP) + string("\t"); // add the position component
-               line += to_string(vec(i)); // add the component of the vector
+               string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i));
                data << line << endl;
             }
          }
