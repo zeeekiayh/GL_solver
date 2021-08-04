@@ -32,7 +32,8 @@ def unFlatten(arr):
          row_number += 1 # we go to the next row
          col_number = -1 # and reset the column number
       col_number += 1
-      new_arr[row_number][col_number] = a # add the element to the 2D array
+      if row_number < size_y and col_number < size_x:
+         new_arr[row_number][col_number] = a # add the element to the 2D array
       
    return new_arr
       

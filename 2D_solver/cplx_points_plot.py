@@ -32,12 +32,12 @@ def unFlatten(arr):
          row_number += 1 # we go to the next row
          col_number = -1 # and reset the column number
       col_number += 1
-      new_arr[row_number][col_number] = a # add the element to the 2D array
+      if row_number < size_y and col_number < size_x:
+         new_arr[row_number][col_number] = a # add the element to the 2D array
       
    return new_arr
       
 data = np.loadtxt('cplx_data.txt')
-# data = np.loadtxt('test_solution.txt')
 
 # axes ranges/extent for imshow()
 ext = [min(data[:,0]),max(data[:,0]),max(data[:,1]),min(data[:,1])]
@@ -53,7 +53,7 @@ im1=plt.imshow(Axx_real,vmin=0,extent=ext)
 plt.xlabel(r'$x/\xi_{||}$ (top)')
 plt.ylabel(r'$z/\xi_\perp$ (right)')
 ax1.set_title("Axx real")
-cbar_ax = fig.add_axes([0.62,0.67,0.02,0.22])
+cbar_ax = fig.add_axes([0.63,0.67,0.02,0.22])
 fig.colorbar(im1,cax=cbar_ax)
 
 # Axx:     cplx
@@ -75,7 +75,7 @@ im2=plt.imshow(Ayy_real,vmin=0,extent=ext)
 plt.xlabel(r'$x/\xi_{||}$ (top)')
 plt.ylabel(r'$z/\xi_\perp$ (right)')
 ax2.set_title("Ayy (Axx) real")
-cbar_ax = fig.add_axes([0.62,0.38,0.02,0.22])
+cbar_ax = fig.add_axes([0.63,0.38,0.02,0.22])
 fig.colorbar(im2,cax=cbar_ax)
 
 # Ayy:     cplx
@@ -97,7 +97,7 @@ im3=plt.imshow(Azz_real,vmin=0,extent=ext)
 plt.xlabel(r'$x/\xi_{||}$ (top)')
 plt.ylabel(r'$z/\xi_\perp$ (right)')
 ax3.set_title("Azz real")
-cbar_ax = fig.add_axes([0.62,0.1,0.02,0.22])
+cbar_ax = fig.add_axes([0.63,0.1,0.02,0.22])
 fig.colorbar(im3,cax=cbar_ax)
 
 # Azz:     cplx

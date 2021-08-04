@@ -6,7 +6,7 @@ begins with "#". All other text will be ignored.
    acceleration
    method can be "relaxation" or "acceleration"
 #SIZE
-   200 300
+   300 300
    the length, or number of points in each direction
 #ACCUR
    1e-6
@@ -18,7 +18,7 @@ begins with "#". All other text will be ignored.
    200
    the maximum number of loops allowed
 #rel_p
-   0.005
+   0.01
    the relaxation parameter
 #maxStore
    7
