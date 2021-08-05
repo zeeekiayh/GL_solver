@@ -302,17 +302,15 @@
          }
 
          double beta_B = 3.*(gl.B1+gl.B2) + 6.*(gl.B3+gl.B4+gl.B5);
-         dcomplex I = 0; // start the integral sum at 0
+         dcomplex I = 0.; // start the integral sum at 0
          dcomplex f_bulk, f_bulk_prev = 0.;
          dcomplex f_grad, f_grad_prev = 0.;
          dcomplex k1, k2, k3; // the 3 derivative values
          Matrix3d A, A_tran, A_dag, A_conj;
          VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
-
+         VectorXcd I_bulk(size), I_grad(size);
          Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
-
          dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
-         // MatrixXd integ(size - 2, size - 2); // value of the integral over the mesh
          Bound_Cond temp_bc_j, temp_bc_k;
          int cts = 0;
 
@@ -453,7 +451,8 @@
 
                // add them all together to get the gradient term for this OP
                f_grad = k1 + k2 + k3;
-               // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3;
+               // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3; // the general way
+               I_grad(ID(size,n_u,cond.SIZEu,n_v,0)) = f_grad;
                
                // this value is not normalized, while the values put into here have been...this can only be used if the GL equations we solve are not normalized
                // f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
@@ -464,7 +463,8 @@
                         +gl.B4*(A * A_dag * A * A_dag).trace()
                         +gl.B5*(A * A_dag * A_conj * A_tran).trace()
                         )/beta_B + (A * A_dag).trace();
-               
+               I_bulk(ID(size,n_u,cond.SIZEu,n_v,0)) = f_bulk;
+
                // 
                I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
 
@@ -475,6 +475,8 @@
 
          // save the integrand vector to plot and inspect
          WriteToFile_single_vector(I_vals,"integrand.txt");
+         WriteToFile_single_vector(I_bulk,"integ_bulk.txt");
+         WriteToFile_single_vector(I_grad,"integ_grad.txt");
 
          // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
          if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero:" << I.imag() << endl;
@@ -517,6 +519,17 @@
          if (data.is_open()) {
             for (int i = 0; i < vec.size(); i++) {
                string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i));
+               data << line << endl;
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
+      }
+      void WriteToFile_single_vector(VectorXcd& vec, string file_name)
+      {
+         std::ofstream data (file_name);
+         if (data.is_open()) {
+            for (int i = 0; i < vec.size(); i++) {
+               string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i).real()) + string("\t") + to_string(vec(i).imag());
                data << line << endl;
             }
          }

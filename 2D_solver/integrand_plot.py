@@ -20,4 +20,20 @@ step   = conditions[2][0]
 data = np.loadtxt('integrand.txt')
 
 plt.plot(data[:,0],data[:,1])
+plt.title('total integrand')
+plt.show()
+
+integrand_bulk = np.loadtxt("integ_bulk.txt")
+integrand_grad = np.loadtxt('integ_grad.txt')
+integ_bulk_real = integrand_bulk[:,1]
+integ_bulk_comp = integrand_bulk[:,2]
+integ_grad_real = integrand_grad[:,1]
+integ_grad_comp = integrand_grad[:,2]
+
+plt.clf()
+plt.plot(integ_bulk_real,label='bulk real')
+plt.plot(integ_bulk_comp,label='bulk comp')
+plt.plot(integ_grad_real,label='grad real')
+plt.plot(integ_grad_comp,label='grad comp')
+plt.legend()
 plt.show()
