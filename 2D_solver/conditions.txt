@@ -18,7 +18,7 @@ begins with "#". All other text will be ignored.
    200
    the maximum number of loops allowed
 #rel_p
-   0.01
+   0.006
    the relaxation parameter
 #maxStore
    7

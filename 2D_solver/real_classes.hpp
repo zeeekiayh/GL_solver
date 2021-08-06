@@ -343,23 +343,23 @@
                            // calculate the derivatives depending on the index.
                            // divide by h^2 later for nicer code.
                            if (j ==0) { // x-derivative
-                              Aajj = (A_next_x(j) - A_prev_x(j));
-                              Aakj = (A_next_x(k) - A_prev_x(k));
+                              Aajj = (A_next_x(j) - A_prev_x(j))/cond.STEP*2;
+                              Aakj = (A_next_x(k) - A_prev_x(k))/cond.STEP*2;
                            }
                            // if (j ==1) // y-derivative
                            if (j ==2) { // z-derivative
-                              Aajj = (A_next_z(j) - A_prev_z(j));
-                              Aakj = (A_next_z(k) - A_prev_z(k));
+                              Aajj = (A_next_z(j) - A_prev_z(j))/cond.STEP*2;
+                              Aakj = (A_next_z(k) - A_prev_z(k))/cond.STEP*2;
                            }
 
                            if (k == 0) { // x-derivative
-                              Aajk = (A_next_x(j) - A_prev_x(j));
-                              Aakk = (A_next_x(k) - A_prev_x(k));
+                              Aajk = (A_next_x(j) - A_prev_x(j))/cond.STEP*2;
+                              Aakk = (A_next_x(k) - A_prev_x(k))/cond.STEP*2;
                            }
                            // if (k == 1) // y-derivative
                            if (k == 2) { // z-derivative
-                              Aajk = (A_next_z(j) - A_prev_z(j));
-                              Aakk = (A_next_z(k) - A_prev_z(k));
+                              Aajk = (A_next_z(j) - A_prev_z(j))/cond.STEP*2;
+                              Aakk = (A_next_z(k) - A_prev_z(k))/cond.STEP*2;
                            }
 
                            // sum up over the indexes
@@ -451,7 +451,7 @@
                }
 
                // add them all together to get the gradient term for this OP
-               f_grad = (k1 + k2 + k3)/pow(cond.STEP*2,2);
+               f_grad = -2./3.*(k1 + k2 + k3);
                // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3; // the general way
                I_grad(ID(size,n_u,cond.SIZEu,n_v,0)) = f_grad;
                
@@ -463,7 +463,7 @@
                         +gl.B3*(A * A_tran * A_conj * A_dag).trace()
                         +gl.B4*(A * A_dag * A * A_dag).trace()
                         +gl.B5*(A * A_dag * A_conj * A_tran).trace()
-                        )/beta_B + (A * A_dag).trace();
+                        )*-1./(beta_B*9) + 2./3.*(A * A_dag).trace();
                I_bulk(ID(size,n_u,cond.SIZEu,n_v,0)) = f_bulk;
 
                // 
