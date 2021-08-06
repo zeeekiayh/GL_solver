@@ -301,7 +301,7 @@
             return 0.;
          }
 
-         double beta_B = 3.*(gl.B1+gl.B2) + 6.*(gl.B3+gl.B4+gl.B5);
+         double beta_B = 6.*(gl.B1+gl.B2) + 2.*(gl.B3+gl.B4+gl.B5);
          dcomplex I = 0.; // start the integral sum at 0
          dcomplex f_bulk, f_bulk_prev = 0.;
          dcomplex f_grad, f_grad_prev = 0.;
@@ -340,25 +340,26 @@
                      for (int j = 0; j < 3; j++) {    // orbital/derivative index
                         for (int k = 0; k < 3; k++) { // orbital/derivative index
 
-                           // calculate the derivatives depending on the index
+                           // calculate the derivatives depending on the index.
+                           // divide by h^2 later for nicer code.
                            if (j ==0) { // x-derivative
-                              Aajj = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                              Aakj = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                              Aajj = (A_next_x(j) - A_prev_x(j));
+                              Aakj = (A_next_x(k) - A_prev_x(k));
                            }
                            // if (j ==1) // y-derivative
                            if (j ==2) { // z-derivative
-                              Aajj = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
-                              Aakj = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                              Aajj = (A_next_z(j) - A_prev_z(j));
+                              Aakj = (A_next_z(k) - A_prev_z(k));
                            }
 
                            if (k == 0) { // x-derivative
-                              Aajk = (A_next_x(j) - A_prev_x(j))/(cond.STEP*2);
-                              Aakk = (A_next_x(k) - A_prev_x(k))/(cond.STEP*2);
+                              Aajk = (A_next_x(j) - A_prev_x(j));
+                              Aakk = (A_next_x(k) - A_prev_x(k));
                            }
                            // if (k == 1) // y-derivative
                            if (k == 2) { // z-derivative
-                              Aajk = (A_next_z(j) - A_prev_z(j))/(cond.STEP*2);
-                              Aakk = (A_next_z(k) - A_prev_z(k))/(cond.STEP*2);
+                              Aajk = (A_next_z(j) - A_prev_z(j));
+                              Aakk = (A_next_z(k) - A_prev_z(k));
                            }
 
                            // sum up over the indexes
@@ -450,7 +451,7 @@
                }
 
                // add them all together to get the gradient term for this OP
-               f_grad = k1 + k2 + k3;
+               f_grad = (k1 + k2 + k3)/pow(cond.STEP*2,2);
                // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3; // the general way
                I_grad(ID(size,n_u,cond.SIZEu,n_v,0)) = f_grad;
                
