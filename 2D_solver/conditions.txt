@@ -24,7 +24,7 @@ begins with "#". All other text will be ignored.
    7
    the maximum number of previous vectors to be stored in the acceleration method
 #wait
-   5
+   1
    the number of iterations to wait before applying the acceleration
       it will be using normal relaxation until then
 #update

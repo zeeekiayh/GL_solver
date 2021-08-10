@@ -1,5 +1,5 @@
 clear
-g++ Dist_B_Phase.cpp
+g++ Dist_B_Phase.cpp -O3
 ./a.out
 ./points_plot.py
 ./cplx_points_plot.py

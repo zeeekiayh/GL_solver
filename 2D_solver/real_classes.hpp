@@ -77,8 +77,9 @@
          return solver_mat;
       }
       
-      VectorXd RHS_He3Defect()
+      VectorXd RHS_He3Defect(VectorXd& new_guess)
       {
+         update_OP_Matrix(new_guess); // make sure the op matrix is up-to-date
          int cts = 0;
          Matrix3d op, op_T, op_dag, op_conj;
          VectorXd rhs(op_vector.size());
@@ -133,15 +134,17 @@
 
       // given the next guess, update the op at all points on the mesh
       //   and make it available in it's vector form.
-      void updateMatrix(VectorXd& new_guess)
+      void update_OP_Matrix(VectorXd& new_guess)
       {
          int sz = cond.SIZEu*cond.SIZEv;
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-               Matrix3d op;
-               op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     0.,
-                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)), 0.,
-                     0.,                                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2));
+               // Matrix3d op;
+               // op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     0.,
+               //       0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)), 0.,
+               //       0.,                                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2));
+               VectorXd op(3);
+               op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)), new_guess(ID(sz,n_u,cond.SIZEu,n_v,2));
                op_matrix(n_v,n_u).Set_OP(op);
             }
          }
@@ -177,11 +180,9 @@
          auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
          cout << "\ttime: " << elapsed.count() << " seconds." << endl << endl;
 
-         // updateMatrix(f); // prepare the matrix for RHS
-
          int cts = 0; // count loops
          double err;  // to store current error
-         VectorXd rhs = RHS_He3Defect(); // the right hand side
+         VectorXd rhs = RHS_He3Defect(f); // the right hand side
 
          // the acceleration object
          converg_acceler<VectorXd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
@@ -199,8 +200,7 @@
             }
             else { cout << "ERROR: Unknown method type given." << endl; return; }
 
-            // updateMatrix(f);       // update the matrix for RHS
-            rhs = RHS_He3Defect(); // update rhs
+            rhs = RHS_He3Defect(f);// update rhs
             cts++;                 // increment counter
 
             // for debugging: to see if the solution is oscillating rather than converging

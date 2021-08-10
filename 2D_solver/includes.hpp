@@ -120,6 +120,16 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          this->num_comp = n;
          if (this->num_comp > 1) OP.resize(this->num_comp);
       }
+
+      void Set_OP(Matrix<Scalar_type,-1,1> op)
+      {
+         if (op.rows() != this->num_comp)
+         {
+            cout << "ERROR: vector given to Set_OP is not the correct size." << endl;
+            return;
+         }
+         this->OP = op;
+      }
       
       // get the op components into a vector form from a 3x3 matrix
       void Set_OP(Matrix<Scalar_type,3,3> op)
