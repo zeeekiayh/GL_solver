@@ -174,6 +174,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
                   +gl.B5*(A * A_dag * A_conj * A_tran).trace()
                   )/(Beta_B * 9.)
                   +2./3.*(A * A_dag).trace();
+         // TODO: return just the real part...
       }
    };
 
