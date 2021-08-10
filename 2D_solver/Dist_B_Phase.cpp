@@ -36,12 +36,12 @@ int main()
     VectorXd solution = gls.getSolution();
     gls.WriteToFile(solution,"data.txt");
 
-    cout << "free-energy: " << gls.free_energy() << endl;
+    cout << "free-energy: " << gls.free_energy() << endl << endl << endl;
 
-    /* Complex-valued GL solver
+    //* Complex-valued GL solver
     VectorXcd guess_cplx;
     Three_Component_GL_Solver<VectorXcd,dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
-    cout << endl << endl << "Initialized complex GL Solver" << endl;
+    cout << "Initialized complex GL Solver" << endl;
 
     // start timing
     start = std::chrono::system_clock::now();

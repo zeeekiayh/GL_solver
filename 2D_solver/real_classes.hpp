@@ -61,9 +61,9 @@
          SpMat_d solver_mat(Dv2.rows()*OP_size,Dv2.cols()*OP_size);
 
          // initialize each non-zero 'element'
-         SpMat_d elem_00 = Dv2_BD(Axx,0),
-                 elem_11 = Dv2_BD(Ayy,1),
-                 elem_22 = 3.*Dv2_BD(Azz,2);
+         SpMat_d elem_00 = Dv2_BD(Axx_BC,0),
+                 elem_11 = Dv2_BD(Ayy_BC,1),
+                 elem_22 = 3.*Dv2_BD(Azz_BC,2);
 
          // matrices for placement of each non-zero 'element'
          SpMat_d M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
@@ -89,9 +89,9 @@
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
             // decide which BC to use
-                 if (vi == 0) temp_BC = Axx;
-            else if (vi == 1) temp_BC = Ayy;
-            else if (vi == 2) temp_BC = Azz;
+                 if (vi == 0) temp_BC = Axx_BC;
+            else if (vi == 1) temp_BC = Ayy_BC;
+            else if (vi == 2) temp_BC = Azz_BC;
             else cout << "RHS ERROR: OP index out of bounds." << endl;
 
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -109,9 +109,9 @@
                      auto azz = op_matrix(n_v,n_u)(2);
 
                      // assuming all components are real, so a* = a
-                     // the Azz: perpendicular
+                     // the Azz_BC: perpendicular
                      if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                     // the Axx or Ayy: parallel
+                     // the Axx_BC or Ayy_BC: parallel
                      else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
                      // auto A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
@@ -222,25 +222,25 @@
       // make an educated guess using the boundary conditions
       VectorXd makeGuess(VectorXd& g)
       {
-         if (Axx.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx.bB;
+         if (Axx_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx_BC.bB;
          }
-         if (Axx.typeT == string("Dirichlet")) {
-            for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx.bT;
-         }
-         
-         if (Ayy.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy.bB;
-         }
-         if (Ayy.typeT == string("Dirichlet")) {
-            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy.bT;
+         if (Axx_BC.typeT == string("Dirichlet")) {
+            for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx_BC.bT;
          }
          
-         if (Azz.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz.bB;
+         if (Ayy_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy_BC.bB;
          }
-         if (Azz.typeT == string("Dirichlet")) {
-            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz.bT;
+         if (Ayy_BC.typeT == string("Dirichlet")) {
+            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy_BC.bT;
+         }
+         
+         if (Azz_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz_BC.bB;
+         }
+         if (Azz_BC.typeT == string("Dirichlet")) {
+            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz_BC.bT;
          } return g;
       }
 
@@ -261,29 +261,29 @@
                if (line[0] == '#') {           // any good way for error handling here?
                   string ls = line.substr(1);
                   if (ls == string("Axx bTop")) {
-                     BCs >> Axx.bT;
-                     BCs >> Axx.typeT;
+                     BCs >> Axx_BC.bT;
+                     BCs >> Axx_BC.typeT;
                   } else if (ls == string("Axx bBott")) {
-                     BCs >> Axx.bB;
-                     BCs >> Axx.typeB;
+                     BCs >> Axx_BC.bB;
+                     BCs >> Axx_BC.typeB;
                   }
 
                   // Ayy
                   else if (ls == string("Ayy bTop")) {
-                     BCs >> Ayy.bT;
-                     BCs >> Ayy.typeT;
+                     BCs >> Ayy_BC.bT;
+                     BCs >> Ayy_BC.typeT;
                   } else if (ls == string("Ayy bBott")) {
-                     BCs >> Ayy.bB;
-                     BCs >> Ayy.typeB;
+                     BCs >> Ayy_BC.bB;
+                     BCs >> Ayy_BC.typeB;
                   }
 
                   // Azz
                   else if (ls == string("Azz bTop")) {
-                     BCs >> Azz.bT;
-                     BCs >> Azz.typeT;
+                     BCs >> Azz_BC.bT;
+                     BCs >> Azz_BC.typeT;
                   } else if (ls == string("Azz bBott")) {
-                     BCs >> Azz.bB;
-                     BCs >> Azz.typeB;
+                     BCs >> Azz_BC.bB;
+                     BCs >> Azz_BC.typeB;
                   }
                }
             }
@@ -379,14 +379,14 @@
                   //   loop through the OP at the point
                   for (int a = 0; a < 3; a++) {    // spin index
                      for (int j = 0; j < 3; j++) { // orbital/derivative index
-                        if (j == 0) temp_bc_j = Axx; // choose BC for the j index
-                        if (j == 1) temp_bc_j = Ayy;
-                        if (j == 2) temp_bc_j = Azz;
+                        if (j == 0) temp_bc_j = Axx_BC; // choose BC for the j index
+                        if (j == 1) temp_bc_j = Ayy_BC;
+                        if (j == 2) temp_bc_j = Azz_BC;
 
                         for (int k = 0; k < 3; k++) { // orbital/derivative index
-                           if (k == 0) temp_bc_k = Axx; // choose BC for the k index
-                           if (k == 1) temp_bc_k = Ayy;
-                           if (k == 2) temp_bc_k = Azz;
+                           if (k == 0) temp_bc_k = Axx_BC; // choose BC for the k index
+                           if (k == 1) temp_bc_k = Ayy_BC;
+                           if (k == 2) temp_bc_k = Azz_BC;
 
                            // Right now, we only use a step of h, so it is less stable...
                            //    is there a way to work around that?

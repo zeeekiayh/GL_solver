@@ -96,7 +96,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 // to allow for the specialized class, define a derived template
    template<typename Container_type, typename Scalar_type>
    class Three_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-// This class is specific to the OP form with Axx, Ayy, Azz along the main diagonal
+// This class is specific to the OP form with Axx_BC, Ayy_BC, Azz_BC along the main diagonal
    template<typename Scalar_type>
    class Three_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
    {
@@ -373,7 +373,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       string method; // if Solve will use normal relaxtion or the accelerated
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
-      Bound_Cond Axx,Axz,Ayy,Azx,Azz; // boundary conditions for OP components
+      Bound_Cond Axx_BC,Axz,Ayy_BC,Azx,Azz_BC; // boundary conditions for OP components
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
