@@ -20,7 +20,7 @@
       {
          Build_D_Matrices();
          initialize_OP_matrix();
-         SolverMatrix = SolverMatrix_He3Defect(Dv2);
+         SolverMatrix = BuildSolverMatrix(Dw2);
       }
 
       void initialize_OP_matrix()
@@ -51,7 +51,7 @@
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
-      SpMat_d SolverMatrix_He3Defect(SpMat_d& Dv2)
+      SpMat_d BuildSolverMatrix(SpMat_d& Dv2)
       {
          // to make the code cleaner, define some constants
          double K123 = gl.K1+gl.K2+gl.K3,
@@ -61,9 +61,9 @@
          SpMat_d solver_mat(Dv2.rows()*OP_size,Dv2.cols()*OP_size);
 
          // initialize each non-zero 'element'
-         SpMat_d elem_00 = Dv2_BD(Axx_BC,0),
-                 elem_11 = Dv2_BD(Ayy_BC,1),
-                 elem_22 = 3.*Dv2_BD(Azz_BC,2);
+         SpMat_d elem_00 = Dw2_BD(Auu_BC,0),
+                 elem_11 = Dw2_BD(Aww_BC,1),
+                 elem_22 = 3.*Dw2_BD(Avv_BC,2);
 
          // matrices for placement of each non-zero 'element'
          SpMat_d M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
@@ -89,9 +89,9 @@
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
             // decide which BC to use
-                 if (vi == 0) temp_BC = Axx_BC;
-            else if (vi == 1) temp_BC = Ayy_BC;
-            else if (vi == 2) temp_BC = Azz_BC;
+                 if (vi == 0) temp_BC = Auu_BC;
+            else if (vi == 1) temp_BC = Aww_BC;
+            else if (vi == 2) temp_BC = Avv_BC;
             else cout << "RHS ERROR: OP index out of bounds." << endl;
 
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -109,9 +109,9 @@
                      auto azz = op_matrix(n_v,n_u)(2);
 
                      // assuming all components are real, so a* = a
-                     // the Azz_BC: perpendicular
+                     // the Avv_BC: perpendicular
                      if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                     // the Axx_BC or Ayy_BC: parallel
+                     // the Auu_BC or Aww_BC: parallel
                      else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
                      // auto A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
@@ -222,25 +222,25 @@
       // make an educated guess using the boundary conditions
       VectorXd makeGuess(VectorXd& g)
       {
-         if (Axx_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx_BC.bB;
+         if (Auu_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
          }
-         if (Axx_BC.typeT == string("Dirichlet")) {
-            for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx_BC.bT;
-         }
-         
-         if (Ayy_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy_BC.bB;
-         }
-         if (Ayy_BC.typeT == string("Dirichlet")) {
-            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy_BC.bT;
+         if (Auu_BC.typeT == string("Dirichlet")) {
+            for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
          }
          
-         if (Azz_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz_BC.bB;
+         if (Aww_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Aww_BC.bB;
          }
-         if (Azz_BC.typeT == string("Dirichlet")) {
-            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz_BC.bT;
+         if (Aww_BC.typeT == string("Dirichlet")) {
+            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Aww_BC.bT;
+         }
+         
+         if (Avv_BC.typeB == string("Dirichlet")) {
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Avv_BC.bB;
+         }
+         if (Avv_BC.typeT == string("Dirichlet")) {
+            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Avv_BC.bT;
          } return g;
       }
 
@@ -261,29 +261,29 @@
                if (line[0] == '#') {           // any good way for error handling here?
                   string ls = line.substr(1);
                   if (ls == string("Axx bTop")) {
-                     BCs >> Axx_BC.bT;
-                     BCs >> Axx_BC.typeT;
+                     BCs >> Auu_BC.bT;
+                     BCs >> Auu_BC.typeT;
                   } else if (ls == string("Axx bBott")) {
-                     BCs >> Axx_BC.bB;
-                     BCs >> Axx_BC.typeB;
+                     BCs >> Auu_BC.bB;
+                     BCs >> Auu_BC.typeB;
                   }
 
-                  // Ayy
+                  // Aww
                   else if (ls == string("Ayy bTop")) {
-                     BCs >> Ayy_BC.bT;
-                     BCs >> Ayy_BC.typeT;
+                     BCs >> Aww_BC.bT;
+                     BCs >> Aww_BC.typeT;
                   } else if (ls == string("Ayy bBott")) {
-                     BCs >> Ayy_BC.bB;
-                     BCs >> Ayy_BC.typeB;
+                     BCs >> Aww_BC.bB;
+                     BCs >> Aww_BC.typeB;
                   }
 
-                  // Azz
+                  // Avv
                   else if (ls == string("Azz bTop")) {
-                     BCs >> Azz_BC.bT;
-                     BCs >> Azz_BC.typeT;
+                     BCs >> Avv_BC.bT;
+                     BCs >> Avv_BC.typeT;
                   } else if (ls == string("Azz bBott")) {
-                     BCs >> Azz_BC.bB;
-                     BCs >> Azz_BC.typeB;
+                     BCs >> Avv_BC.bB;
+                     BCs >> Avv_BC.typeB;
                   }
                }
             }
@@ -379,14 +379,14 @@
                   //   loop through the OP at the point
                   for (int a = 0; a < 3; a++) {    // spin index
                      for (int j = 0; j < 3; j++) { // orbital/derivative index
-                        if (j == 0) temp_bc_j = Axx_BC; // choose BC for the j index
-                        if (j == 1) temp_bc_j = Ayy_BC;
-                        if (j == 2) temp_bc_j = Azz_BC;
+                        if (j == 0) temp_bc_j = Auu_BC; // choose BC for the j index
+                        if (j == 1) temp_bc_j = Aww_BC;
+                        if (j == 2) temp_bc_j = Avv_BC;
 
                         for (int k = 0; k < 3; k++) { // orbital/derivative index
-                           if (k == 0) temp_bc_k = Axx_BC; // choose BC for the k index
-                           if (k == 1) temp_bc_k = Ayy_BC;
-                           if (k == 2) temp_bc_k = Azz_BC;
+                           if (k == 0) temp_bc_k = Auu_BC; // choose BC for the k index
+                           if (k == 1) temp_bc_k = Aww_BC;
+                           if (k == 2) temp_bc_k = Avv_BC;
 
                            // Right now, we only use a step of h, so it is less stable...
                            //    is there a way to work around that?
@@ -487,7 +487,7 @@
 
 
       // Write all components of the OP, all into one file, of the form:
-      //             __x__|__y__|_Axx_|_Axy_| ...
+      //             __x__|__y__|_Auu_|_Axy_| ...
       //              ... | ... | ... | ... | ...
       // separates the components from solution...storing real and imag parts ==> up to 18
       void WriteToFile(VectorXd& vec, string file_name)

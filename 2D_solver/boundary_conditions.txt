@@ -24,3 +24,17 @@ type:      Dirichlet OR Neumann
 #Azz bBott
    0
    Dirichlet
+
+#Axz bTop
+   1
+   Dirichlet
+#Axz bBott
+   1e10
+   Neumann
+
+#Azx bTop
+   1
+   Dirichlet
+#Azx bBott
+   1e10
+   Neumann

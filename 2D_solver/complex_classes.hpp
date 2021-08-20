@@ -20,7 +20,7 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
    {
       Build_D_Matrices();
       initialize_OP_matrix();
-      SolverMatrix = SolverMatrix_He3Defect();
+      SolverMatrix = BuildSolverMatrix();
    }
 
    void initialize_OP_matrix()
@@ -51,19 +51,19 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
    }
 
    // User-defined methods to build the solver matrix and the rhs vector
-   SpMat_cd SolverMatrix_He3Defect()
+   SpMat_cd BuildSolverMatrix()
    {
       // to make the code cleaner, define some constants
       double K123 = gl.K1+gl.K2+gl.K3,
-               K23  = gl.K2+gl.K3;
+             K23  = gl.K2+gl.K3;
 
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
 
       // initialize each non-zero 'element'
-      SpMat_cd elem_00 = Dv2_BD(Axx_BC,0);
-      SpMat_cd elem_11 = Dv2_BD(Ayy_BC,1);
-      SpMat_cd elem_22 = 3.*Dv2_BD(Azz_BC,2);
+      SpMat_cd elem_00 = Dw2_BD(Auu_BC,0);
+      SpMat_cd elem_11 = Dw2_BD(Avv_BC,1);
+      SpMat_cd elem_22 = 3.*Dw2_BD(Aww_BC,2);
 
       // matrices for placement of each non-zero 'element'
       SpMat_cd M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
@@ -88,9 +88,9 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
          // decide which BC to use
-               if (vi == 0) temp_BC = Axx_BC;
-         else if (vi == 1) temp_BC = Ayy_BC;
-         else if (vi == 2) temp_BC = Azz_BC;
+               if (vi == 0) temp_BC = Auu_BC;
+         else if (vi == 1) temp_BC = Avv_BC;
+         else if (vi == 2) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
 
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -108,9 +108,9 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
                   auto azz = op_matrix(n_v,n_u)(2);
 
                   // assuming all components are real, so a* = a
-                  // the Azz_BC: perpendicular
+                  // the Aww_BC: perpendicular
                   if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                  // the Axx_BC or Ayy_BC: parallel
+                  // the Auu_BC or Avv_BC: parallel
                   else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
@@ -215,25 +215,25 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
    // make an educated guess using the boundary conditions
    VectorXcd makeGuess(VectorXcd& g)
    {
-      if (Axx_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx_BC.bB;
+      if (Auu_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
       }
-      if (Axx_BC.typeT == string("Dirichlet")) {
-         for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx_BC.bT;
-      }
-      
-      if (Ayy_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy_BC.bB;
-      }
-      if (Ayy_BC.typeT == string("Dirichlet")) {
-         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy_BC.bT;
+      if (Auu_BC.typeT == string("Dirichlet")) {
+         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
       }
       
-      if (Azz_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz_BC.bB;
+      if (Avv_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.bB;
       }
-      if (Azz_BC.typeT == string("Dirichlet")) {
-         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz_BC.bT;
+      if (Avv_BC.typeT == string("Dirichlet")) {
+         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.bT;
+      }
+      
+      if (Aww_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.bB;
+      }
+      if (Aww_BC.typeT == string("Dirichlet")) {
+         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.bT;
       } return g;
    }
 
@@ -253,29 +253,29 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
             if (line[0] == '#') {           // any good way for error handling here?
                string ls = line.substr(1);
                if (ls == string("Axx bTop")) {
-                  BCs >> Axx_BC.bT;
-                  BCs >> Axx_BC.typeT;
+                  BCs >> Auu_BC.bT;
+                  BCs >> Auu_BC.typeT;
                } else if (ls == string("Axx bBott")) {
-                  BCs >> Axx_BC.bB;
-                  BCs >> Axx_BC.typeB;
+                  BCs >> Auu_BC.bB;
+                  BCs >> Auu_BC.typeB;
                }
 
-               // Ayy
+               // Avv
                else if (ls == string("Ayy bTop")) {
-                  BCs >> Ayy_BC.bT;
-                  BCs >> Ayy_BC.typeT;
+                  BCs >> Avv_BC.bT;
+                  BCs >> Avv_BC.typeT;
                } else if (ls == string("Ayy bBott")) {
-                  BCs >> Ayy_BC.bB;
-                  BCs >> Ayy_BC.typeB;
+                  BCs >> Avv_BC.bB;
+                  BCs >> Avv_BC.typeB;
                }
 
-               // Azz
+               // Aww
                else if (ls == string("Azz bTop")) {
-                  BCs >> Azz_BC.bT;
-                  BCs >> Azz_BC.typeT;
+                  BCs >> Aww_BC.bT;
+                  BCs >> Aww_BC.typeT;
                } else if (ls == string("Azz bBott")) {
-                  BCs >> Azz_BC.bB;
-                  BCs >> Azz_BC.typeB;
+                  BCs >> Aww_BC.bB;
+                  BCs >> Aww_BC.typeB;
                }
             }
          }
@@ -286,7 +286,7 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
    }
    
    // Write all components of the OP, all into one file, of the form:
-   //             __x__|__y__|_Axx_|_Axy_| ...
+   //             __x__|__y__|_Auu_|_Auv_| ...
    //              ... | ... | ... | ... | ...
    // separates the components from solution...storing real and imag parts ==> up to 18
    void WriteToFile(VectorXcd& vec, string file_name)
@@ -335,7 +335,7 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
    {
       Build_D_Matrices();
       initialize_OP_matrix();
-      SolverMatrix = SolverMatrix_He3Defect();
+      SolverMatrix = BuildSolverMatrix();
    }
 
    void initialize_OP_matrix()
@@ -366,19 +366,25 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
    }
 
    // User-defined methods to build the solver matrix and the rhs vector
-   SpMat_cd SolverMatrix_He3Defect()
+   SpMat_cd BuildSolverMatrix()
    {
       // to make the code cleaner, define some constants
-      double K123 = gl.K1+gl.K2+gl.K3,
-               K23  = gl.K2+gl.K3;
+      double K23  = gl.K2+gl.K3;
+      double K123 = gl.K1+gl.K2+gl.K3;
 
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
 
       // initialize each non-zero 'element'
-      SpMat_cd elem_00 = Dv2_BD(Axx_BC,0);
-      SpMat_cd elem_11 = Dv2_BD(Ayy_BC,1);
-      SpMat_cd elem_22 = 3.*Dv2_BD(Azz_BC,2);
+      SpMat_cd elem_00 = K123*Du2_BD(Auu_BC,0) + gl.K1*Dw2_BD(Auu_BC,0);
+      SpMat_cd elem_01 = K23*Duw_BD(Auw_BC,0);
+      SpMat_cd elem_10 = K23*Duw_BD(Auu_BC,1);
+      SpMat_cd elem_11 = K123*Dw2_BD(Auw_BC,1) + gl.K1*Du2_BD(Auw_BC,1);
+      SpMat_cd elem_22 = gl.K1*(Du2_BD(Avv_BC,2) + Dw2_BD(Avv_BC,2));
+      SpMat_cd elem_33 = K123*Du2_BD(Awu_BC,3) + gl.K1*Dw2_BD(Awu_BC,3);
+      SpMat_cd elem_34 = K23*Duw_BD(Aww_BC,3);
+      SpMat_cd elem_43 = K23*Duw_BD(Awu_BC,4);
+      SpMat_cd elem_44 = K123*Dw2_BD(Aww_BC,4) + gl.K1*Du2_BD(Aww_BC,4);
 
       // matrices for placement of each non-zero 'element'
       SpMat_cd M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
@@ -392,7 +398,7 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
       return solver_mat;
    }
    
-   VectorXcd RHS_He3Defect()
+   VectorXcd RHS()
    {
       int cts = 0;
       Matrix3cd op, op_T, op_dag, op_conj;
@@ -403,9 +409,9 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
          // decide which BC to use
-               if (vi == 0) temp_BC = Axx_BC;
-         else if (vi == 1) temp_BC = Ayy_BC;
-         else if (vi == 2) temp_BC = Azz_BC;
+               if (vi == 0) temp_BC = Auu_BC;
+         else if (vi == 1) temp_BC = Avv_BC;
+         else if (vi == 2) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
 
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -423,9 +429,9 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
                   auto azz = op_matrix(n_v,n_u)(2);
 
                   // assuming all components are real, so a* = a
-                  // the Azz_BC: perpendicular
+                  // the Aww_BC: perpendicular
                   if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                  // the Axx_BC or Ayy_BC: parallel
+                  // the Auu_BC or Avv_BC: parallel
                   else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
@@ -489,7 +495,7 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
 
       int cts = 0; // count loops
       double err;  // to store current error
-      VectorXcd rhs = RHS_He3Defect(); // the right hand side
+      VectorXcd rhs = RHS(); // the right hand side
 
       // the acceleration object
       converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
@@ -508,7 +514,7 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
          else { cout << "ERROR: Unknown method type given." << endl; return; }
 
          updateMatrix(f);       // update the matrix for RHS
-         rhs = RHS_He3Defect(); // update rhs
+         rhs = RHS(); // update rhs
          cts++;                 // increment counter
 
          // for debugging: to see if the solution is oscillating rather than converging
@@ -530,25 +536,25 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
    // make an educated guess using the boundary conditions
    VectorXcd makeGuess(VectorXcd& g)
    {
-      if (Axx_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Axx_BC.bB;
+      if (Auu_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
       }
-      if (Axx_BC.typeT == string("Dirichlet")) {
-         for (int i = 0; i < cond.SIZEu; i++) g(i) = Axx_BC.bT;
-      }
-      
-      if (Ayy_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Ayy_BC.bB;
-      }
-      if (Ayy_BC.typeT == string("Dirichlet")) {
-         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Ayy_BC.bT;
+      if (Auu_BC.typeT == string("Dirichlet")) {
+         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
       }
       
-      if (Azz_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Azz_BC.bB;
+      if (Avv_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.bB;
       }
-      if (Azz_BC.typeT == string("Dirichlet")) {
-         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Azz_BC.bT;
+      if (Avv_BC.typeT == string("Dirichlet")) {
+         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.bT;
+      }
+      
+      if (Aww_BC.typeB == string("Dirichlet")) {
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.bB;
+      }
+      if (Aww_BC.typeT == string("Dirichlet")) {
+         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.bT;
       } return g;
    }
 
@@ -568,29 +574,29 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
             if (line[0] == '#') {           // any good way for error handling here?
                string ls = line.substr(1);
                if (ls == string("Axx bTop")) {
-                  BCs >> Axx_BC.bT;
-                  BCs >> Axx_BC.typeT;
+                  BCs >> Auu_BC.bT;
+                  BCs >> Auu_BC.typeT;
                } else if (ls == string("Axx bBott")) {
-                  BCs >> Axx_BC.bB;
-                  BCs >> Axx_BC.typeB;
+                  BCs >> Auu_BC.bB;
+                  BCs >> Auu_BC.typeB;
                }
 
-               // Ayy
-               else if (ls == string("Ayy bTop")) {
-                  BCs >> Ayy_BC.bT;
-                  BCs >> Ayy_BC.typeT;
-               } else if (ls == string("Ayy bBott")) {
-                  BCs >> Ayy_BC.bB;
-                  BCs >> Ayy_BC.typeB;
+               // Avv
+               else if (ls == string("Avv bTop")) {
+                  BCs >> Avv_BC.bT;
+                  BCs >> Avv_BC.typeT;
+               } else if (ls == string("Avv bBott")) {
+                  BCs >> Avv_BC.bB;
+                  BCs >> Avv_BC.typeB;
                }
 
-               // Azz
-               else if (ls == string("Azz bTop")) {
-                  BCs >> Azz_BC.bT;
-                  BCs >> Azz_BC.typeT;
-               } else if (ls == string("Azz bBott")) {
-                  BCs >> Azz_BC.bB;
-                  BCs >> Azz_BC.typeB;
+               // Aww
+               else if (ls == string("Aww bTop")) {
+                  BCs >> Aww_BC.bT;
+                  BCs >> Aww_BC.typeT;
+               } else if (ls == string("Aww bBott")) {
+                  BCs >> Aww_BC.bB;
+                  BCs >> Aww_BC.typeB;
                }
             }
          }
@@ -601,7 +607,7 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
    }
    
    // Write all components of the OP, all into one file, of the form:
-   //             __x__|__y__|_Axx_|_Axy_| ...
+   //             __x__|__y__|_Auu_|_Axy_| ...
    //              ... | ... | ... | ... | ...
    // separates the components from solution...storing real and imag parts ==> up to 18
    void WriteToFile(VectorXcd& vec, string file_name)
