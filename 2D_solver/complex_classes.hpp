@@ -285,6 +285,198 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
       else cout << "Unable to open file:" << boundary_conditions_file << endl;
    }
    
+   double free_energy()
+   {
+      if (!solution.size())
+      {
+         cout << "ERROR: cannot calculate free-energy without a solution." << endl;
+         return 0.;
+      }
+
+      double beta_B = 6.*(gl.B1+gl.B2) + 2.*(gl.B3+gl.B4+gl.B5);
+      dcomplex I = 0.; // start the integral sum at 0
+      dcomplex f_bulk, f_bulk_prev = 0.;
+      dcomplex f_grad, f_grad_prev = 0.;
+      dcomplex k1, k2, k3; // the 3 derivative values
+      Matrix3cd A, A_tran, A_dag, A_conj;
+      VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
+      VectorXcd I_bulk(size), I_grad(size);
+      Three_ComponentOrderParam<VectorXcd, dcomplex> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
+      dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
+      Bound_Cond temp_bc_j, temp_bc_k;
+      int cts = 0;
+
+      // loop through all OP's in the mesh
+      for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+
+            // calculate all the needed forms of A
+            A = op_matrix(n_v,n_u).GetMatrixForm_He3Defect();
+            A_tran = A.transpose();
+            A_conj = A.conjugate();
+            A_dag = A.adjoint();
+
+            k1 = 0., k2 = 0., k3 = 0.; // start them all at 0 for each OP
+            
+            if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1) // if we're not at a boundary,
+            {
+               // get all the needed neighbors of A
+               A_prev_x = op_matrix(n_v,n_u-1);
+               A_next_x = op_matrix(n_v,n_u+1);
+               A_prev_z = op_matrix(n_v-1,n_u);
+               A_next_z = op_matrix(n_v+1,n_u);
+
+               // calculate the gradient at each point:
+               //   loop through the OP at the point
+               for (int a = 0; a < 3; a++) {       // spin index
+                  for (int j = 0; j < 3; j++) {    // orbital/derivative index
+                     for (int k = 0; k < 3; k++) { // orbital/derivative index
+
+                        // calculate the derivatives depending on the index.
+                        // divide by h^2 later for nicer code.
+                        if (j ==0) { // x-derivative
+                           Aajj = (A_next_x(j) - A_prev_x(j))/cond.STEP*2.;
+                           Aakj = (A_next_x(k) - A_prev_x(k))/cond.STEP*2.;
+                        }
+                        // if (j ==1) // y-derivative
+                        if (j ==2) { // z-derivative
+                           Aajj = (A_next_z(j) - A_prev_z(j))/cond.STEP*2.;
+                           Aakj = (A_next_z(k) - A_prev_z(k))/cond.STEP*2.;
+                        }
+
+                        if (k == 0) { // x-derivative
+                           Aajk = (A_next_x(j) - A_prev_x(j))/cond.STEP*2.;
+                           Aakk = (A_next_x(k) - A_prev_x(k))/cond.STEP*2.;
+                        }
+                        // if (k == 1) // y-derivative
+                        if (k == 2) { // z-derivative
+                           Aajk = (A_next_z(j) - A_prev_z(j))/cond.STEP*2.;
+                           Aakk = (A_next_z(k) - A_prev_z(k))/cond.STEP*2.;
+                        }
+
+                        // sum up over the indexes
+                        k1 += abs2(Aajk);
+                        k2 += conj(Aajj)*Aakk;
+                        k3 += conj(Aajk)*Aakj;
+
+                        // reset
+                        Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
+                     } // for k
+                  } // for j
+               } // for a
+            } // if not @ bd
+            else { // we're at a boundary
+
+               // calculate the gradient at each point:
+               //   loop through the OP at the point
+               for (int a = 0; a < 3; a++) {    // spin index
+                  for (int j = 0; j < 3; j++) { // orbital/derivative index
+                     if (j == 0) temp_bc_j = Auu_BC; // choose BC for the j index
+                     if (j == 1) temp_bc_j = Aww_BC;
+                     if (j == 2) temp_bc_j = Avv_BC;
+
+                     for (int k = 0; k < 3; k++) { // orbital/derivative index
+                        if (k == 0) temp_bc_k = Auu_BC; // choose BC for the k index
+                        if (k == 1) temp_bc_k = Aww_BC;
+                        if (k == 2) temp_bc_k = Avv_BC;
+
+                        // Right now, we only use a step of h, so it is less stable...
+                        //    is there a way to work around that?
+                        // use BC values to calculate the gradient terms
+                        if (j == 0) { // x-derivative
+                           if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
+                           if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
+
+                           if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/cond.STEP;
+                        }
+                        // if (j == 1) // y derivative
+                        if (j == 2) { // z-derivative
+                           if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
+                           if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
+
+                           if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajj = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakj = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajj = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakj = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/cond.STEP;
+                        }
+
+                        if (k == 0) { // x-derivative
+                           if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
+                           if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
+
+                           if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u+1)(j) - op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u+1)(k) - op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v,n_u-1)(j) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v,n_u-1)(k) )/cond.STEP;
+                        }
+                        // if (k == 1) // y derivative
+                        if (k == 2) { // z-derivative
+                           if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
+                           if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
+
+                           if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajk = ( op_matrix(n_v+1,n_u)(j) - op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakk = ( op_matrix(n_v+1,n_u)(k) - op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajk = ( op_matrix(n_v,n_u)(j) - op_matrix(n_v-1,n_u)(j) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakk = ( op_matrix(n_v,n_u)(k) - op_matrix(n_v-1,n_u)(k) )/cond.STEP;
+                        }
+
+                        k1 += abs2(Aajk);
+                        k2 += conj(Aajj)*Aakk;
+                        k3 += conj(Aajk)*Aakj;
+
+                        // reset
+                        Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
+                     } // for k
+                  } // for j
+               } // for a
+            }
+
+            // add them all together to get the gradient term for this OP
+            f_grad = -2./3.*(k1 + k2 + k3);
+            // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3; // the general way
+            I_grad(ID(size,n_u,cond.SIZEu,n_v,0)) = f_grad;
+            
+            // this value is not normalized, while the values put into here have been...this can only be used if the GL equations we solve are not normalized
+            // f_bulk = gl.B1*abs2((A*A_tran).trace()) + gl.B2*pow((A*A_dag).trace(),2) + gl.B3*(A*A_tran*A_conj*A_dag).trace() + gl.B4*(A*A_dag*A*A_dag).trace() + gl.B5*(A*A_dag*A_conj*A_tran).trace() + gl.alpha*(A*A_dag).trace();
+            
+            f_bulk = (gl.B1*abs2((A * A_tran).trace())
+                     +gl.B2*pow( (A * A_dag).trace(), 2)
+                     +gl.B3*(A * A_tran * A_conj * A_dag).trace()
+                     +gl.B4*(A * A_dag * A * A_dag).trace()
+                     +gl.B5*(A * A_dag * A_conj * A_tran).trace()
+                     )*-1./(beta_B*9) + 2./3.*(A * A_dag).trace();
+            I_bulk(ID(size,n_u,cond.SIZEu,n_v,0)) = f_bulk;
+
+            // 
+            I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
+
+            cts++;
+         }
+         I_vals(n_v) = I.real();
+      }
+
+      // save the integrand vector to plot and inspect
+      WriteToFile_single_vector(I_vals,"integrand.txt");
+      WriteToFile_single_vector(I_bulk,"integ_bulk.txt");
+      WriteToFile_single_vector(I_grad,"integ_grad.txt");
+
+      // cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
+      if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero:" << I.imag() << endl;
+
+      return I.real();
+   }
+
    // Write all components of the OP, all into one file, of the form:
    //             __x__|__y__|_Auu_|_Auv_| ...
    //              ... | ... | ... | ... | ...
@@ -314,12 +506,35 @@ class Three_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXc
       else cout << "Unable to open file: " << file_name << endl;
    }
 
+   void WriteToFile_single_vector(VectorXd& vec, string file_name)
+   {
+      std::ofstream data (file_name);
+      if (data.is_open()) {
+         for (int i = 0; i < vec.size(); i++) {
+            string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i));
+            data << line << endl;
+         }
+      }
+      else cout << "Unable to open file: " << file_name << endl;
+   }
+   void WriteToFile_single_vector(VectorXcd& vec, string file_name)
+   {
+      std::ofstream data (file_name);
+      if (data.is_open()) {
+         for (int i = 0; i < vec.size(); i++) {
+            string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i).real()) + string("\t") + to_string(vec(i).imag());
+            data << line << endl;
+         }
+      }
+      else cout << "Unable to open file: " << file_name << endl;
+   }
+
    private:
    Matrix<Three_ComponentOrderParam<VectorXcd, dcomplex>,-1,-1> op_matrix;
    VectorXcd op_vector;
 };
 
-// derived, complex 3-component GL solver class
+// derived, complex 5-component GL solver class
 template<>
 class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd, dcomplex>
 {
@@ -387,7 +602,9 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
       SpMat_cd elem_44 = K123*Dw2_BD(Aww_BC,4) + gl.K1*Du2_BD(Aww_BC,4);
 
       // matrices for placement of each non-zero 'element'
-      SpMat_cd M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
+      SpMat_cd M00(OP_size,OP_size), M01(OP_size,OP_size), M10(OP_size,OP_size), M11(OP_size,OP_size),
+               M22(OP_size,OP_size), M33(OP_size,OP_size), M34(OP_size,OP_size), M43(OP_size,OP_size),
+               M44(OP_size,OP_size);
       
       // add a single 1 to each matrix to place the elem_.. matrices in the correct spot
       M00.insert(0,0) = 1.; M11.insert(1,1) = 1.; M22.insert(2,2) = 1.;
@@ -453,9 +670,9 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
       for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
             Matrix3cd op;
-            op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     0.,
-                  0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)), 0.,
-                  0.,                                     0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2));
+            op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)),
+                  0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2)), 0.,
+                  new_guess(ID(sz,n_u,cond.SIZEu,n_v,3)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,4));
             op_matrix(n_v,n_u).Set_OP(op);
          }
       }
@@ -573,6 +790,8 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
             getline(BCs,line);
             if (line[0] == '#') {           // any good way for error handling here?
                string ls = line.substr(1);
+
+               // Auu
                if (ls == string("Axx bTop")) {
                   BCs >> Auu_BC.bT;
                   BCs >> Auu_BC.typeT;
@@ -581,20 +800,38 @@ class Five_Component_GL_Solver<VectorXcd, dcomplex> : public GL_Solver<VectorXcd
                   BCs >> Auu_BC.typeB;
                }
 
+               // Auw
+               if (ls == string("Axz bTop")) {
+                  BCs >> Auw_BC.bT;
+                  BCs >> Auw_BC.typeT;
+               } else if (ls == string("Axz bBott")) {
+                  BCs >> Auw_BC.bB;
+                  BCs >> Auw_BC.typeB;
+               }
+
                // Avv
-               else if (ls == string("Avv bTop")) {
+               else if (ls == string("Ayy bTop")) {
                   BCs >> Avv_BC.bT;
                   BCs >> Avv_BC.typeT;
-               } else if (ls == string("Avv bBott")) {
+               } else if (ls == string("Ayy bBott")) {
                   BCs >> Avv_BC.bB;
                   BCs >> Avv_BC.typeB;
                }
 
+               // Awu
+               if (ls == string("Azx bTop")) {
+                  BCs >> Awu_BC.bT;
+                  BCs >> Awu_BC.typeT;
+               } else if (ls == string("Azx bBott")) {
+                  BCs >> Awu_BC.bB;
+                  BCs >> Awu_BC.typeB;
+               }
+
                // Aww
-               else if (ls == string("Aww bTop")) {
+               else if (ls == string("Azz bTop")) {
                   BCs >> Aww_BC.bT;
                   BCs >> Aww_BC.typeT;
-               } else if (ls == string("Aww bBott")) {
+               } else if (ls == string("Azz bBott")) {
                   BCs >> Aww_BC.bB;
                   BCs >> Aww_BC.typeB;
                }

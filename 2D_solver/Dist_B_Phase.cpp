@@ -18,9 +18,9 @@ int main()
 
     // make a guess
     int size = gls.getSolverMatrixSize(); // the number of columns in the matrix
-    in_conditions c = gls.getConditions();
+    // in_conditions c = gls.getConditions();
     guess.resize(size);
-    auto p = gls.getConditions();
+    // auto p = gls.getConditions();
     for (int i = 0; i < size; i++) guess(i) = 1.; // i < p.SIZEu ? 0. : 1.
 
     auto end = std::chrono::system_clock::now();
@@ -52,7 +52,7 @@ int main()
 
     // make a guess
     guess_cplx.resize(size);
-    p = gls_cplx.getConditions();
+    // p = gls_cplx.getConditions();
     for (int i = 0; i < size; i++) guess_cplx(i) = 1.; // i < p.SIZEu ? 0. : 1.
 
     end = std::chrono::system_clock::now();
@@ -67,6 +67,8 @@ int main()
 
     VectorXcd solution_cplx = gls_cplx.getSolution();
     gls_cplx.WriteToFile(solution_cplx,"cplx_data.txt");
+
+    cout << "free-energy: " << gls_cplx.free_energy() << endl;
     //*/
 
     return 0;
