@@ -4,7 +4,7 @@ int main()
 {
     // Complex-valued GL solver
     VectorXcd guess_cplx;
-    Three_Component_GL_Solver<VectorXcd,dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
+    Three_Component_GL_Solver<dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
     // cout << "Initialized complex GL Solver" << endl;
 
     // start timing
@@ -30,7 +30,9 @@ int main()
     cout << "\ttime: " << elapsed.count() << " second(s)." << endl;
 
     VectorXcd solution_cplx = gls_cplx.getSolution();
+    cout << "got solution" << endl;
     gls_cplx.WriteToFile(solution_cplx,"cplx_data.txt");
+    cout << "wrote solution to file" << endl;
 
     cout << "Free energy: " << gls_cplx.free_energy() << endl;
 

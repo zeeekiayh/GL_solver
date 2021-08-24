@@ -2,11 +2,11 @@
 #define _real_includes
 
 // just to keep all the "errors" out while in VS Codes
-#include "includes.hpp"
+// #include "includes.hpp"
 
 // derived, real 3-component GL solver class
    template<>
-   class Three_Component_GL_Solver<VectorXd, double> : public GL_Solver<VectorXd, double>
+   class Three_Component_GL_Solver<double> : public GL_Solver<double>
    {
       public:
       Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
@@ -309,7 +309,7 @@
          Matrix3d A, A_tran, A_dag, A_conj;
          VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
          VectorXcd I_bulk(size), I_grad(size);
-         Three_ComponentOrderParam<VectorXd, double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
+         Three_ComponentOrderParam<double> A_prev_x, A_next_x, A_prev_z, A_next_z; // the A's for the gradient terms
          dcomplex Aajk = 0., Aakj = 0., Aajj = 0., Aakk = 0.;
          Bound_Cond temp_bc_j, temp_bc_k;
          int cts = 0;
@@ -538,7 +538,7 @@
       }
 
       private:
-      Matrix<Three_ComponentOrderParam<VectorXd, double>,-1,-1> op_matrix;
+      Matrix<Three_ComponentOrderParam<double>,-1,-1> op_matrix;
       VectorXd op_vector;
    };
 

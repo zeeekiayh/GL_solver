@@ -69,12 +69,10 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
-//    point on the mesh. 'Container_type' can be something
-//    like double or VectorXcd; Scalar_type must match it,
-//    in a way (e.g. VectorXd and double). If your order
-//    parameter is a matrix, it will be flattened as a
-//    VectorXcd in 'Set_OP()'.
-   template <typename Container_type, typename Scalar_type>
+//    point on the mesh. Scalar_type must be like dcomplex,
+//    double, or similar. If your order parameter is a
+//    matrix, it will be flattened as a VectorXcd.
+   template <typename Scalar_type>
    class OrderParam
    {
       protected:
@@ -82,38 +80,11 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       int num_comp = 1; // we'll assume it's 1, unless in the derived class
 
       private:
-      Container_type OP;
+      Matrix<Scalar_type,-1,1> OP;
 
       public:
       OrderParam() {}
       OrderParam(int n): num_comp(n) {}
-      void Set_OP(Container_type op) { OP = op; }
-      void initialize(int);
-      Scalar_type& operator() (int);
-      dcomplex F_Bulk();
-   };
-
-// to allow for the specialized class, define a derived template
-   template<typename Container_type, typename Scalar_type>
-   class Three_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-// This class is specific to the OP form with Auu_BC, Aww_BC, Avv_BC along the main diagonal
-   template<typename Scalar_type>
-   class Three_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
-   {
-      private:
-      Matrix<Scalar_type,-1,1> OP;
-
-      public:
-      Three_ComponentOrderParam() {}
-      Three_ComponentOrderParam(int n) { this->initialize(n); }
-
-      Three_ComponentOrderParam& operator=(Three_ComponentOrderParam& rhs)
-      {
-         this->OP = rhs.OP;
-         this->num_comp = rhs.num_comp;
-
-         return *this;
-      }
 
       void initialize(int n)
       {
@@ -121,6 +92,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          if (this->num_comp > 1) OP.resize(this->num_comp);
       }
 
+      // void Set_OP(Matrix<Scalar_type,-1,1> op) { OP = op; }
       void Set_OP(Matrix<Scalar_type,-1,1> op)
       {
          if (op.rows() != this->num_comp)
@@ -129,6 +101,23 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
             return;
          }
          this->OP = op;
+      }
+
+      Scalar_type& operator() (int i)
+      {
+         // cout << "&operator(i); i = " << i << endl;
+         if (i > this->num_comp-1) // check the range first
+            throw "ERROR: index out of range OrderParam::operator()\n";
+         // cout << "OP = " << OP << endl;
+         return OP(i); // it's component
+      }
+
+      OrderParam& operator=(OrderParam& rhs)
+      {
+         this->OP = rhs.OP;
+         this->num_comp = rhs.num_comp;
+
+         return *this;
       }
       
       // get the op components into a vector form from a 3x3 matrix
@@ -150,21 +139,29 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          } // for's
       }
 
-      // gives the 3x3 form of the op for this special form
-      Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
+      Matrix<Scalar_type,3,3> GetMatrixForm()
       {
          Matrix<Scalar_type,3,3> mat;
-         mat << OP(0), 0.,    0.,
-                0.,    OP(1), 0.,
-                0.,    0.,    OP(2);
+         switch (num_comp)
+         {
+         case 1:
+            // add desired OP forms here
+            break;
+            // ...
+         case 3:
+            mat << OP(0), 0.,    0.,
+                  0.,    OP(1), 0.,
+                  0.,    0.,    OP(2);
+            break;
+         case 5:
+            mat << OP(0), 0.,    OP(1),
+                   0.,    OP(2), 0.,
+                   OP(3), 0.,    OP(4);
+         default:
+            cout << "ERROR: Calling function for OP matrix form, but the form for num_comp = " << num_comp << "has not been defined." << endl;
+            break;
+         }
          return mat;
-      }
-
-      Scalar_type& operator() (int i)
-      {
-         if (i > this->num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
       }
 
       dcomplex F_Bulk(GL_param gl)
@@ -188,60 +185,43 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       }
    };
 
-   template<typename Container_type, typename Scalar_type>
-   class Five_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-   template<typename Scalar_type>
-   class Five_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
-   {
-      private:
-      Matrix<Scalar_type,-1,1> OP;
+// Matrix<Scalar_type,-1,1>
 
-      public:
-      Five_ComponentOrderParam() {}
-      Five_ComponentOrderParam(int n) { this->initialize(n); }
+// This class is specific to the OP form with Auu_BC, Aww_BC, Avv_BC along the main diagonal
 
-      void initialize(int n)
-      {
-         this->num_comp = n;
-         if (this->num_comp > 1) OP.resize(this->num_comp);
-      }
-      
-      // get the op components into a vector form from a 3x3 matrix
-      void Set_OP(Matrix<Scalar_type,3,3> op)
-      {
-         // // flatten the matrix (row major)
-         // int i = 0; // count the values put into the vector OP
+   // template<typename Scalar_type>
+   // class Three_ComponentOrderParam : public OrderParam<Scalar_type>
+   // {
+   //    public:
+   //    Three_ComponentOrderParam() {}
+   //    // Three_ComponentOrderParam(int n) { this->initialize(n); }
+   //    // gives the 3x3 form of the op for this special form
+   //    Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
+   //    {
+   //       Matrix<Scalar_type,3,3> mat;
+   //       mat << OP(0), 0.,    0.,
+   //              0.,    OP(1), 0.,
+   //              0.,    0.,    OP(2);
+   //       return mat;
+   //    }
+   // };
 
-         // for (int a = 0; a < 3; a++) {          // For each spin index...
-         //    for (int j = 0; j < 3; j++) {       //   go across all orbital indexes
-         //       if (abs(op(a,j)) > pow(10,-8)) { // If not effectively 0
-         //          if (i > this->num_comp) cout << "WARNING: more elements in matrix than specified by this->num_comp." << endl;
-         //          else {
-         //             this->OP(i) = op(a,j);
-         //             i++;
-         //          }
-         //       }
-         //    }
-         // } // for's
-      }
-
-      // gives the 3x3 form of the op for this special form
-      Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
-      {
-         Matrix<Scalar_type,3,3> mat;
-         mat << OP(0), 0.,    OP(1),
-                0.,    OP(2), 0.,
-                OP(3), 0.,    OP(4);
-         return mat;
-      }
-
-      Scalar_type& operator() (int i)
-      {
-         if (i > this->num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
-      }
-   };
+   // template<typename Scalar_type>
+   // class Five_ComponentOrderParam : public OrderParam<Scalar_type>
+   // {
+   //    public:
+   //    Five_ComponentOrderParam() {}
+   //    // Five_ComponentOrderParam(int n) { this->initialize(n); }
+   //    // gives the 3x3 form of the op for this special form
+   //    Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
+   //    {
+   //       Matrix<Scalar_type,3,3> mat;
+   //       mat << OP(0), 0.,    OP(1),
+   //              0.,    OP(2), 0.,
+   //              OP(3), 0.,    OP(4);
+   //       return mat;
+   //    }
+   // };
 // ========================================================
 
 
@@ -267,97 +247,12 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    };
 // ===========================================
 
-// TODO: modify the grad terms to calculate it based on the mesh
-// Calculate the free-energy loss by the integral of the energy density
-// This value has been normalized because the deltas were calculated as
-//    normalized. Dividing f by (alpha(T) * delta_0^2) and simplifying.
-// Gives a warning if the result has ~non-zero imaginary part.
-// double Free_energy()
-// {
-//    if (!solution.size())
-//    {
-//       cout << "ERROR: cannot calculate free-energy without a solution." << endl;
-//       return 0.;
-//    }
-//    double I = 0; // start the integral sum at 0
-//    double f_bulk, f_bulk_prev = 0.;
-//    double f_grad, f_grad_prev = 0.;
-//    VectorXd integ(size-2); // value of the integral over distance--to plot
-//    // calculate the first step
-//    f_bulk = F_Bulk(0);
-//    f_grad = F_Grad(0,1);
-//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
-//    for (int i = 1; i <= size-2; i++)
-//    {
-//       // set the previous values
-//       f_bulk_prev = f_bulk;
-//       f_grad_prev = f_grad;
-//       f_bulk = F_Bulk(i);
-//       // calculate the gradient term
-//       f_grad = F_Grad(i-1,i+1);
-//       // use a rectangular integral approximation, centered at the midpoints
-//       I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
-//       integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
-//    }
-//    // calculate the last step
-//    f_bulk = F_Bulk(size-1);
-//    f_grad = F_Grad(size-2,size-1);
-//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
-//    // save the integrand vector to plot and inspect
-//    Write_To_File(integ,"integ_c.txt","integ_r.txt"); // using the non-member function
-//    cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
-//    if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
-//    return I.real();
-// }
-// calculate the normalized bulk free-energy density
-// double F_Bulk(int i)
-// {
-//    // calculate the used forms of A
-//    Matrix<double,3,3> A = M_index(OP,i),
-//                               AT = A.transpose(),
-//                               A_dag = A.adjoint(),
-//                               A_conj = A.conjugate();
-//    double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
-//    return -( gl.B1*pow( abs((A * AT).trace()), 2)
-//             +gl.B2*pow( (A * A_dag).trace(), 2)
-//             +gl.B3*(A * AT * A_conj * A_dag).trace()
-//             +gl.B4*(A * A_dag * A * A_dag).trace()
-//             +gl.B5*(A * A_dag * A_conj * AT).trace()
-//          )/(Beta_B*9.)
-//          +2./3.*(A * A_dag).trace();
-// }
-// TODO: make it calculate the gradient using the central difference
-//       derivative for each internal point on the mesh...do we pass
-//       in the mesh? or just pass in the relating indexes?
-// calculate the normalized gradient free-energy density
-// double F_Grad(int m, int n)
-// {
-//    if (m < 0) { cout << "ERROR: F_Grad 'm' must be >= 0." << endl; return 0.0; }
-//    double k1 = 0., k2 = 0., k3 = 0.; // grad term sums
-//    // used center difference derivatives
-//    Matrix<double,3,3> A_next = M_index(OP,n), A_prev = M_index(OP,m);
-//    for (int a = 0; a < 3; a++)
-//    {
-//       for (int k = 0; k < 3; k++)
-//       {
-//          for (int j = 0; j < 3; j++)
-//          {
-//             // these derivatives are divided by their step size when used in Free_Energy()
-//             if (var_mat(a,j)[k])                 k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
-//             if (var_mat(a,k)[j]*var_mat(a,j)[k]) k2 += ( conj(A_next(a,k) - A_prev(a,k)) ) * ( A_next(a,j) - A_prev(a,j) );
-//             if (var_mat(a,j)[k]*var_mat(a,k)[j]) k3 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,k) - A_prev(a,k) );
-//          }
-//       }
-//    }
-//    return -2./3.*(k1+k2+k3)/(pow(2*cond.STEP,2)); // divide by (2h)^2 becasue there
-//                   //  is a product of 2 derivatives, but we have double step size
-// }
 
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and
 //    solves the system using (accelerated) relaxation
-   template <class Container_type, class Scalar_type>
+   template <class Scalar_type>
    class GL_Solver
    {
       // VARIABLES
@@ -378,7 +273,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices
-      Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
+      Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
       // CONSTRUCTORS & DECSTRUCTOR
@@ -728,16 +623,16 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    
    }; // GL_solver class
 
-   template <class Container_type, class Scalar_type>
-   class Three_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
+   template <class Scalar_type>
+   class Three_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 
-   template <class Container_type, class Scalar_type>
-   class Five_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
+   template <class Scalar_type>
+   class Five_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 // ==================================================
 
 // Now include the real and comples class header files,
 //   since the parent class are defined
-#include "real_classes.hpp"
+// #include "real_classes.hpp"
 #include "complex_classes.hpp"
 
 #endif
