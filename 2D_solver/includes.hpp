@@ -25,25 +25,8 @@ using namespace Eigen;
 
 typedef Triplet<double> Tr;
 typedef SparseMatrix<double> SpMat_d;
-typedef Triplet<dcomplex> cTr;
 typedef SparseMatrix<dcomplex> SpMat_cd;
-
-// constants used in the GL equations
-struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
-
-// values used for set up, initial conditions, and algorithmic parameters
-struct in_conditions
-{
-   int SIZEu;    // the number of points...
-   int SIZEv;    // "" ...
-   int SIZEw;    // "" in orthogonal directions
-   int N_loop;   // count limit for iterations
-   int maxStore; // max num vectors kept in accerleration
-   int wait;     // iterations to wait before using acceleration
-   double ACCUR; // the minimum desired accuracy
-   double STEP;  // step size
-   double rel_p; // relaxation param
-};
+// typedef Triplet<dcomplex> cTr; // will we actually use this?
 
 // returns the unique id corresponding to each op-component in the mesh.
 //    n_u: mesh index along u
@@ -67,14 +50,29 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    }
 }
 
+// constants used in the GL equations
+struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
+
+// values used for set up, initial conditions, and algorithmic parameters
+struct in_conditions
+{
+   int SIZEu;    // the number of points...
+   int SIZEv;    // "" ...
+   int SIZEw;    // "" in orthogonal directions
+   int N_loop;   // count limit for iterations
+   int maxStore; // max num vectors kept in accerleration
+   int wait;     // iterations to wait before using acceleration
+   double ACCUR; // the minimum desired accuracy
+   double STEP;  // step size
+   double rel_p; // relaxation param
+};
+
 // ========================================================
 // A class for the Order Parameter component; just at one 
-//    point on the mesh. 'Container_type' can be something
-//    like double or VectorXcd; Scalar_type must match it,
-//    in a way (e.g. VectorXd and double). If your order
-//    parameter is a matrix, it will be flattened as a
-//    VectorXcd in 'Set_OP()'.
-   template <typename Container_type, typename Scalar_type>
+//    point on the mesh. Scalar_type must be like dcomplex,
+//    double, or similar. If your order parameter is a
+//    matrix, it will be flattened as a VectorXcd.
+   template <typename Scalar_type>
    class OrderParam
    {
       protected:
@@ -82,53 +80,44 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       int num_comp = 1; // we'll assume it's 1, unless in the derived class
 
       private:
-      Container_type OP;
+      Matrix<Scalar_type,-1,1> OP;
 
       public:
       OrderParam() {}
       OrderParam(int n): num_comp(n) {}
-      void Set_OP(Container_type op) { OP = op; }
-      void initialize(int);
-      Scalar_type& operator() (int);
-      dcomplex F_Bulk();
-   };
-
-// to allow for the specialized class, define a derived template
-   template<typename Container_type, typename Scalar_type>
-   class Three_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-// This class is specific to the OP form with Auu_BC, Aww_BC, Avv_BC along the main diagonal
-   template<typename Scalar_type>
-   class Three_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
-   {
-      private:
-      Matrix<Scalar_type,-1,1> OP;
-
-      public:
-      Three_ComponentOrderParam() {}
-      Three_ComponentOrderParam(int n) { this->initialize(n); }
-
-      Three_ComponentOrderParam& operator=(Three_ComponentOrderParam& rhs)
-      {
-         this->OP = rhs.OP;
-         this->num_comp = rhs.num_comp;
-
-         return *this;
-      }
 
       void initialize(int n)
       {
-         this->num_comp = n;
-         if (this->num_comp > 1) OP.resize(this->num_comp);
+         num_comp = n;
+         if (num_comp > 1) OP.resize(num_comp);
       }
 
+      // void Set_OP(Matrix<Scalar_type,-1,1> op) { OP = op; }
       void Set_OP(Matrix<Scalar_type,-1,1> op)
       {
-         if (op.rows() != this->num_comp)
+         if (op.rows() != num_comp)
          {
             cout << "ERROR: vector given to Set_OP is not the correct size." << endl;
             return;
          }
-         this->OP = op;
+         OP = op;
+      }
+
+      Scalar_type& operator() (int i)
+      {
+         // cout << "&operator(i); i = " << i << endl;
+         if (i > num_comp-1) // check the range first
+            throw "ERROR: index out of range OrderParam::operator()\n";
+         // cout << "OP = " << OP << endl;
+         return OP(i); // it's component
+      }
+
+      OrderParam& operator=(OrderParam& rhs)
+      {
+         OP = rhs.OP;
+         num_comp = rhs.num_comp;
+
+         return *this;
       }
       
       // get the op components into a vector form from a 3x3 matrix
@@ -140,9 +129,9 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          for (int a = 0; a < 3; a++) {          // For each spin index...
             for (int j = 0; j < 3; j++) {       //   go across all orbital indexes
                if (abs(op(a,j)) > pow(10,-8)) { // If not effectively 0
-                  if (i > this->num_comp) cout << "WARNING: more elements in matrix than specified by this->num_comp." << endl;
+                  if (i > num_comp) cout << "WARNING: more elements in matrix than specified by num_comp." << endl;
                   else {
-                     this->OP(i) = op(a,j);
+                     OP(i) = op(a,j);
                      i++;
                   }
                }
@@ -150,27 +139,35 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          } // for's
       }
 
-      // gives the 3x3 form of the op for this special form
-      Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
+      Matrix<Scalar_type,3,3> GetMatrixForm()
       {
          Matrix<Scalar_type,3,3> mat;
-         mat << OP(0), 0.,    0.,
-                0.,    OP(1), 0.,
-                0.,    0.,    OP(2);
+         switch (num_comp)
+         {
+         case 1:
+            // add desired OP forms here
+            break;
+            // ...
+         case 3:
+            mat << OP(0), 0.,    0.,
+                   0.,    OP(1), 0.,
+                   0.,    0.,    OP(2);
+            break;
+         case 5:
+            mat << OP(0), 0.,    OP(1),
+                   0.,    OP(2), 0.,
+                   OP(3), 0.,    OP(4);
+         default:
+            cout << "ERROR: Calling function for OP matrix form, but the form for num_comp = " << num_comp << "has not been defined." << endl;
+            break;
+         }
          return mat;
-      }
-
-      Scalar_type& operator() (int i)
-      {
-         if (i > this->num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
       }
 
       dcomplex F_Bulk(GL_param gl)
       {
          // calculate the used forms of A
-         auto A = this->GetMatrixForm_He3Defect();
+         auto A = GetMatrixForm();
          auto A_tran = A.transpose();
          auto A_conj = A.conjugate();
          auto A_dag  = A.adjoint();
@@ -187,61 +184,6 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          // TODO: return just the real part...
       }
    };
-
-   template<typename Container_type, typename Scalar_type>
-   class Five_ComponentOrderParam : public OrderParam<Container_type, Scalar_type> {};
-   template<typename Scalar_type>
-   class Five_ComponentOrderParam<Matrix<Scalar_type,-1,1>, Scalar_type> : public OrderParam<Matrix<Scalar_type,-1,1>, Scalar_type>
-   {
-      private:
-      Matrix<Scalar_type,-1,1> OP;
-
-      public:
-      Five_ComponentOrderParam() {}
-      Five_ComponentOrderParam(int n) { this->initialize(n); }
-
-      void initialize(int n)
-      {
-         this->num_comp = n;
-         if (this->num_comp > 1) OP.resize(this->num_comp);
-      }
-      
-      // get the op components into a vector form from a 3x3 matrix
-      void Set_OP(Matrix<Scalar_type,3,3> op)
-      {
-         // // flatten the matrix (row major)
-         // int i = 0; // count the values put into the vector OP
-
-         // for (int a = 0; a < 3; a++) {          // For each spin index...
-         //    for (int j = 0; j < 3; j++) {       //   go across all orbital indexes
-         //       if (abs(op(a,j)) > pow(10,-8)) { // If not effectively 0
-         //          if (i > this->num_comp) cout << "WARNING: more elements in matrix than specified by this->num_comp." << endl;
-         //          else {
-         //             this->OP(i) = op(a,j);
-         //             i++;
-         //          }
-         //       }
-         //    }
-         // } // for's
-      }
-
-      // gives the 3x3 form of the op for this special form
-      Matrix<Scalar_type,3,3> GetMatrixForm_He3Defect() // this function is specific to one OP structure
-      {
-         Matrix<Scalar_type,3,3> mat;
-         mat << OP(0), 0.,    OP(1),
-                0.,    OP(2), 0.,
-                OP(3), 0.,    OP(4);
-         return mat;
-      }
-
-      Scalar_type& operator() (int i)
-      {
-         if (i > this->num_comp-1) // check the range first
-            throw "ERROR: index out of range OrderParam::operator()\n";
-         return OP(i); // it's component
-      }
-   };
 // ========================================================
 
 
@@ -254,116 +196,29 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
                              // for Dirichlet BC: function value
       Bound_Cond& operator= (Bound_Cond& rhs)
       {
-         this->typeB = rhs.typeB;
-         this->typeT = rhs.typeT;
-         this->typeL = rhs.typeL;
-         this->typeR = rhs.typeR;
-         this->bB = rhs.bB;
-         this->bT = rhs.bT;
-         this->bL = rhs.bL;
-         this->bR = rhs.bR;
+         typeB = rhs.typeB;
+         typeT = rhs.typeT;
+         typeL = rhs.typeL;
+         typeR = rhs.typeR;
+         bB = rhs.bB;
+         bT = rhs.bT;
+         bL = rhs.bL;
+         bR = rhs.bR;
          return *this;
       }
    };
 // ===========================================
 
-// TODO: modify the grad terms to calculate it based on the mesh
-// Calculate the free-energy loss by the integral of the energy density
-// This value has been normalized because the deltas were calculated as
-//    normalized. Dividing f by (alpha(T) * delta_0^2) and simplifying.
-// Gives a warning if the result has ~non-zero imaginary part.
-// double Free_energy()
-// {
-//    if (!solution.size())
-//    {
-//       cout << "ERROR: cannot calculate free-energy without a solution." << endl;
-//       return 0.;
-//    }
-//    double I = 0; // start the integral sum at 0
-//    double f_bulk, f_bulk_prev = 0.;
-//    double f_grad, f_grad_prev = 0.;
-//    VectorXd integ(size-2); // value of the integral over distance--to plot
-//    // calculate the first step
-//    f_bulk = F_Bulk(0);
-//    f_grad = F_Grad(0,1);
-//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
-//    for (int i = 1; i <= size-2; i++)
-//    {
-//       // set the previous values
-//       f_bulk_prev = f_bulk;
-//       f_grad_prev = f_grad;
-//       f_bulk = F_Bulk(i);
-//       // calculate the gradient term
-//       f_grad = F_Grad(i-1,i+1);
-//       // use a rectangular integral approximation, centered at the midpoints
-//       I += ( (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2. - 1. )*cond.STEP;
-//       integ(i-1) = (f_bulk+f_bulk_prev + f_grad+f_grad_prev)/2.;//I;
-//    }
-//    // calculate the last step
-//    f_bulk = F_Bulk(size-1);
-//    f_grad = F_Grad(size-2,size-1);
-//    I += ( f_bulk + f_grad - 1. )*cond.STEP;
-//    // save the integrand vector to plot and inspect
-//    Write_To_File(integ,"integ_c.txt","integ_r.txt"); // using the non-member function
-//    cout << "The final value of f/f0 = " << integ(integ.size()-1) << endl;
-//    if (I.imag() >= pow(10,-8)) cout << "WARNING: imaginary part of the free-energy is not zero." << endl;
-//    return I.real();
-// }
-// calculate the normalized bulk free-energy density
-// double F_Bulk(int i)
-// {
-//    // calculate the used forms of A
-//    Matrix<double,3,3> A = M_index(OP,i),
-//                               AT = A.transpose(),
-//                               A_dag = A.adjoint(),
-//                               A_conj = A.conjugate();
-//    double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.;
-//    return -( gl.B1*pow( abs((A * AT).trace()), 2)
-//             +gl.B2*pow( (A * A_dag).trace(), 2)
-//             +gl.B3*(A * AT * A_conj * A_dag).trace()
-//             +gl.B4*(A * A_dag * A * A_dag).trace()
-//             +gl.B5*(A * A_dag * A_conj * AT).trace()
-//          )/(Beta_B*9.)
-//          +2./3.*(A * A_dag).trace();
-// }
-// TODO: make it calculate the gradient using the central difference
-//       derivative for each internal point on the mesh...do we pass
-//       in the mesh? or just pass in the relating indexes?
-// calculate the normalized gradient free-energy density
-// double F_Grad(int m, int n)
-// {
-//    if (m < 0) { cout << "ERROR: F_Grad 'm' must be >= 0." << endl; return 0.0; }
-//    double k1 = 0., k2 = 0., k3 = 0.; // grad term sums
-//    // used center difference derivatives
-//    Matrix<double,3,3> A_next = M_index(OP,n), A_prev = M_index(OP,m);
-//    for (int a = 0; a < 3; a++)
-//    {
-//       for (int k = 0; k < 3; k++)
-//       {
-//          for (int j = 0; j < 3; j++)
-//          {
-//             // these derivatives are divided by their step size when used in Free_Energy()
-//             if (var_mat(a,j)[k])                 k1 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,j) - A_prev(a,j) );
-//             if (var_mat(a,k)[j]*var_mat(a,j)[k]) k2 += ( conj(A_next(a,k) - A_prev(a,k)) ) * ( A_next(a,j) - A_prev(a,j) );
-//             if (var_mat(a,j)[k]*var_mat(a,k)[j]) k3 += ( conj(A_next(a,j) - A_prev(a,j)) ) * ( A_next(a,k) - A_prev(a,k) );
-//          }
-//       }
-//    }
-//    return -2./3.*(k1+k2+k3)/(pow(2*cond.STEP,2)); // divide by (2h)^2 becasue there
-//                   //  is a product of 2 derivatives, but we have double step size
-// }
 
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and
 //    solves the system using (accelerated) relaxation
-   template <class Container_type, class Scalar_type>
+   template <class Scalar_type>
    class GL_Solver
    {
       // VARIABLES
       private:
-      // Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
-      // Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
 
       protected:
       int size; // number of mesh points (size of the D matrices or OP-component vectors)
@@ -373,12 +228,12 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       string method; // if Solve will use normal relaxtion or the accelerated
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
-      Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices
-      Matrix<OrderParam<Container_type,Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
+      Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
+      Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
       // CONSTRUCTORS & DECSTRUCTOR
@@ -390,24 +245,20 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       }
       // ~GL_Solver() {};
 
+      // virtual functions; to be defined in derived classes.
+      //   these 3 must be pure virtual so that they can
+      //   be called by other functions in this class
+      virtual SparseMatrix<Scalar_type> BuildSolverMatrix() = 0;
+      virtual Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&) = 0;
+      virtual Matrix<Scalar_type,-1,1> RHS() = 0;
+      // non-virtual functions; to be defined in derived classes
+      Scalar_type F_Grad(int, int, int);
+      double free_energy();
+
       // METHODS
-
-      // functions to be defined in specialized derived classes
-      void setVectorForm();
-      void Solve(Matrix<Scalar_type,-1,1>&);
-      void initialize_OP_matrix();
-      Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&);
-      void ReadBoundaryConditions(string);
-      void BuildProblem(int,Bound_Cond,Bound_Cond);
-      void WriteToFile(string); // Write all components of the OP, all into one file
-
       Matrix<Scalar_type,-1,1> getSolution() const { return solution; }
       int getSolverMatrixSize() const { return SolverMatrix.cols(); }
       in_conditions getConditions() const { return cond; }
-
-      // Scalar_type f_bulk();
-      Scalar_type F_Grad(int, int, int);
-      double free_energy();
 
       // read in the conditions from the file
       void ReadConditions(string conditions_file)
@@ -460,6 +311,74 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          else cout << "Unable to open file:" << conditions_file << endl;
       }
 
+      void ReadBoundaryConditions(string boundary_conditions_file)
+      {
+         string line;
+         std::ifstream BCs(boundary_conditions_file);
+
+         // get boundary conditions from the file
+         if (BCs.is_open()) {
+
+            while (line != "#OP size") getline(BCs,line); // find the line with the size
+            BCs >> OP_size;
+            
+            while (!BCs.eof()) {
+               getline(BCs,line);
+               if (line[0] == '#') {           // any good way for error handling here?
+                  string ls = line.substr(1);
+
+                  // Auu
+                  if (ls == string("Axx bTop")) {
+                     BCs >> Auu_BC.bT;
+                     BCs >> Auu_BC.typeT;
+                  } else if (ls == string("Axx bBott")) {
+                     BCs >> Auu_BC.bB;
+                     BCs >> Auu_BC.typeB;
+                  }
+
+                  // Auw
+                  if (ls == string("Axz bTop")) {
+                     BCs >> Auw_BC.bT;
+                     BCs >> Auw_BC.typeT;
+                  } else if (ls == string("Axz bBott")) {
+                     BCs >> Auw_BC.bB;
+                     BCs >> Auw_BC.typeB;
+                  }
+
+                  // Avv
+                  else if (ls == string("Ayy bTop")) {
+                     BCs >> Avv_BC.bT;
+                     BCs >> Avv_BC.typeT;
+                  } else if (ls == string("Ayy bBott")) {
+                     BCs >> Avv_BC.bB;
+                     BCs >> Avv_BC.typeB;
+                  }
+
+                  // Awu
+                  if (ls == string("Azx bTop")) {
+                     BCs >> Awu_BC.bT;
+                     BCs >> Awu_BC.typeT;
+                  } else if (ls == string("Azx bBott")) {
+                     BCs >> Awu_BC.bB;
+                     BCs >> Awu_BC.typeB;
+                  }
+
+                  // Aww
+                  else if (ls == string("Azz bTop")) {
+                     BCs >> Aww_BC.bT;
+                     BCs >> Aww_BC.typeT;
+                  } else if (ls == string("Azz bBott")) {
+                     BCs >> Aww_BC.bB;
+                     BCs >> Aww_BC.typeB;
+                  }
+               }
+            }
+
+            BCs.close();
+         }
+         else cout << "Unable to open file:" << boundary_conditions_file << endl;
+      }
+   
       // Build the derivative matrices
       void Build_D_Matrices()
       {
@@ -726,18 +645,186 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       //    return Duw_copy;
       }
    
+      void BuildProblem()
+      {
+         Build_D_Matrices();
+         initialize_OP_matrix();
+         SolverMatrix = BuildSolverMatrix();
+      }
+
+      // Convert the OP matrix, at all mesh points, into a vector
+      void setVectorForm()
+      {
+         for (int vi = 0; vi < OP_size; vi++) {
+            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+                  op_vector(ID(size,n_u,cond.SIZEu,n_v,vi)) = op_matrix(n_v,n_u)(vi);
+               }
+            }
+         }
+      }
+
+      void initialize_OP_matrix()
+      {
+         op_matrix.resize(cond.SIZEv,cond.SIZEu); // initialize matrix
+         op_vector.resize(cond.SIZEu*cond.SIZEv*OP_size); // initialize op_vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
+
+         // initialize elements in 'matrix'
+         for (int n_u = 0; n_u < cond.SIZEu; n_u++) for (int n_v = 0; n_v < cond.SIZEv; n_v++) op_matrix(n_v,n_u).initialize(OP_size);
+
+         setVectorForm();// make the vector form available
+      }
+
+      // given the next guess, update the op at all points on the mesh
+      //   and make it available in it's vector form.
+      void updateVector(Matrix<Scalar_type,-1,1>& new_guess)
+      {
+         for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+            for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+               Matrix<Scalar_type,-1,1> op(3);
+               op << new_guess(ID(size,n_u,cond.SIZEu,n_v,0)), new_guess(ID(size,n_u,cond.SIZEu,n_v,1)), new_guess(ID(size,n_u,cond.SIZEu,n_v,2));
+               op_matrix(n_v,n_u).Set_OP(op);
+            }
+         }
+         setVectorForm();
+      }
+
+      // use the relaxation method and Anderson Acceleration to solve
+      void Solve(Matrix<Scalar_type,-1,1>& guess)
+      {
+         cout << "solving..." << endl;
+         auto start = std::chrono::system_clock::now();
+         Matrix<Scalar_type,-1,1> f = makeGuess(guess), df(guess.size()); // initialize vectors
+
+         if (no_update.size()) cout << "using no_update" << endl;
+
+         // use LU decomposition to solve the system
+         SparseLU<SparseMatrix<Scalar_type>, COLAMDOrdering<int> > solver;
+         solver.analyzePattern(SolverMatrix); // without this, Eigen throws: Eigen::Matrix<int, -1, 1>; ... Assertion `index >= 0 && index < size()' failed.
+         solver.factorize(SolverMatrix);
+
+         // check to see if the solver failed
+         if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
+         else if (solver.info() == Eigen::NumericalIssue) // for debugging non-invertable matrices
+         {
+            cout << "Solver: numerical issues" << endl;
+            // for (int k=0; k < SolverMatrix.outerSize(); ++k) for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
+            return;
+         }
+
+         // time to prepare solving method
+         auto end = std::chrono::system_clock::now();
+         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+         cout << "\ttime: " << elapsed.count() << " seconds." << endl << endl;
+
+         updateVector(f); // prepare the matrix for RHS
+
+         int cts = 0; // count loops
+         double err;  // to store current error
+         Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
+
+         // the acceleration object
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
+         
+         // loop until f converges or until it's gone too long
+         do { // use relaxation
+
+            df = solver.solve(rhs)-f; // find the change in f
+
+            if (method == string("acceleration")) Con_Acc.template next_vector<Matrix<Scalar_type,-1,-1>>(f,df,err); // use Anderson Acceleration to converge faster
+            else if (method == string("relaxation")) // use normal relaxation
+            {
+               f += cond.rel_p*df;
+               err = df.norm()/f.norm();
+            }
+            else { cout << "ERROR: Unknown method type given." << endl; return; }
+
+            updateVector(f); // update the matrix for RHS
+            rhs = RHS();     // update rhs
+            cts++;           // increment counter
+
+            // for debugging: to see if the solution is oscillating rather than converging
+            // for (int i = 0; i < f.size(); i++) if ((i+1)%cond.SIZEu==0) cout << "\tf(" << i << ") = " << f(i) << endl;
+
+            // output approx. percent completed
+            cout << "\033[A\33[2K\r" << "estimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
+
+         } while(err > cond.ACCUR && cts < cond.N_loop);
+
+         if (err < cond.ACCUR) cout << "Found solution:" << endl;
+         else cout << "Result did not converge satifactorily:" << endl;
+         cout << "\titerations = " << cts << endl;
+         cout << "\trelative error = " << err << endl;
+
+         solution = f;
+      }
+
+      // Write all components of the OP, all into one file, of the form:
+      //             __x__|__y__|_Auu_|_Auv_| ...
+      //              ... | ... | ... | ... | ...
+      // separates the components from solution...storing real and imag parts ==> up to 18
+      void WriteToFile(Matrix<Scalar_type,-1,1>& vec, string file_name)
+      {
+         std::ofstream data (file_name);
+         if (data.is_open())
+         {
+            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+
+                  string line = to_string(n_u*cond.STEP) + string("\t")
+                              + to_string(n_v*cond.STEP) + string("\t"); // add the position components
+
+                  for (int vi = 0; vi < OP_size; vi++) {
+                     dcomplex element = solution(ID(size,n_u,cond.SIZEu,n_v,vi));
+                     line += to_string(element.real())                 // add the real and imaginary
+                           + string("\t") + to_string(element.imag()); //   components of the solution vector
+                     if (vi+1 < size) line += string("\t");
+                  }
+
+                  data << line << endl;
+               }
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
+      }
+
+      void WriteToFile_single_vector(VectorXd& vec, string file_name)
+      {
+         std::ofstream data (file_name);
+         if (data.is_open()) {
+            for (int i = 0; i < vec.size(); i++) {
+               string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i));
+               data << line << endl;
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
+      }
+
+      void WriteToFile_single_vector(VectorXcd& vec, string file_name)
+      {
+         std::ofstream data (file_name);
+         if (data.is_open()) {
+            for (int i = 0; i < vec.size(); i++) {
+               string line = to_string(i*cond.STEP) + string("\t") + to_string(vec(i).real()) + string("\t") + to_string(vec(i).imag());
+               data << line << endl;
+            }
+         }
+         else cout << "Unable to open file: " << file_name << endl;
+      }
+
    }; // GL_solver class
 
-   template <class Container_type, class Scalar_type>
-   class Three_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
+// derived classes for specific OP forms
+   template <class Scalar_type>
+   class Three_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 
-   template <class Container_type, class Scalar_type>
-   class Five_Component_GL_Solver : public GL_Solver<Container_type, Scalar_type> {};
+   template <class Scalar_type>
+   class Five_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 // ==================================================
 
 // Now include the real and comples class header files,
 //   since the parent class are defined
-#include "real_classes.hpp"
+// #include "real_classes.hpp"
 #include "complex_classes.hpp"
 
 #endif
