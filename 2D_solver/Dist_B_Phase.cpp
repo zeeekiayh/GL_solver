@@ -30,9 +30,7 @@ int main()
     cout << "\ttime: " << elapsed.count() << " second(s)." << endl;
 
     VectorXcd solution_cplx = gls_cplx.getSolution();
-    cout << "got solution" << endl;
     gls_cplx.WriteToFile(solution_cplx,"cplx_data.txt");
-    cout << "wrote solution to file" << endl;
 
     cout << "Free energy: " << gls_cplx.free_energy() << endl;
 
