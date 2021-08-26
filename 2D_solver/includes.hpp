@@ -677,12 +677,12 @@ struct in_conditions
 
       // given the next guess, update the op at all points on the mesh
       //   and make it available in it's vector form.
-      void updateVector(Matrix<Scalar_type,-1,1>& new_guess)
+      void update_OP_Vector(Matrix<Scalar_type,-1,1>& new_guess)
       {
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-               Matrix<Scalar_type,-1,1> op(3);
-               op << new_guess(ID(size,n_u,cond.SIZEu,n_v,0)), new_guess(ID(size,n_u,cond.SIZEu,n_v,1)), new_guess(ID(size,n_u,cond.SIZEu,n_v,2));
+               Matrix<Scalar_type,-1,1> op(OP_size); // a vector the size of # of OP components
+               for (int i = 0; i < OP_size; i++) op(i) = new_guess(ID(size,n_u,cond.SIZEu,n_v,i));
                op_matrix(n_v,n_u).Set_OP(op);
             }
          }
@@ -717,7 +717,7 @@ struct in_conditions
          auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
          cout << "\ttime: " << elapsed.count() << " seconds." << endl << endl;
 
-         updateVector(f); // prepare the matrix for RHS
+         update_OP_Vector(f); // prepare the matrix for RHS
 
          int cts = 0; // count loops
          double err;  // to store current error
@@ -739,7 +739,7 @@ struct in_conditions
             }
             else { cout << "ERROR: Unknown method type given." << endl; return; }
 
-            updateVector(f); // update the matrix for RHS
+            update_OP_Vector(f); // update the matrix for RHS
             rhs = RHS();     // update rhs
             cts++;           // increment counter
 
