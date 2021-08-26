@@ -25,25 +25,8 @@ using namespace Eigen;
 
 typedef Triplet<double> Tr;
 typedef SparseMatrix<double> SpMat_d;
-typedef Triplet<dcomplex> cTr;
 typedef SparseMatrix<dcomplex> SpMat_cd;
-
-// constants used in the GL equations
-struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
-
-// values used for set up, initial conditions, and algorithmic parameters
-struct in_conditions
-{
-   int SIZEu;    // the number of points...
-   int SIZEv;    // "" ...
-   int SIZEw;    // "" in orthogonal directions
-   int N_loop;   // count limit for iterations
-   int maxStore; // max num vectors kept in accerleration
-   int wait;     // iterations to wait before using acceleration
-   double ACCUR; // the minimum desired accuracy
-   double STEP;  // step size
-   double rel_p; // relaxation param
-};
+// typedef Triplet<dcomplex> cTr; // will we actually use this?
 
 // returns the unique id corresponding to each op-component in the mesh.
 //    n_u: mesh index along u
@@ -66,6 +49,23 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       cout << endl;
    }
 }
+
+// constants used in the GL equations
+struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
+
+// values used for set up, initial conditions, and algorithmic parameters
+struct in_conditions
+{
+   int SIZEu;    // the number of points...
+   int SIZEv;    // "" ...
+   int SIZEw;    // "" in orthogonal directions
+   int N_loop;   // count limit for iterations
+   int maxStore; // max num vectors kept in accerleration
+   int wait;     // iterations to wait before using acceleration
+   double ACCUR; // the minimum desired accuracy
+   double STEP;  // step size
+   double rel_p; // relaxation param
+};
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
@@ -184,6 +184,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
          // TODO: return just the real part...
       }
    };
+// ========================================================
 
 
 // ===========================================
@@ -227,11 +228,11 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       string method; // if Solve will use normal relaxtion or the accelerated
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
-      Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices
+      Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
       Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
@@ -244,11 +245,13 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
       }
       // ~GL_Solver() {};
 
-      // functions to be defined in specialized derived classes
+      // virtual functions; to be defined in derived classes.
+      //   these 3 must be pure virtual so that they can
+      //   be called by other functions in this class
       virtual SparseMatrix<Scalar_type> BuildSolverMatrix() = 0;
-      Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&);
-      Matrix<Scalar_type,-1,1> RHS();
-      // Scalar_type f_bulk();
+      virtual Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&) = 0;
+      virtual Matrix<Scalar_type,-1,1> RHS() = 0;
+      // non-virtual functions; to be defined in derived classes
       Scalar_type F_Grad(int, int, int);
       double free_energy();
 
@@ -811,6 +814,7 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 
    }; // GL_solver class
 
+// derived classes for specific OP forms
    template <class Scalar_type>
    class Three_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 
