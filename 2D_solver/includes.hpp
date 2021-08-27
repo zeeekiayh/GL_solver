@@ -50,6 +50,16 @@ void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
    }
 }
 
+// Insert the matrix "spMat" into the location (i,j) in a
+//    sparse matrix of size "size" and return the matrix
+template<typename Scalar_type>
+SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<Scalar_type> spMat)
+{
+   SparseMatrix<Scalar_type> Mij(size,size);
+   Mij.insert(i,j) = 1.;
+   return kroneckerProduct(Mij,spMat);
+}
+
 // constants used in the GL equations
 struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
 

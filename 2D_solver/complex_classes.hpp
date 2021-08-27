@@ -19,10 +19,6 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    // User-defined methods to build the solver matrix and the rhs vector
    SpMat_cd BuildSolverMatrix()
    {
-      // to make the code cleaner, define some constants
-      double K123 = gl.K1+gl.K2+gl.K3,
-             K23  = gl.K2+gl.K3;
-
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
 
@@ -31,14 +27,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       SpMat_cd elem_11 = Dw2_BD(Avv_BC,1);
       SpMat_cd elem_22 = 3.*Dw2_BD(Aww_BC,2);
 
-      // matrices for placement of each non-zero 'element'
-      SpMat_cd M00(OP_size,OP_size), M11(OP_size,OP_size), M22(OP_size,OP_size);
-      
-      // add a single 1 to each matrix to place the elem_.. matrices in the correct spot
-      M00.insert(0,0) = 1.; M11.insert(1,1) = 1.; M22.insert(2,2) = 1.;
-      
-      // 'place' them using the Kronecker product
-      solver_mat = kroneckerProduct( M00, elem_00 ) + kroneckerProduct( M11, elem_11 ) + kroneckerProduct( M22, elem_22 );
+      solver_mat = Place_subMatrix(0,0,OP_size,elem_00) + Place_subMatrix(1,1,OP_size,elem_11) + Place_subMatrix(2,2,OP_size,elem_22);
 
       return solver_mat;
    }
@@ -354,16 +343,13 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       SpMat_cd elem_43 = K23*Duw_BD(Awu_BC,4);
       SpMat_cd elem_44 = K123*Dw2_BD(Aww_BC,4) + gl.K1*Du2_BD(Aww_BC,4);
 
-      // matrices for placement of each non-zero 'element'
-      SpMat_cd M00(OP_size,OP_size), M01(OP_size,OP_size), M10(OP_size,OP_size), M11(OP_size,OP_size),
-               M22(OP_size,OP_size), M33(OP_size,OP_size), M34(OP_size,OP_size), M43(OP_size,OP_size),
-               M44(OP_size,OP_size);
-      
-      // add a single 1 to each matrix to place the elem_.. matrices in the correct spot
-      M00.insert(0,0) = 1.; M11.insert(1,1) = 1.; M22.insert(2,2) = 1.;
-      
-      // 'place' them using the Kronecker product
-      solver_mat = kroneckerProduct( M00, elem_00 ) + kroneckerProduct( M11, elem_11 ) + kroneckerProduct( M22, elem_22 );
+      // insert each 'element' from above into their respective locations
+      //    and add them together to get the solver matrix
+      solver_mat = Place_subMatrix(0,0,OP_size,elem_00) + Place_subMatrix(0,1,OP_size,elem_01)
+                  + Place_subMatrix(1,0,OP_size,elem_10) + Place_subMatrix(1,1,OP_size,elem_11) 
+                  + Place_subMatrix(2,2,OP_size,elem_22) + Place_subMatrix(3,3,OP_size,elem_33)
+                  + Place_subMatrix(3,4,OP_size,elem_34) + Place_subMatrix(4,3,OP_size,elem_43)
+                  + Place_subMatrix(4,4,OP_size,elem_44);
 
       return solver_mat;
    }
