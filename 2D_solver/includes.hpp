@@ -221,6 +221,17 @@ struct in_conditions
 // ===========================================
 
 
+// Access OP elements from a vector that has been flatened from a
+//   matrix of size 'sizeU' X 'sizeV', with an OP size 'OPsize'
+template<typename Scalar_type>
+OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int v, int sizeU, int sizeV, int OPsize)
+{
+   OrderParam<Scalar_type> op(OPsize); // initialize the OP to return
+   for (int vi = 0; vi < OPsize; vi++) op(vi) = vec(ID(sizeU*sizeV,u,sizeU,v,u)); // insert all OP components into the OrderParam object
+   return op;
+}
+
+
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and
