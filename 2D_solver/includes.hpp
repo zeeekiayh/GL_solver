@@ -38,17 +38,17 @@ int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max
 double abs2(dcomplex x) { return pow(abs(x),2); }
 double abs2(double x) { return pow(abs(x),2); }
 
-// To see a small portion of a (sparse) matrix; for debugging
-void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
-{
-   for (int h = 0; h < height; h++) {
-      for (int w = 0; w < width; w++) {
-         cout << matrix.coeffRef(n_u+w, n_v+h);
-         if (w+1 < width) cout << ", ";
-      }
-      cout << endl;
-   }
-}
+// // To see a small portion of a (sparse) matrix; for debugging
+// void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
+// {
+//    for (int h = 0; h < height; h++) {
+//       for (int w = 0; w < width; w++) {
+//          cout << matrix.coeffRef(n_u+w, n_v+h);
+//          if (w+1 < width) cout << ", ";
+//       }
+//       cout << endl;
+//    }
+// }
 
 // Insert the matrix "spMat" into the location (i,j) in a
 //    sparse matrix of size "size" and return the matrix
@@ -131,6 +131,7 @@ struct in_conditions
       }
       
       // get the op components into a vector form from a 3x3 matrix
+      // ...do we actually need this?
       void Set_OP(Matrix<Scalar_type,3,3> op)
       {
          // flatten the matrix (row major)
