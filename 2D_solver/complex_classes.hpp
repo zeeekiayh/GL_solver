@@ -34,7 +34,6 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    
    VectorXcd RHS()
    {
-      int cts = 0;
       Matrix3cd op, op_T, op_dag, op_conj;
       VectorXcd rhs(this->op_vector.size());
       double Beta_bulk = 6*(gl.B1+gl.B2)+2*(gl.B3+gl.B4+gl.B5);
@@ -43,7 +42,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
          // decide which BC to use
-               if (vi == 0) temp_BC = Auu_BC;
+              if (vi == 0) temp_BC = Auu_BC;
          else if (vi == 1) temp_BC = Avv_BC;
          else if (vi == 2) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
@@ -53,20 +52,17 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
-               if (temp_BC.typeB == string("Dirichlet") && !n_v) val = temp_BC.bB;
-               else if (temp_BC.typeB == string("Neumann") && !n_v) val = 0.;
+                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.bB;
                else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
-               else if (temp_BC.typeT == string("Neumann") && n_v == cond.SIZEv-1) val = 0.;
                else
                {
                   auto axx = this->op_matrix(n_v,n_u)(0);
                   auto azz = this->op_matrix(n_v,n_u)(2);
 
-                  // assuming all components are real, so a* = a
                   // the Aww_BC: perpendicular
-                  if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
+                  if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(azz) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
                   // the Auu_BC or Avv_BC: parallel
-                  else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
+                  else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(axx) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                }
@@ -219,49 +215,49 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         //    is there a way to work around that?
                         // use BC values to calculate the gradient terms
                         if (j == 0) { // x-derivative
-                           if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
-                           if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
 
-                           if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
                            if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v,n_u-1)(j) )/cond.STEP;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v,n_u-1)(k) )/cond.STEP;
                         }
                         // if (j == 1) // y derivative
                         if (j == 2) { // z-derivative
-                           if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
-                           if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
 
-                           if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajj = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakj = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajj = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakj = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
                            if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v-1,n_u)(j) )/cond.STEP;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v-1,n_u)(k) )/cond.STEP;
                         }
 
                         if (k == 0) { // x-derivative
-                           if (!n_u &&                temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
-                           if (!n_u &&                temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
 
-                           if (!n_u &&                temp_bc_j.typeL == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (!n_u &&                temp_bc_k.typeL == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
                            if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v,n_u-1)(j) )/cond.STEP;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v,n_u-1)(k) )/cond.STEP;
                         }
                         // if (k == 1) // y derivative
                         if (k == 2) { // z-derivative
-                           if (!n_v &&                temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
-                           if (!n_v &&                temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
 
-                           if (!n_v &&                temp_bc_j.typeB == string("Dirichlet")) Aajk = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (!n_v &&                temp_bc_k.typeB == string("Dirichlet")) Aakk = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajk = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakk = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
                            if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v-1,n_u)(j) )/cond.STEP;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v-1,n_u)(k) )/cond.STEP;
                         }
@@ -356,18 +352,26 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    
    VectorXcd RHS()
    {
-      int cts = 0;
       Matrix3cd op, op_T, op_dag, op_conj;
       VectorXcd rhs(this->op_vector.size());
-      double Beta_bulk = 6*(gl.B1+gl.B2)+2*(gl.B3+gl.B4+gl.B5);
       Bound_Cond temp_BC;
+
+      // define common values for brevity
+      double beta_bulk = 5.*(gl.B1+gl.B2)+17./5.*(gl.B3+gl.B4+gl.B5);
+      double beta_1_5 = gl.B1 + gl.B2 + gl.B3 + gl.B4 + gl.B5;
+      double beta_234 = gl.B2 + gl.B3 + gl.B4;
+      double beta_245 = gl.B2 + gl.B4 + gl.B5;
+      double beta_13 = gl.B1 + gl.B3;
+      double beta_15 = gl.B1 + gl.B5;
 
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
          // decide which BC to use
-               if (vi == 0) temp_BC = Auu_BC;
-         else if (vi == 1) temp_BC = Avv_BC;
-         else if (vi == 2) temp_BC = Aww_BC;
+              if (vi == 0) temp_BC = Auu_BC;
+         else if (vi == 1) temp_BC = Auw_BC;
+         else if (vi == 2) temp_BC = Avv_BC;
+         else if (vi == 3) temp_BC = Awu_BC;
+         else if (vi == 4) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
 
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
@@ -375,20 +379,39 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
-               if (temp_BC.typeB == string("Dirichlet") && !n_v) val = temp_BC.bB;
-               else if (temp_BC.typeB == string("Neumann") && !n_v) val = 0.;
+                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.bB;
                else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
-               else if (temp_BC.typeT == string("Neumann") && n_v == cond.SIZEv-1) val = 0.;
                else
                {
                   auto axx = this->op_matrix(n_v,n_u)(0);
-                  auto azz = this->op_matrix(n_v,n_u)(2);
+                  auto axz = this->op_matrix(n_v,n_u)(1);
+                  auto ayy = this->op_matrix(n_v,n_u)(2);
+                  auto azx = this->op_matrix(n_v,n_u)(3);
+                  auto azz = this->op_matrix(n_v,n_u)(4);
 
-                  // assuming all components are real, so a* = a
-                  // the Aww_BC: perpendicular
-                  if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*azz + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
-                  // the Auu_BC or Avv_BC: parallel
-                  else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*axx + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
+                  switch (vi)
+                  {
+                  case 0: // Axx
+                     val = axx + axx/beta_bulk * 2.*( beta_1_5*abs2(axx) + beta_245*abs2(axz) + gl.B2*abs2(ayy) + beta_234*abs2(azx) + gl.B3*abs2(azz) )
+                           + 2./beta_bulk*( gl.B4*axz*azx*conj(azz) + gl.B3*axz*conj(azx)*azz + gl.B5*conj(axz)*azx*azz )
+                           + 2.*conj(axx)/beta_bulk*( beta_13*pow(axz,2) + gl.B1*(pow(ayy,2)+pow(azz,2)) + beta_15*pow(azx,2) );
+                     break;
+                  case 1: // Axz
+                     val = 0.;
+                     break;
+                  case 2: // Ayy
+                     val = 0.;
+                     break;
+                  case 3: // Azx
+                     val = 0.;
+                     break;
+                  case 4: // Azz
+                     val = 0.;
+                     break;
+                  
+                  default:
+                     break;
+                  }
 
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                }
