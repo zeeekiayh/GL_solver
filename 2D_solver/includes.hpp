@@ -63,19 +63,46 @@ SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<S
 // constants used in the GL equations
 struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
 
-// values used for set up, initial conditions, and algorithmic parameters
-struct in_conditions
-{
-   int SIZEu;    // the number of points...
-   int SIZEv;    // "" ...
-   int SIZEw;    // "" in orthogonal directions
-   int N_loop;   // count limit for iterations
-   int maxStore; // max num vectors kept in accerleration
-   int wait;     // iterations to wait before using acceleration
-   double ACCUR; // the minimum desired accuracy
-   double STEP;  // step size
-   double rel_p; // relaxation param
-};
+// ===========================================
+// Values used for set up, initial conditions,
+//   and algorithmic parameters
+   struct in_conditions
+   {
+      int SIZEu;    // the number of points...
+      int SIZEv;    // "" ...
+      int SIZEw;    // "" in orthogonal directions
+      int N_loop;   // count limit for iterations
+      int maxStore; // max num vectors kept in accerleration
+      int wait;     // iterations to wait before using acceleration
+      double ACCUR; // the minimum desired accuracy
+      double STEP;  // step size
+      double rel_p; // relaxation param
+   };
+// ===========================================
+
+
+// ===========================================
+// Boundary condition structure for a sigle OP
+   struct Bound_Cond
+   {
+      string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
+      double bB, bT, bL, bR; // for Neumann BC:   slip length
+                             // for Dirichlet BC: function value
+      Bound_Cond& operator= (Bound_Cond& rhs)
+      {
+         typeB = rhs.typeB;
+         typeT = rhs.typeT;
+         typeL = rhs.typeL;
+         typeR = rhs.typeR;
+         bB = rhs.bB;
+         bT = rhs.bT;
+         bL = rhs.bL;
+         bR = rhs.bR;
+         return *this;
+      }
+   };
+// ===========================================
+
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
@@ -99,7 +126,7 @@ struct in_conditions
       void initialize(int n)
       {
          num_comp = n;
-         if (num_comp > 1) OP.resize(num_comp);
+         OP.resize(num_comp);
       }
 
       // void Set_OP(Matrix<Scalar_type,-1,1> op) { OP = op; }
@@ -122,7 +149,7 @@ struct in_conditions
          return OP(i); // it's component
       }
 
-      OrderParam& operator=(OrderParam& rhs)
+      OrderParam& operator=(OrderParam rhs)
       {
          OP = rhs.OP;
          num_comp = rhs.num_comp;
@@ -198,36 +225,19 @@ struct in_conditions
 // ========================================================
 
 
-// ===========================================
-// Boundary condition structure for a sigle OP
-   struct Bound_Cond
-   {
-      string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
-      double bB, bT, bL, bR; // for Neumann BC:   slip length
-                             // for Dirichlet BC: function value
-      Bound_Cond& operator= (Bound_Cond& rhs)
-      {
-         typeB = rhs.typeB;
-         typeT = rhs.typeT;
-         typeL = rhs.typeL;
-         typeR = rhs.typeR;
-         bB = rhs.bB;
-         bT = rhs.bT;
-         bL = rhs.bL;
-         bR = rhs.bR;
-         return *this;
-      }
-   };
-// ===========================================
-
-
-// Access OP elements from a vector that has been flatened from a
-//   matrix of size 'sizeU' X 'sizeV', with an OP size 'OPsize'
+// A special function to access OP elements from a vector that
+//   has been flattened from a matrix of size 'sizeU' X 'sizeV'
 template<typename Scalar_type>
-OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int v, int sizeU, int sizeV, int OPsize)
+OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, int u, int sizeV, int sizeU, int OPsize, bool debug = false)
 {
-   OrderParam<Scalar_type> op(OPsize); // initialize the OP to return
-   for (int vi = 0; vi < OPsize; vi++) op(vi) = vec(ID(sizeU*sizeV,u,sizeU,v,u)); // insert all OP components into the OrderParam object
+   OrderParam<Scalar_type> op;
+   op.initialize(OPsize); // initialize the OP to return
+   if (debug) cout << "size = " << sizeV*sizeU << endl;
+   for (int vi = 0; vi < OPsize; vi++)
+   {
+      if (debug) cout << "ID = " << ID(sizeU*sizeV,u,sizeU,v,vi) << endl;
+      op(vi) = vec(ID(sizeU*sizeV,u,sizeU,v,vi)); // insert all OP components into the OrderParam object
+   }
    return op;
 }
 
@@ -255,7 +265,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices
       Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
-      Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
+      // Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
       // CONSTRUCTORS & DECSTRUCTOR
@@ -670,46 +680,48 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int
       void BuildProblem()
       {
          Build_D_Matrices();
-         initialize_OP_matrix();
+         op_vector.resize(size*OP_size); // initialize OP vetor
          SolverMatrix = BuildSolverMatrix();
       }
 
-      // Convert the OP matrix, at all mesh points, into a vector
-      void setVectorForm()
-      {
-         for (int vi = 0; vi < OP_size; vi++) {
-            for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-                  op_vector(ID(size,n_u,cond.SIZEu,n_v,vi)) = op_matrix(n_v,n_u)(vi);
-               }
-            }
-         }
-      }
+// // won't be needed without 'op_matrix'...
+//       // Convert the OP matrix, at all mesh points, into a vector
+//       void setVectorForm()
+//       {
+//          for (int vi = 0; vi < OP_size; vi++) {
+//             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+//                for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+//                   op_vector(ID(size,n_u,cond.SIZEu,n_v,vi)) = op_matrix(n_v,n_u)(vi);
+//                }
+//             }
+//          }
+//       }
 
-      void initialize_OP_matrix()
-      {
-         op_matrix.resize(cond.SIZEv,cond.SIZEu); // initialize matrix
-         op_vector.resize(cond.SIZEu*cond.SIZEv*OP_size); // initialize op_vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
+// // won't be needed without 'op_matrix'...
+//       void initialize_OP_matrix()
+//       {
+//          op_matrix.resize(cond.SIZEv,cond.SIZEu); // initialize matrix
+//          op_vector.resize(cond.SIZEu*cond.SIZEv*OP_size); // initialize op_vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
+//          // initialize elements in 'matrix'
+//          for (int n_u = 0; n_u < cond.SIZEu; n_u++) for (int n_v = 0; n_v < cond.SIZEv; n_v++) op_matrix(n_v,n_u).initialize(OP_size);
+//          setVectorForm();// make the vector form available
+//       }
 
-         // initialize elements in 'matrix'
-         for (int n_u = 0; n_u < cond.SIZEu; n_u++) for (int n_v = 0; n_v < cond.SIZEv; n_v++) op_matrix(n_v,n_u).initialize(OP_size);
-
-         setVectorForm();// make the vector form available
-      }
-
-      // given the next guess, update the op at all points on the mesh
-      //   and make it available in it's vector form.
-      void update_OP_Vector(Matrix<Scalar_type,-1,1>& new_guess)
-      {
-         for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-            for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-               Matrix<Scalar_type,-1,1> op(OP_size); // a vector the size of # of OP components
-               for (int i = 0; i < OP_size; i++) op(i) = new_guess(ID(size,n_u,cond.SIZEu,n_v,i));
-               op_matrix(n_v,n_u).Set_OP(op);
-            }
-         }
-         setVectorForm();
-      }
+// // won't be neede without 'op_matrix'...
+// // we will simply say 'this->op_vector = new_guess', or something like that
+//       // given the next guess, update the op at all points on the mesh
+//       //   and make it available in it's vector form.
+//       void update_OP_Vector(Matrix<Scalar_type,-1,1>& new_guess)
+//       {
+//          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+//             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+//                Matrix<Scalar_type,-1,1> op(OP_size); // a vector the size of # of OP components
+//                for (int i = 0; i < OP_size; i++) op(i) = new_guess(ID(size,n_u,cond.SIZEu,n_v,i));
+//                op_matrix(n_v,n_u).Set_OP(op);
+//             }
+//          }
+//          setVectorForm();
+//       }
 
       // use the relaxation method and Anderson Acceleration to solve
       void Solve(Matrix<Scalar_type,-1,1>& guess)
@@ -739,7 +751,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int
          auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
          cout << "\ttime: " << elapsed.count() << " seconds." << endl << endl;
 
-         update_OP_Vector(f); // prepare the matrix for RHS
+         // update_OP_Vector(f); // prepare the matrix for RHS
 
          int cts = 0; // count loops
          double err;  // to store current error
@@ -761,9 +773,9 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1> vec, int u, int
             }
             else { cout << "ERROR: Unknown method type given." << endl; return; }
 
-            update_OP_Vector(f); // update the matrix for RHS
-            rhs = RHS();     // update rhs
-            cts++;           // increment counter
+            op_vector = f; // update the matrix for RHS
+            rhs = RHS();   // update rhs
+            cts++;         // increment counter
 
             // for debugging: to see if the solution is oscillating rather than converging
             // for (int i = 0; i < f.size(); i++) if ((i+1)%cond.SIZEu==0) cout << "\tf(" << i << ") = " << f(i) << endl;

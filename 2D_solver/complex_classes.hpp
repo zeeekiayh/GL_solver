@@ -11,14 +11,19 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    public:
    Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
    {
+      // cout << "Three_Component_GL_Solver()" << endl;
       ReadConditions(conditions_file);
+      // cout << "here 4" << endl;
       ReadBoundaryConditions(boundary_conditions_file);
+      // cout << "here 5" << endl;
       size = cond.SIZEu*cond.SIZEv;
+      // cout << "here 6" << endl;
    }
 
    // User-defined methods to build the solver matrix and the rhs vector
    SpMat_cd BuildSolverMatrix()
    {
+      // cout << "BuildSolverMatrix()" << endl;
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
 
@@ -34,10 +39,12 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    
    VectorXcd RHS()
    {
+      // cout << "RHS()" << endl;
       Matrix3cd op, op_T, op_dag, op_conj;
       VectorXcd rhs(this->op_vector.size());
       double Beta_bulk = 6*(gl.B1+gl.B2)+2*(gl.B3+gl.B4+gl.B5);
       Bound_Cond temp_BC;
+      // cout << "here 7" << endl;
 
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
@@ -46,9 +53,12 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          else if (vi == 1) temp_BC = Avv_BC;
          else if (vi == 2) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
+         // cout << "here 8" << endl;
 
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+            // cout << "here n_v = " << n_v << endl;
             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+               // cout << "here n_u = " << n_u << endl;
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
@@ -56,19 +66,28 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
                else
                {
-                  auto axx = this->op_matrix(n_v,n_u)(0);
-                  auto azz = this->op_matrix(n_v,n_u)(2);
+                  // cout << "here 9" << endl;
+                  // cout << "op_vector.size(): " << op_vector.size() << endl;
+                  auto a = matrix_operator(op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
+                  // cout << "here 9.5" << endl;
+                  auto axx = a(0);
+                  auto azz = a(2);
+                  // cout << "here 10" << endl;
 
                   // the Aww_BC: perpendicular
                   if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(azz) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
                   // the Auu_BC or Avv_BC: parallel
                   else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(axx) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
+                  // cout << "here 11" << endl;
+
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                }
+               // cout << "here 12" << endl;
 
                // insert val in rhs, in the matching location
                rhs(id) = val;
+               // cout << "here 13" << endl;
             }
          }
       }
@@ -123,8 +142,6 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          return 0.;
       }
 
-      auto o = this->op_matrix(2,2);
-
       double beta_B = 6.*(gl.B1+gl.B2) + 2.*(gl.B3+gl.B4+gl.B5);
       dcomplex I = 0.; // start the integral sum at 0
       dcomplex f_bulk = 0.;
@@ -142,7 +159,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
 
             // calculate all the needed forms of A
-            A = this->op_matrix(n_v,n_u).GetMatrixForm();
+            A = matrix_operator(op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size).GetMatrixForm();
             A_tran = A.transpose();
             A_conj = A.conjugate();
             A_dag = A.adjoint();
@@ -152,10 +169,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
             if (n_u && n_v && n_u < cond.SIZEu-1 && n_v < cond.SIZEv-1) // if we're not at a boundary,
             {
                // get all the needed neighbors of A
-               A_prev_x = this->op_matrix(n_v,n_u-1);
-               A_next_x = this->op_matrix(n_v,n_u+1);
-               A_prev_z = this->op_matrix(n_v-1,n_u);
-               A_next_z = this->op_matrix(n_v+1,n_u);
+               A_prev_x = matrix_operator(op_vector,n_v,n_u-1,cond.SIZEv,cond.SIZEu,OP_size);
+               A_next_x = matrix_operator(op_vector,n_v,n_u+1,cond.SIZEv,cond.SIZEu,OP_size);
+               A_prev_z = matrix_operator(op_vector,n_v-1,n_u,cond.SIZEv,cond.SIZEu,OP_size);
+               A_next_z = matrix_operator(op_vector,n_v+1,n_u,cond.SIZEv,cond.SIZEu,OP_size);
 
                // calculate the gradient at each point:
                //   loop through the OP at the point
@@ -197,6 +214,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                } // for a
             } // if not @ bd
             else { // we're at a boundary
+               OrderParam<dcomplex> A_vu, A_vup, A_vum, A_vpu, A_vmu;
 
                // calculate the gradient at each point:
                //   loop through the OP at the point
@@ -211,6 +229,12 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         if (k == 1) temp_bc_k = Aww_BC;
                         if (k == 2) temp_bc_k = Avv_BC;
 
+                        A_vu = matrix_operator(op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
+                        if (n_u != cond.SIZEu-1) A_vup = matrix_operator(op_vector,n_v,n_u+1,cond.SIZEv,cond.SIZEu,OP_size); // 'up' = u plus = u+1
+                        if (n_u != 0) A_vum = matrix_operator(op_vector,n_v,n_u-1,cond.SIZEv,cond.SIZEu,OP_size); // 'um' = u minus = u-1
+                        if (n_v != cond.SIZEv-1) A_vpu = matrix_operator(op_vector,n_v+1,n_u,cond.SIZEv,cond.SIZEu,OP_size); // 'vp' = v plus = v+1
+                        if (n_v != 0) A_vmu = matrix_operator(op_vector,n_v-1,n_u,cond.SIZEv,cond.SIZEu,OP_size); // 'vm' = v minus = v-1
+
                         // Right now, we only use a step of h, so it is less stable...
                         //    is there a way to work around that?
                         // use BC values to calculate the gradient terms
@@ -220,10 +244,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                            if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
 
-                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
-                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v,n_u-1)(j) )/cond.STEP;
-                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v,n_u-1)(k) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajj = ( A_vup(j) - A_vu(j) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakj = ( A_vup(k) - A_vu(k) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajj = ( A_vu(j) - A_vum(j) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakj = ( A_vu(k) - A_vum(k) )/cond.STEP;
                         }
                         // if (j == 1) // y derivative
                         if (j == 2) { // z-derivative
@@ -232,10 +256,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                            if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
 
-                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajj = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakj = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
-                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajj = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v-1,n_u)(j) )/cond.STEP;
-                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakj = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v-1,n_u)(k) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajj = ( A_vpu(j) - A_vu(j) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakj = ( A_vpu(k) - A_vu(k) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajj = ( A_vu(j) - A_vmu(j) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakj = ( A_vu(k) - A_vmu(k) )/cond.STEP;
                         }
 
                         if (k == 0) { // x-derivative
@@ -244,10 +268,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                            if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
                            if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
 
-                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u+1)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u+1)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
-                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v,n_u-1)(j) )/cond.STEP;
-                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v,n_u-1)(k) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajk = ( A_vup(j) - A_vu(j) )/cond.STEP;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakk = ( A_vup(k) - A_vu(k) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Dirichlet")) Aajk = ( A_vu(j) - A_vum(j) )/cond.STEP;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Dirichlet")) Aakk = ( A_vu(k) - A_vum(k) )/cond.STEP;
                         }
                         // if (k == 1) // y derivative
                         if (k == 2) { // z-derivative
@@ -256,10 +280,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                            if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
                            if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
 
-                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajk = ( this->op_matrix(n_v+1,n_u)(j) - this->op_matrix(n_v,n_u)(j) )/cond.STEP;
-                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakk = ( this->op_matrix(n_v+1,n_u)(k) - this->op_matrix(n_v,n_u)(k) )/cond.STEP;
-                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajk = ( this->op_matrix(n_v,n_u)(j) - this->op_matrix(n_v-1,n_u)(j) )/cond.STEP;
-                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakk = ( this->op_matrix(n_v,n_u)(k) - this->op_matrix(n_v-1,n_u)(k) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajk = ( A_vpu(j) - A_vu(j) )/cond.STEP;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakk = ( A_vpu(k) - A_vu(k) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Dirichlet")) Aajk = ( A_vu(j) - A_vmu(j) )/cond.STEP;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Aakk = ( A_vu(k) - A_vmu(k) )/cond.STEP;
                         }
 
                         k1 += abs2(Aajk);
@@ -383,11 +407,12 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
                else
                {
-                  auto axx = this->op_matrix(n_v,n_u)(0);
-                  auto axz = this->op_matrix(n_v,n_u)(1);
-                  auto ayy = this->op_matrix(n_v,n_u)(2);
-                  auto azx = this->op_matrix(n_v,n_u)(3);
-                  auto azz = this->op_matrix(n_v,n_u)(4);
+                  auto a = matrix_operator(this->op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
+                  auto axx = a(0);
+                  auto axz = a(1);
+                  auto ayy = a(2);
+                  auto azx = a(3);
+                  auto azz = a(4);
 
                   switch (vi)
                   {
@@ -424,22 +449,23 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       return rhs;
    }
 
-   // given the next guess, update the op at all points on the mesh
-   //   and make it available in it's vector form.
-   void updateMatrix(VectorXcd& new_guess)
-   {
-      int sz = cond.SIZEu*cond.SIZEv;
-      for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-         for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-            Matrix3cd op;
-            op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)),
-                  0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2)), 0.,
-                  new_guess(ID(sz,n_u,cond.SIZEu,n_v,3)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,4));
-            this->op_matrix(n_v,n_u).Set_OP(op);
-         }
-      }
-      setVectorForm();
-   }
+// won't need this without 'op_matrix'
+   // // given the next guess, update the op at all points on the mesh
+   // //   and make it available in it's vector form.
+   // void updateMatrix(VectorXcd& new_guess)
+   // {
+   //    int sz = cond.SIZEu*cond.SIZEv;
+   //    for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
+   //       for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
+   //          Matrix3cd op;
+   //          op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)),
+   //                0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2)), 0.,
+   //                new_guess(ID(sz,n_u,cond.SIZEu,n_v,3)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,4));
+   //          this->op_matrix(n_v,n_u).Set_OP(op);
+   //       }
+   //    }
+   //    setVectorForm();
+   // }
 
    // make an educated guess using the boundary conditions
    VectorXcd makeGuess(VectorXcd& g)
