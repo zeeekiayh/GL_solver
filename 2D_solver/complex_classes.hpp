@@ -416,22 +416,29 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
 
                   switch (vi)
                   {
-                  case 0: // Axx
+                  case 0: // Axx                                                                   b2 here?            and                b3 here?
                      val = axx + axx/beta_bulk * 2.*( beta_1_5*abs2(axx) + beta_245*abs2(axz) + gl.B2*abs2(ayy) + beta_234*abs2(azx) + gl.B3*abs2(azz) )
                            + 2./beta_bulk*( gl.B4*axz*azx*conj(azz) + gl.B3*axz*conj(azx)*azz + gl.B5*conj(axz)*azx*azz )
                            + 2.*conj(axx)/beta_bulk*( beta_13*pow(axz,2) + gl.B1*(pow(ayy,2)+pow(azz,2)) + beta_15*pow(azx,2) );
                      break;
                   case 1: // Axz
-                     val = 0.;
+                     val = axz + axz/beta_bulk * 2.*( beta_245*abs2(axx) + beta_1_5*abs2(axz) + gl.B2*abs2(ayy) + gl.B2*abs2(azx) + beta_234*abs2(azz) )
+                           + 2./beta_bulk*( gl.B3*axx*azx*conj(azz) + gl.B4*axx*conj(azx)*azz + gl.B5*conj(axx)*azx*azz )
+                           + 2.*conj(axz)/beta_bulk*( beta_13*pow(axx,2) + gl.B1*(pow(ayy,2)+pow(azx,2)) + beta_15*pow(azz,2) );
                      break;
                   case 2: // Ayy
-                     val = 0.;
+                     val = ayy + 2.*ayy*gl.B2/beta_bulk * (abs2(axx) + abs2(axz) + abs2(azx) + abs2(azz)) + 2.*beta_1_5/beta_bulk*ayy*abs2(ayy)
+                           + 2.*gl.B1*conj(ayy)/beta_bulk*(pow(axx,2) + pow(axz,2) + pow(azx,2) + pow(azz,2));
                      break;
                   case 3: // Azx
-                     val = 0.;
+                     val = azx + azx/beta_bulk * 2.*( beta_234*abs2(axx) + gl.B2*abs2(axz) + gl.B2*abs2(ayy) + beta_1_5*abs2(azx) + beta_245*abs2(azz) )
+                           + 2./beta_bulk*( gl.B5*axx*axz*conj(azz) + gl.B4*axx*conj(axz)*azz + gl.B3*conj(axx)*axz*azz )
+                           + 2.*conj(azx)/beta_bulk*( beta_15*pow(axx,2) + gl.B1*(pow(axz,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
                      break;
                   case 4: // Azz
-                     val = 0.;
+                     val = azz + azz/beta_bulk * 2.*( gl.B2*abs2(axx) + beta_234*abs2(axz) + gl.B2*abs2(ayy) + beta_245*abs2(azx) + beta_1_5*abs2(azz) )
+                           + 2./beta_bulk*( gl.B5*axx*azx*conj(azx) + gl.B3*axx*conj(azx)*azx + gl.B4*conj(axx)*azx*azx )
+                           + 2.*conj(azz)/beta_bulk*( beta_15*pow(axz,2) + gl.B1*(pow(axx,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
                      break;
                   
                   default:

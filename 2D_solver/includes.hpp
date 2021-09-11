@@ -415,7 +415,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       void Build_D_Matrices()
       {
          // make vectors to hold the triplets of coefficients
-         vector<Tr> coeffs_u2, coeffs_v2, coeffs_uv; // coeffs_y2, coeffs_xy, coeffs_yz
+         vector<Tr> coeffs_u2, coeffs_w2, coeffs_uw; // coeffs_v2, coeffs_uv, coeffs_vw
 
          // u, v, w are orthogonal basis for the system
          //   the n's are indexes in each direction
@@ -425,84 +425,125 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
                int id = ID(size,n_u,cond.SIZEu,n_v,0);
                
-               // InsertCoeff_Du2(id, n_u,   n_v, -2., coeffs_u2);
-               // InsertCoeff_Du2(id, n_u-1, n_v,  1., coeffs_u2);
-               // InsertCoeff_Du2(id, n_u+1, n_v,  1., coeffs_u2);
+               InsertCoeff_Du2(id, n_u,   n_v, -2., coeffs_u2);
+               InsertCoeff_Du2(id, n_u-1, n_v,  1., coeffs_u2);
+               InsertCoeff_Du2(id, n_u+1, n_v,  1., coeffs_u2);
                
-               InsertCoeff_Dw2(id, n_u, n_v,  -2., coeffs_v2);
-               InsertCoeff_Dw2(id, n_u, n_v-1, 1., coeffs_v2);
-               InsertCoeff_Dw2(id, n_u, n_v+1, 1., coeffs_v2);
+               InsertCoeff_Dw2(id, n_u, n_v,  -2., coeffs_w2);
+               InsertCoeff_Dw2(id, n_u, n_v-1, 1., coeffs_w2);
+               InsertCoeff_Dw2(id, n_u, n_v+1, 1., coeffs_w2);
                
-               // InsertCoeff_Duw(id, n_u-1, n_v-1, 1./4., coeffs_uv);
-               // InsertCoeff_Duw(id, n_u+1, n_v-1,-1./4., coeffs_uv);
-               // InsertCoeff_Duw(id, n_u-1, n_v+1,-1./4., coeffs_uv);
-               // InsertCoeff_Duw(id, n_u+1, n_v+1, 1./4., coeffs_uv);
-               
+               InsertCoeff_Duw(id, n_u-1, n_v-1, 1./4., coeffs_uw);
+               InsertCoeff_Duw(id, n_u+1, n_v-1,-1./4., coeffs_uw);
+               InsertCoeff_Duw(id, n_u-1, n_v+1,-1./4., coeffs_uw);
+               InsertCoeff_Duw(id, n_u+1, n_v+1, 1./4., coeffs_uw);
             }
          }
 
          // initialize the D's by size
-         // Du2.resize(size,size);
+         Du2.resize(size,size);
          Dw2.resize(size,size);
-         // Duw.resize(size,size);
+         Duw.resize(size,size);
 
          // build all the D's from their coefficient triplet-vectors
-         // Du2.setFromTriplets(coeffs_u2.begin(), coeffs_u2.end());
-         Dw2.setFromTriplets(coeffs_v2.begin(), coeffs_v2.end());
-         // Duw.setFromTriplets(coeffs_uv.begin(), coeffs_uv.end());
+         Du2.setFromTriplets(coeffs_u2.begin(), coeffs_u2.end());
+         Dw2.setFromTriplets(coeffs_w2.begin(), coeffs_w2.end());
+         Duw.setFromTriplets(coeffs_uw.begin(), coeffs_uw.end());
       }
 
-      // // Insert method for the Dx^2 matrix derivatives
-      // void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs)
-      // {
-      //    // id is the index of the connecting element, so
-      //    //   id1 is the index of the element being inserted
-      //    int id1 = ID(size,u,cond.SIZEv,v,0);
-      //    // would add boundary conditions here, but we'll use ghost points, so do nothing
-      //    if (u == -1 || u == cond.SIZEu);
-      //    // we'll just insert default values, filling the spaces,
-      //    //   but they will be modified later for each OP-component
-      //    else coeffs.push_back(Tr(id,id1,weight));
-      // }
+      // // Insert method for the Du^2 matrix derivatives
+      void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs)
+      {
+         if (u == -1 || u == cond.SIZEu);
+         else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEv,v,0),weight));
+      }
 
-      // insert method for the Dz^2 matrix derivatives
+      // insert method for the Dw^2 matrix derivatives
       void InsertCoeff_Dw2(int id, int u, int v, double weight, vector<Tr>& coeffs)
       {
-         if (v == -1 || v == cond.SIZEv){} // would add boundary conditions here, but
+         if (v == -1 || v == cond.SIZEv); // would add boundary conditions here, but
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight)); // we'll use ghost points, so do nothing
       }
 
       // // insert method for the mixed derivative matrices
-      // void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs)
-      // {
-      //         if (u == -1 || u == cond.SIZEu){} // would add boundary conditions here,
-      //    else if (v == -1 || v == cond.SIZEv){} //  but we'll use ghost points, so do nothing
-      //    else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
-      // }
+      void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs)
+      {
+              if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
+         else if (v == -1 || v == cond.SIZEv); //  but we'll use ghost points, so do nothing
+         else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
+      }
    
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num)
       {
-         SparseMatrix<Scalar_type> Du2_copy;
+         // vector<int> indexes_to_visit; // vector for debugging
+         SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
+
+         for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the top and bottom boundary points of the mesh
+         {
+            // indexes for the points on the bottom side
+            int id0 =         ID(size, 0, cond.SIZEu, n_v, 0),
+                id0_connect = ID(size, 1, cond.SIZEu, n_v, 0);
+            
+            // indexes for the points on the top side
+            int idN =         ID(size, cond.SIZEu-1, cond.SIZEu, n_v, 0),
+                idN_connect = ID(size, cond.SIZEv-2, cond.SIZEu, n_v, 0);
+
+            // set the values at these indexes using the ghost points,
+            //   and depending on what kind of BC we have there
+            if (BC.typeB == string("Neumann"))
+            {
+               Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.bB;
+               Du2_copy.coeffRef(id0,id0_connect) = 2.;
+            }
+            else if (BC.typeB == string("Dirichlet"))
+            {
+               Du2_copy.coeffRef(id0,id0) = 1.;
+               if (!update) no_update.push_back(ID(size,0,cond.SIZEu,n_v,op_elem_num));
+               Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
+            }
+
+            if (BC.typeT == string("Neumann"))
+            {
+               Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.bT;
+               Du2_copy.coeffRef(idN,idN_connect) = 2.;
+            }
+            else if (BC.typeT == string("Dirichlet"))
+            {
+               Du2_copy.coeffRef(idN,idN) = 1.;
+               if (!update) no_update.push_back(ID(size,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+               Du2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
+            }
+
+            // // debugging (for a large matrix):
+            // if (!(n_v%21-2)) indexes_to_visit.push_back(id0);
+         }
+
+         // // debugging (for a large matrix):
+         // cout << endl << "ouside loop:";
+         // for (auto it = indexes_to_visit.begin(); it != indexes_to_visit.end(); it++)
+         // {
+         //    cout << endl << "mini view:" << endl;
+         //    Matrix_SubView(Du2_copy,*it-2,*it-2,7,7);
+         // }
+
          return Du2_copy;
       }
 
       // derivative matrix methods
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num)
       {
-         vector<int> indexes_to_visit; // vector for debugging
+         // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Dw2_copy = Dw2;// the matrix that we will edit and return to not modify the original
-
-         int sz = cond.SIZEu*cond.SIZEv; // size of D matrix (num of mesh points)
 
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) // loop through just the top and bottom boundary points of the mesh
          {
             // indexes for the points on the bottom side
-            int id0 =         ID(sz, n_u, cond.SIZEu, 0, 0),
-                id0_connect = ID(sz, n_u, cond.SIZEu, 1, 0);
+            int id0 =         ID(size, n_u, cond.SIZEu, 0, 0),
+                id0_connect = ID(size, n_u, cond.SIZEu, 1, 0);
             
             // indexes for the points on the top side
-            int idN =         ID(sz, n_u, cond.SIZEu, cond.SIZEv-1, 0),
-                idN_connect = ID(sz, n_u, cond.SIZEu, cond.SIZEv-2, 0);
+            int idN =         ID(size, n_u, cond.SIZEu, cond.SIZEv-1, 0),
+                idN_connect = ID(size, n_u, cond.SIZEu, cond.SIZEv-2, 0);
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
@@ -514,7 +555,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             else if (BC.typeB == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(id0,id0) = 1.;
-               if (!update) no_update.push_back(ID(sz,n_u,cond.SIZEu,0,op_elem_num));
+               if (!update) no_update.push_back(ID(size,n_u,cond.SIZEu,0,op_elem_num));
                Dw2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -526,7 +567,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             else if (BC.typeT == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(idN,idN) = 1.;
-               if (!update) no_update.push_back(ID(sz,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+               if (!update) no_update.push_back(ID(size,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
                Dw2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -547,134 +588,146 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 
       SparseMatrix<Scalar_type> Duw_BD(Bound_Cond BC, int op_elem_num)
       {
+         // the matrix that we will edit and return to not modify the original
          SparseMatrix<Scalar_type> Duw_copy;
+
+         // loop through just the boundary points of the mesh
+         for (int n_v = 1; n_v < cond.SIZEv-1; n_v++) // loop through the left and right boundary points of the mesh
+         {
+            // indexes for the left side
+            int id0 =             ID(size, 0, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
+                id0_connectB =    ID(size, 0, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
+                id0_connectT =    ID(size, 0, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
+                // we need to disconnect from the points that the default D matrix has
+                id0_disconnectB = ID(size, 1, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
+                id0_disconnectT = ID(size, 1, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
+            
+            // indexes for the right side
+            int idN =             ID(size, cond.SIZEu-1, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
+                idN_connectB =    ID(size, cond.SIZEu-1, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
+                idN_connectT =    ID(size, cond.SIZEu-1, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
+                // we need to disconnect from the points that the default D matrix has
+                idN_disconnectB = ID(size, cond.SIZEu-2, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
+                idN_disconnectT = ID(size, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
+            
+            // set the values at these indexes using the ghost points
+            if (BC.typeL == string("Neumann"))
+            {
+               Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
+               Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL);
+               // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL) (BC.bL >= pow(10,-7) ? cond.STEP/(2.*BC.bL) : 0);
+               Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.bL);
+            }
+            else if (BC.typeL == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
+            if (BC.typeR == string("Neumann"))
+            {
+               Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
+               Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.bR);
+               Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.bR);
+            }
+            else if (BC.typeR == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
+
+            // disconnect from default connections
+            Duw_copy.coeffRef(id0,id0_disconnectB) = 0.;
+            Duw_copy.coeffRef(id0,id0_disconnectT) = 0.;
+            Duw_copy.coeffRef(idN,idN_disconnectB) = 0.;
+            Duw_copy.coeffRef(idN,idN_disconnectT) = 0.;
+
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (!update && BC.typeL == string("Dirichlet")) no_update.push_back(ID(size,0,cond.SIZEu,n_v,op_elem_num));
+            if (!update && BC.typeR == string("Dirichlet")) no_update.push_back(ID(size,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+         }
+
+         for (int n_u = 1; n_u < cond.SIZEu-1; n_u++) // loop through the top and bottom boundary points of the mesh
+         {
+            // indexes for the bottom side
+            int id0 =             ID(size, n_u,   cond.SIZEu, 0, 0), // the index of the mesh point we're at
+                id0_connectL =    ID(size, n_u-1, cond.SIZEu, 0, 0), // index of the left point to connect to
+                id0_connectR =    ID(size, n_u+1, cond.SIZEu, 0, 0), // index of the right point to connect to
+                // we need to disconnect from the points that the default D matrix has
+                id0_disconnectL = ID(size, n_u-1, cond.SIZEu, 1, 0), // index of the left point to disconnect from
+                id0_disconnectR = ID(size, n_u+1, cond.SIZEu, 1, 0); // index of the right point to disconnect from
+            
+            // indexes for the top side
+            int idN =             ID(size, n_u,   cond.SIZEu, cond.SIZEv-1, 0), // the index of the mesh point we're at
+                idN_connectL =    ID(size, n_u-1, cond.SIZEu, cond.SIZEv-1, 0), // index of the left point to connect to
+                idN_connectR =    ID(size, n_u+1, cond.SIZEu, cond.SIZEv-1, 0), // index of the right point to connect to
+                // we need to disconnect from the points that the default D matrix has
+                idN_disconnectL = ID(size, n_u-1, cond.SIZEu, cond.SIZEv-2, 0), // index of the left point to disconnect from
+                idN_disconnectR = ID(size, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
+
+            // set the values at these indexes using the ghost points
+            if (BC.typeB == string("Neumann"))
+            {
+               Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
+               Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.bB);
+               Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.bB);
+            }
+            else if (BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
+            if (BC.typeT == string("Neumann"))
+            {
+               Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
+               Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.bT);
+               Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.bT);
+            }
+            else if (BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
+
+            // disconnect from default connections
+            Duw_copy.coeffRef(id0,id0_disconnectL) = 0.;
+            Duw_copy.coeffRef(id0,id0_disconnectR) = 0.;
+            Duw_copy.coeffRef(idN,idN_disconnectL) = 0.;
+            Duw_copy.coeffRef(idN,idN_disconnectR) = 0.;
+
+            // If we know the VALUE at the point, add the index of it of the guess/solution
+            //   vector that we already know, i.e. we don't need to update them
+            if (!update && BC.typeB == string("Dirichlet")) no_update.push_back(ID(size,n_u,cond.SIZEu,0,op_elem_num));
+            if (!update && BC.typeT == string("Dirichlet")) no_update.push_back(ID(size,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         }
+
+         // special case for the corners
+         int id, id_disconnect;
+
+         // Top left
+         id = ID(size,0,cond.SIZEu,cond.SIZEv-1,0);
+         id_disconnect = ID(size,1,cond.SIZEu,cond.SIZEv-2,0);
+         Duw_copy.coeffRef(id,id_disconnect) = 0.;
+              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bT);
+         else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
+               // TODO: determine if this assumption is correct, that
+               //    if the function value is given for one side, we
+               //    don't have to worry about the derivative condition.
+               //    (x4, below)
+         
+         // Top right
+         id = ID(size,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
+         id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
+         Duw_copy.coeffRef(id,id_disconnect) = 0.;
+              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bT);
+         else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
+
+         // Bottom left
+         id = ID(size,0,cond.SIZEu,0,0);
+         id_disconnect = ID(size,1,cond.SIZEu,1,0);
+         Duw_copy.coeffRef(id,id_disconnect) = 0.;
+              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bB);
+         else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
+
+         // Bottom right
+         id = ID(size,cond.SIZEu-1,cond.SIZEu,0,0);
+         id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,1,0);
+         Duw_copy.coeffRef(id,id_disconnect) = 0.;
+              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bB);
+         else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
+      
+         // // If we know the VALUE at the point, add the index of it of the guess/solution
+         // //   vector that we already know, i.e. we don't need to update them
+         // if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         // if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,0,        op_elem_num));
+
          return Duw_copy;
-      //    // ?? We actually will not need to add anything to the no_update vector
-      //    //   because we have already gone through all the boundary points.
-      //    // the matrix that we will edit and return to not modify the original
-      //    SparseMatrix<Scalar_type> Duw_copy = Duw;
-      //    int sz = cond.SIZEu*cond.SIZEv; // size of D matrix (num of mesh points)
-      //    // loop through just the boundary points of the mesh
-      //    for (int n_v = 1; n_v < cond.SIZEv-1; n_v++) // loop through the left and right boundary points of the mesh
-      //    {
-      //       // indexes for the left side
-      //       int id0 =             ID(sz, 0, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
-      //           id0_connectB =    ID(sz, 0, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
-      //           id0_connectT =    ID(sz, 0, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
-      //          // we need to disconnect from the points that the default D matrix has
-      //           id0_disconnectB = ID(sz, 1, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
-      //           id0_disconnectT = ID(sz, 1, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
-      //       // indexes for the right side
-      //       int idN =             ID(sz, cond.SIZEu-1, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
-      //           idN_connectB =    ID(sz, cond.SIZEu-1, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
-      //           idN_connectT =    ID(sz, cond.SIZEu-1, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
-      //          // we need to disconnect from the points that the default D matrix has
-      //           idN_disconnectB = ID(sz, cond.SIZEu-2, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
-      //           idN_disconnectT = ID(sz, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
-      //       // set the values at these indexes using the ghost points
-      //       if (BC.typeL == string("Neumann"))
-      //       {
-      //          Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
-      //          Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL);
-      //          // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL) (BC.bL >= pow(10,-7) ? cond.STEP/(2.*BC.bL) : 0);
-      //          Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.bL);
-      //       }
-      //       else if (BC.typeL == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
-      //       if (BC.typeR == string("Neumann"))
-      //       {
-      //          Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
-      //          Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.bR);
-      //          Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.bR);
-      //       }
-      //       else if (BC.typeR == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
-      //       // disconnect from default connections
-      //       Duw_copy.coeffRef(id0,id0_disconnectB) = 0.;
-      //       Duw_copy.coeffRef(id0,id0_disconnectT) = 0.;
-      //       Duw_copy.coeffRef(idN,idN_disconnectB) = 0.;
-      //       Duw_copy.coeffRef(idN,idN_disconnectT) = 0.;
-      //       // If we know the VALUE at the point, add the index of it of the guess/solution
-      //       //   vector that we already know, i.e. we don't need to update them
-      //       if (BC.typeL == string("Dirichlet")) no_update.push_back(ID(sz,0,cond.SIZEu,n_v,op_elem_num));
-      //       if (BC.typeR == string("Dirichlet")) no_update.push_back(ID(sz,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
-      //    }
-      //    for (int n_u = 1; n_u < cond.SIZEu-1; n_u++) // loop through the top and bottom boundary points of the mesh
-      //    {
-      //       // indexes for the bottom side
-      //       int id0 =             ID(sz, n_u,   cond.SIZEu, 0, 0), // the index of the mesh point we're at
-      //           id0_connectL =    ID(sz, n_u-1, cond.SIZEu, 0, 0), // index of the left point to connect to
-      //           id0_connectR =    ID(sz, n_u+1, cond.SIZEu, 0, 0), // index of the right point to connect to
-      //          // we need to disconnect from the points that the default D matrix has
-      //           id0_disconnectL = ID(sz, n_u-1, cond.SIZEu, 1, 0), // index of the left point to disconnect from
-      //           id0_disconnectR = ID(sz, n_u+1, cond.SIZEu, 1, 0); // index of the right point to disconnect from
-      //       // indexes for the top side
-      //       int idN =             ID(sz, n_u,   cond.SIZEu, cond.SIZEv-1, 0), // the index of the mesh point we're at
-      //           idN_connectL =    ID(sz, n_u-1, cond.SIZEu, cond.SIZEv-1, 0), // index of the left point to connect to
-      //           idN_connectR =    ID(sz, n_u+1, cond.SIZEu, cond.SIZEv-1, 0), // index of the right point to connect to
-      //          // we need to disconnect from the points that the default D matrix has
-      //           idN_disconnectL = ID(sz, n_u-1, cond.SIZEu, cond.SIZEv-2, 0), // index of the left point to disconnect from
-      //           idN_disconnectR = ID(sz, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
-      //       // set the values at these indexes using the ghost points
-      //       if (BC.typeB == string("Neumann"))
-      //       {
-      //          Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
-      //          Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.bB);
-      //          Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.bB);
-      //       }
-      //       else if (BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
-      //       if (BC.typeT == string("Neumann"))
-      //       {
-      //          Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
-      //          Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.bT);
-      //          Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.bT);
-      //       }
-      //       else if (BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
-      //       // disconnect from default connections
-      //       Duw_copy.coeffRef(id0,id0_disconnectL) = 0.;
-      //       Duw_copy.coeffRef(id0,id0_disconnectR) = 0.;
-      //       Duw_copy.coeffRef(idN,idN_disconnectL) = 0.;
-      //       Duw_copy.coeffRef(idN,idN_disconnectR) = 0.;
-      //       // If we know the VALUE at the point, add the index of it of the guess/solution
-      //       //   vector that we already know, i.e. we don't need to update them
-      //       if (BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,n_u,cond.SIZEu,0,op_elem_num));
-      //       if (BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-      //    }
-      //    // special case for the corners
-      //    int id, id_disconnect;
-      //    // Top left
-      //    id = ID(sz,0,cond.SIZEu,cond.SIZEv-1,0);
-      //    id_disconnect = ID(sz,1,cond.SIZEu,cond.SIZEv-2,0);
-      //    Duw_copy.coeffRef(id,id_disconnect) = 0.;
-      //         if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bT);
-      //    else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
-      //          // TODO: determine if this assumption is correct, that
-      //          //    if the function value is given for one side, we
-      //          //    don't have to worry about the derivative condition.
-      //          //    (x4, below)
-      //    // Top right
-      //    id = ID(sz,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
-      //    id_disconnect = ID(sz,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
-      //    Duw_copy.coeffRef(id,id_disconnect) = 0.;
-      //         if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bT);
-      //    else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
-      //    // Bottom left
-      //    id = ID(sz,0,cond.SIZEu,0,0);
-      //    id_disconnect = ID(sz,1,cond.SIZEu,1,0);
-      //    Duw_copy.coeffRef(id,id_disconnect) = 0.;
-      //         if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bB);
-      //    else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
-      //    // Bottom right
-      //    id = ID(sz,cond.SIZEu-1,cond.SIZEu,0,0);
-      //    id_disconnect = ID(sz,cond.SIZEu-2,cond.SIZEu,1,0);
-      //    Duw_copy.coeffRef(id,id_disconnect) = 0.;
-      //         if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bB);
-      //    else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
-      //    // If we know the VALUE at the point, add the index of it of the guess/solution
-      //    //   vector that we already know, i.e. we don't need to update them
-      //    if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,cond.SIZEv-1,op_elem_num));
-      //    if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-      //    if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
-      //    if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,0,        op_elem_num));
-      //    return Duw_copy;
       }
    
       void BuildProblem()
@@ -683,45 +736,6 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          op_vector.resize(size*OP_size); // initialize OP vetor
          SolverMatrix = BuildSolverMatrix();
       }
-
-// // won't be needed without 'op_matrix'...
-//       // Convert the OP matrix, at all mesh points, into a vector
-//       void setVectorForm()
-//       {
-//          for (int vi = 0; vi < OP_size; vi++) {
-//             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-//                for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-//                   op_vector(ID(size,n_u,cond.SIZEu,n_v,vi)) = op_matrix(n_v,n_u)(vi);
-//                }
-//             }
-//          }
-//       }
-
-// // won't be needed without 'op_matrix'...
-//       void initialize_OP_matrix()
-//       {
-//          op_matrix.resize(cond.SIZEv,cond.SIZEu); // initialize matrix
-//          op_vector.resize(cond.SIZEu*cond.SIZEv*OP_size); // initialize op_vector, for the whole thing (size = num_of_mesh_points * num_OP_components)
-//          // initialize elements in 'matrix'
-//          for (int n_u = 0; n_u < cond.SIZEu; n_u++) for (int n_v = 0; n_v < cond.SIZEv; n_v++) op_matrix(n_v,n_u).initialize(OP_size);
-//          setVectorForm();// make the vector form available
-//       }
-
-// // won't be neede without 'op_matrix'...
-// // we will simply say 'this->op_vector = new_guess', or something like that
-//       // given the next guess, update the op at all points on the mesh
-//       //   and make it available in it's vector form.
-//       void update_OP_Vector(Matrix<Scalar_type,-1,1>& new_guess)
-//       {
-//          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-//             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-//                Matrix<Scalar_type,-1,1> op(OP_size); // a vector the size of # of OP components
-//                for (int i = 0; i < OP_size; i++) op(i) = new_guess(ID(size,n_u,cond.SIZEu,n_v,i));
-//                op_matrix(n_v,n_u).Set_OP(op);
-//             }
-//          }
-//          setVectorForm();
-//       }
 
       // use the relaxation method and Anderson Acceleration to solve
       void Solve(Matrix<Scalar_type,-1,1>& guess)
