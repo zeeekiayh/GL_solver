@@ -26,7 +26,6 @@ using namespace Eigen;
 typedef Triplet<double> Tr;
 typedef SparseMatrix<double> SpMat_d;
 typedef SparseMatrix<dcomplex> SpMat_cd;
-// typedef Triplet<dcomplex> cTr; // will we actually use this?
 
 // returns the unique id corresponding to each op-component in the mesh.
 //    n_u: mesh index along u
@@ -50,8 +49,8 @@ double abs2(double x) { return pow(abs(x),2); }
 //    }
 // }
 
-// Insert the matrix "spMat" into the location (i,j) in a
-//    sparse matrix of size "size" and return the matrix
+// Insert the matrix "spMat" into the "location" (i,j) in
+//   a sparse matrix of size "size" and return the matrix
 template<typename Scalar_type>
 SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<Scalar_type> spMat)
 {
@@ -249,10 +248,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
    template <class Scalar_type>
    class GL_Solver
    {
-      // VARIABLES
-      private:
+      protected: // for variables and objects that will be used in derived classes
 
-      protected:
       int size; // number of mesh points (size of the D matrices or OP-component vectors)
       int OP_size; // number of OP components
       bool update; // says whether or not to use the no_update vector
@@ -263,27 +260,26 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
-      SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices
+      SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices: ADD D-MATRIX NAMES HERE
       Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
-      // Matrix<OrderParam<Scalar_type>,-1,-1> op_matrix; // the matrix of OP at each mesh point
 
       public:
-      // CONSTRUCTORS & DECSTRUCTOR
+      // CONSTRUCTORS
       GL_Solver() {};
       GL_Solver(string conditions_file)
       {
          ReadConditions(conditions_file);
          size = cond.SIZEu*cond.SIZEv;
       }
-      // ~GL_Solver() {};
 
-      // virtual functions; to be defined in derived classes.
+      // Virtual Functions; to be defined in derived classes.
       //   these 3 must be pure virtual so that they can
       //   be called by other functions in this class
       virtual SparseMatrix<Scalar_type> BuildSolverMatrix() = 0;
       virtual Matrix<Scalar_type,-1,1> makeGuess(Matrix<Scalar_type,-1,1>&) = 0;
       virtual Matrix<Scalar_type,-1,1> RHS() = 0;
-      // non-virtual functions; to be defined in derived classes
+
+      // Non-Virtual Functions; to be defined in derived classes
       Scalar_type F_Grad(int, int, int);
       double free_energy();
 
@@ -411,6 +407,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          else cout << "Unable to open file:" << boundary_conditions_file << endl;
       }
    
+      // ADD CODE IN THIS FUNCTION TO BUILD ADDITIONAL D-MATRICES
       // Build the derivative matrices
       void Build_D_Matrices()
       {
@@ -451,7 +448,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          Duw.setFromTriplets(coeffs_uw.begin(), coeffs_uw.end());
       }
 
-      // // Insert method for the Du^2 matrix derivatives
+      // Insert method for the Du^2 matrix derivatives
       void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs)
       {
          if (u == -1 || u == cond.SIZEu);
@@ -465,7 +462,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight)); // we'll use ghost points, so do nothing
       }
 
-      // // insert method for the mixed derivative matrices
+      // insert method for the mixed derivative matrices
       void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs)
       {
               if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
@@ -473,6 +470,10 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
       }
    
+      // WRITE ADDITIONAL 'InsertCoeff_D**' METHODS HERE
+
+      // still needs fixed
+      // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num)
       {
          // vector<int> indexes_to_visit; // vector for debugging
@@ -529,7 +530,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          return Du2_copy;
       }
 
-      // derivative matrix methods
+      // derivative matrix: 2nd-order of 3rd coordinate (i.e. z)
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num)
       {
          // vector<int> indexes_to_visit; // vector for debugging
@@ -586,6 +587,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          return Dw2_copy;
       }
 
+      // still needs fixed
+      // mixed derivative: of 1st and 3rd coordinates (i.e. x & z)
       SparseMatrix<Scalar_type> Duw_BD(Bound_Cond BC, int op_elem_num)
       {
          // the matrix that we will edit and return to not modify the original
@@ -730,6 +733,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          return Duw_copy;
       }
    
+      // WRITE ADDITIONAL 'D**_BD' METHODS HERE
+
       void BuildProblem()
       {
          Build_D_Matrices();
@@ -868,7 +873,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 
    template <class Scalar_type>
    class Five_Component_GL_Solver : public GL_Solver<Scalar_type> {};
-// ==================================================
+// ==================================================================
 
 // Now include the real and comples class header files,
 //   since the parent class are defined

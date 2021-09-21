@@ -11,19 +11,14 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    public:
    Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
    {
-      // cout << "Three_Component_GL_Solver()" << endl;
       ReadConditions(conditions_file);
-      // cout << "here 4" << endl;
       ReadBoundaryConditions(boundary_conditions_file);
-      // cout << "here 5" << endl;
       size = cond.SIZEu*cond.SIZEv;
-      // cout << "here 6" << endl;
    }
 
    // User-defined methods to build the solver matrix and the rhs vector
    SpMat_cd BuildSolverMatrix()
    {
-      // cout << "BuildSolverMatrix()" << endl;
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
 
@@ -39,12 +34,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    
    VectorXcd RHS()
    {
-      // cout << "RHS()" << endl;
       Matrix3cd op, op_T, op_dag, op_conj;
       VectorXcd rhs(this->op_vector.size());
       double Beta_bulk = 6*(gl.B1+gl.B2)+2*(gl.B3+gl.B4+gl.B5);
       Bound_Cond temp_BC;
-      // cout << "here 7" << endl;
 
       // loop through all the OP components in the mesh
       for (int vi = 0; vi < OP_size; vi++) {
@@ -53,12 +46,9 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          else if (vi == 1) temp_BC = Avv_BC;
          else if (vi == 2) temp_BC = Aww_BC;
          else cout << "RHS ERROR: OP index out of bounds." << endl;
-         // cout << "here 8" << endl;
 
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-            // cout << "here n_v = " << n_v << endl;
             for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-               // cout << "here n_u = " << n_u << endl;
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
@@ -66,52 +56,31 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
                else
                {
-                  // cout << "here 9" << endl;
-                  // cout << "op_vector.size(): " << op_vector.size() << endl;
                   auto a = matrix_operator(op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
-                  // cout << "here 9.5" << endl;
                   auto axx = a(0);
                   auto azz = a(2);
-                  // cout << "here 10" << endl;
 
                   // the Aww_BC: perpendicular
                   if (vi == 2)                 val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(azz) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*azz + 2./5.*pow(abs(azz),2)*azz - azz;
                   // the Auu_BC or Avv_BC: parallel
                   else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(axx) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
-                  // cout << "here 11" << endl;
 
                   val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                }
-               // cout << "here 12" << endl;
 
                // insert val in rhs, in the matching location
                rhs(id) = val;
-               // cout << "here 13" << endl;
             }
          }
       }
       return rhs;
    }
 
-   // I don't think that we need this one, becuase the OP class
-   //   already has a method to give the matrix form
-
-   // void updateMatrix(VectorXcd& new_guess)
-   // {
-   //    for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-   //       for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-   //          Matrix3cd op;
-   //          op << new_guess(ID(size,n_u,cond.SIZEu,n_v,0)), 0.,                                       0.,
-   //                0.,                                       new_guess(ID(size,n_u,cond.SIZEu,n_v,1)), 0.,
-   //                0.,                                       0.,                                       new_guess(ID(size,n_u,cond.SIZEu,n_v,2));
-   //       }
-   //    }
-   // }
-
    // make an educated guess using the boundary conditions
    VectorXcd makeGuess(VectorXcd& g)
    {
+      // Auu (xx) BC's
       if (Auu_BC.typeB == string("Dirichlet")) {
          for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
       }
@@ -119,6 +88,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
       }
       
+      // Avv (yy) BC's
       if (Avv_BC.typeB == string("Dirichlet")) {
          for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.bB;
       }
@@ -126,6 +96,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
          for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.bT;
       }
       
+      // Aww (zz) BC's
       if (Aww_BC.typeB == string("Dirichlet")) {
          for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.bB;
       }
@@ -455,24 +426,6 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       }
       return rhs;
    }
-
-// won't need this without 'op_matrix'
-   // // given the next guess, update the op at all points on the mesh
-   // //   and make it available in it's vector form.
-   // void updateMatrix(VectorXcd& new_guess)
-   // {
-   //    int sz = cond.SIZEu*cond.SIZEv;
-   //    for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-   //       for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
-   //          Matrix3cd op;
-   //          op << new_guess(ID(sz,n_u,cond.SIZEu,n_v,0)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,1)),
-   //                0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,2)), 0.,
-   //                new_guess(ID(sz,n_u,cond.SIZEu,n_v,3)), 0.,                                     new_guess(ID(sz,n_u,cond.SIZEu,n_v,4));
-   //          this->op_matrix(n_v,n_u).Set_OP(op);
-   //       }
-   //    }
-   //    setVectorForm();
-   // }
 
    // make an educated guess using the boundary conditions
    VectorXcd makeGuess(VectorXcd& g)
