@@ -411,6 +411,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       // Build the derivative matrices
       void Build_D_Matrices()
       {
+         // cout << "build matrices..." << endl;
          // make vectors to hold the triplets of coefficients
          vector<Tr> coeffs_u2, coeffs_w2, coeffs_uw; // coeffs_v2, coeffs_uv, coeffs_vw
 
@@ -437,6 +438,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             }
          }
 
+         // cout << "looped successfully" << endl;
+
          // initialize the D's by size
          Du2.resize(size,size);
          Dw2.resize(size,size);
@@ -446,6 +449,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          Du2.setFromTriplets(coeffs_u2.begin(), coeffs_u2.end());
          Dw2.setFromTriplets(coeffs_w2.begin(), coeffs_w2.end());
          Duw.setFromTriplets(coeffs_uw.begin(), coeffs_uw.end());
+
+         // cout << "build matrices: done" << endl;
       }
 
       // Insert method for the Du^2 matrix derivatives
@@ -472,10 +477,11 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
    
       // WRITE ADDITIONAL 'InsertCoeff_D**' METHODS HERE
 
-      // still needs fixed
+      // ?still needs fixed? I think it's good
       // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num)
       {
+         // cout << "\t\t\tDu2_BD()" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
@@ -527,12 +533,14 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          //    Matrix_SubView(Du2_copy,*it-2,*it-2,7,7);
          // }
 
+         // cout << "\t\t\tDu2_BD(): success" << endl;
          return Du2_copy;
       }
 
       // derivative matrix: 2nd-order of 3rd coordinate (i.e. z)
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num)
       {
+         // cout << "\t\t\tDw2_BD" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Dw2_copy = Dw2;// the matrix that we will edit and return to not modify the original
 
@@ -584,15 +592,17 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          //    Matrix_SubView(Dw2_copy,*it-2,*it-2,7,7);
          // }
 
+         // cout << "\t\t\tDw2_BD: success" << endl;
          return Dw2_copy;
       }
 
-      // still needs fixed
+      // still needs fixed?
       // mixed derivative: of 1st and 3rd coordinates (i.e. x & z)
       SparseMatrix<Scalar_type> Duw_BD(Bound_Cond BC, int op_elem_num)
       {
+         // cout << "\t\t\tDuw_BD" << endl;
          // the matrix that we will edit and return to not modify the original
-         SparseMatrix<Scalar_type> Duw_copy;
+         SparseMatrix<Scalar_type> Duw_copy = Duw;
 
          // loop through just the boundary points of the mesh
          for (int n_v = 1; n_v < cond.SIZEv-1; n_v++) // loop through the left and right boundary points of the mesh
@@ -730,6 +740,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          // if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
          // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,0,        op_elem_num));
 
+         // cout << "\t\t\tDuw_BD: success" << endl;
          return Duw_copy;
       }
    
@@ -738,8 +749,11 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       void BuildProblem()
       {
          Build_D_Matrices();
+         // cout << "build matrices: done" << endl;
          op_vector.resize(size*OP_size); // initialize OP vetor
+         // cout << "op_vector resize: done" << endl;
          SolverMatrix = BuildSolverMatrix();
+         // cout << "solver matrix: done" << endl;
       }
 
       // use the relaxation method and Anderson Acceleration to solve

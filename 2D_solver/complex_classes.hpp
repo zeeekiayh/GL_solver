@@ -316,12 +316,14 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    // User-defined methods to build the solver matrix and the rhs vector
    SpMat_cd BuildSolverMatrix()
    {
+      // cout << "\tin BuildSolverMatrix()" << endl;
       // to make the code cleaner, define some constants
       double K23  = gl.K2+gl.K3;
       double K123 = gl.K1+gl.K2+gl.K3;
 
       // the matrix to be used by the solver
       SpMat_cd solver_mat(size*OP_size,size*OP_size);
+      // cout << "\t\tsolver_mat initialized" << endl;
 
       // initialize each non-zero 'element'
       SpMat_cd elem_00 = K123*Du2_BD(Auu_BC,0) + gl.K1*Dw2_BD(Auu_BC,0);
@@ -333,7 +335,9 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
       SpMat_cd elem_34 = K23*Duw_BD(Aww_BC,3);
       SpMat_cd elem_43 = K23*Duw_BD(Awu_BC,4);
       SpMat_cd elem_44 = K123*Dw2_BD(Aww_BC,4) + gl.K1*Du2_BD(Aww_BC,4);
+      // cout << "\t\t'elements' initialized" << endl;
 
+      // cout << "\t\tusing 'Place_subMatrix()'" << endl;
       // insert each 'element' from above into their respective locations
       //    and add them together to get the solver matrix
       solver_mat = Place_subMatrix(0,0,OP_size,elem_00) + Place_subMatrix(0,1,OP_size,elem_01)
@@ -341,6 +345,7 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                   + Place_subMatrix(2,2,OP_size,elem_22) + Place_subMatrix(3,3,OP_size,elem_33)
                   + Place_subMatrix(3,4,OP_size,elem_34) + Place_subMatrix(4,3,OP_size,elem_43)
                   + Place_subMatrix(4,4,OP_size,elem_44);
+      // cout << "\t\tusing 'Place_subMatrix()': success" << endl;
 
       return solver_mat;
    }
