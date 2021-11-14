@@ -241,6 +241,67 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 }
 
 
+// TODO: make one input file and read it all in 
+//       can make different files for different OP's
+// Testing to import the K matrix from a file
+void ImportKMatrix(string K_matrix_file) // TODO: read in K_size...
+{
+   string line;
+   std::ifstream K_file(K_matrix_file);
+
+   const int K_size = 5;             // the size of the k-matrix
+   Matrix<MatrixXd,K_size,K_size> K; // define the k-matrix: matrix of matrices
+
+   MatrixXd K0(2,2); // the basic 0-matrix--TODO: use Eigen's zero matrix
+   K0 << 0, 0, 0, 0;
+   MatrixXd K_temp(2,2); // the temporary k-matrix for importing
+
+   // get K matrix elements from the file
+   if (K_file.is_open()) {
+      for (int row = 0; row < K_size && !K_file.eof(); row++) {
+         getline(K_file,line);
+
+         bool started = false; // to check if we're in a set of parentheses
+         int k_index = 0;      // index of the inner k-matrices
+         int col = 0;          // column number
+
+         for (int i = 0; i < line.length(); i++) {
+            if (line[i] == '(') started = true; // toggle the started flag when "("
+            if (line[i] == ')') {               // or ")" is reached
+               started = false;
+               k_index = 0; // and reset the index
+
+               // if it was an empty set of parentheses...
+               if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
+
+               K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
+               col++;               // increment for the next one's position
+            }
+            if (started) {
+               if (isdigit(line[i])) {         // only if it's a number
+                  int r = floor(k_index/2);    // for some reason, we have to define the index
+                  int c = k_index%2;           //   values separately, then pass them in!
+                  K_temp(r,c) = line[i] - '0'; // add the number to the matrix
+                  k_index++;                   // increment for the next location in the matrix
+               }
+            }
+         } // end for (row)
+      } // end file open
+      
+      // print the matrix, for debugging
+      for (int row = 0; row < K_size; row++) {
+         for (int col = 0; col < K_size; col++) {
+         //    cout << "(" << row << ", " << col << "):\n" << K(row,col) << endl << endl;
+            cout << K(row,col)(1,1) << endl;
+         }
+      }
+
+      K_file.close();
+   }
+   else cout << "Unable to open file:" << K_matrix_file << endl;
+}
+
+
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and

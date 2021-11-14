@@ -2,6 +2,8 @@
 
 int main()
 {
+    ImportKMatrix("K_matrix.txt");
+
     // Complex-valued, 3-component GL solver
     VectorXcd guess_cplx;
     Three_Component_GL_Solver<dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
