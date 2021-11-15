@@ -241,67 +241,6 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 }
 
 
-// TODO: make one input file and read it all in 
-//       can make different files for different OP's
-// Testing to import the K matrix from a file
-void ImportKMatrix(string K_matrix_file) // TODO: read in K_size...
-{
-   string line;
-   std::ifstream K_file(K_matrix_file);
-
-   const int K_size = 5;             // the size of the k-matrix
-   Matrix<MatrixXd,K_size,K_size> K; // define the k-matrix: matrix of matrices
-
-   MatrixXd K0(2,2); // the basic 0-matrix--TODO: use Eigen's zero matrix
-   K0 << 0, 0, 0, 0;
-   MatrixXd K_temp(2,2); // the temporary k-matrix for importing
-
-   // get K matrix elements from the file
-   if (K_file.is_open()) {
-      for (int row = 0; row < K_size && !K_file.eof(); row++) {
-         getline(K_file,line);
-
-         bool started = false; // to check if we're in a set of parentheses
-         int k_index = 0;      // index of the inner k-matrices
-         int col = 0;          // column number
-
-         for (int i = 0; i < line.length(); i++) {
-            if (line[i] == '(') started = true; // toggle the started flag when "("
-            if (line[i] == ')') {               // or ")" is reached
-               started = false;
-               k_index = 0; // and reset the index
-
-               // if it was an empty set of parentheses...
-               if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
-
-               K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
-               col++;               // increment for the next one's position
-            }
-            if (started) {
-               if (isdigit(line[i])) {         // only if it's a number
-                  int r = floor(k_index/2);    // for some reason, we have to define the index
-                  int c = k_index%2;           //   values separately, then pass them in!
-                  K_temp(r,c) = line[i] - '0'; // add the number to the matrix
-                  k_index++;                   // increment for the next location in the matrix
-               }
-            }
-         } // end for (row)
-      } // end file open
-      
-      // print the matrix, for debugging
-      for (int row = 0; row < K_size; row++) {
-         for (int col = 0; col < K_size; col++) {
-         //    cout << "(" << row << ", " << col << "):\n" << K(row,col) << endl << endl;
-            cout << K(row,col)(1,1) << endl;
-         }
-      }
-
-      K_file.close();
-   }
-   else cout << "Unable to open file:" << K_matrix_file << endl;
-}
-
-
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and
@@ -357,9 +296,12 @@ void ImportKMatrix(string K_matrix_file) // TODO: read in K_size...
 
          // get conditions from the file
          if (conditions.is_open()) {
-            while (!conditions.eof()) {
+            // read in the initial conditions
+            int num_conditions = 0;
+            while (num_conditions < 12) {
                getline(conditions,line);
                if (line[0] == '#') {           // any good way for error handling here?
+                  num_conditions++; // count the inputs
                   string ls = line.substr(1);
                   if (ls == string("SIZE"))
                   {
@@ -394,78 +336,119 @@ void ImportKMatrix(string K_matrix_file) // TODO: read in K_size...
                   }
                }
             }
-            conditions.close();
-            cout << "NOTICE: using " << method << " to solve." << endl;
-         }
-         else cout << "Unable to open file:" << conditions_file << endl;
-      }
 
-      void ReadBoundaryConditions(string boundary_conditions_file)
-      {
-         string line;
-         std::ifstream BCs(boundary_conditions_file);
-
-         // get boundary conditions from the file
-         if (BCs.is_open()) {
-
-            while (line != "#OP size") getline(BCs,line); // find the line with the size
-            BCs >> OP_size;
+            // now read in the boundary conditions
+            while (line != "#OP size") getline(conditions,line); // find the line with the size
+            conditions >> OP_size;
             
-            while (!BCs.eof()) {
-               getline(BCs,line);
+            int num_BCs = 0; // to count the number of BC's read in
+            while (num_BCs < OP_size*2) {
+               getline(conditions,line);
                if (line[0] == '#') {           // any good way for error handling here?
+                  num_BCs++;
                   string ls = line.substr(1);
 
                   // Auu
                   if (ls == string("Axx bTop")) {
-                     BCs >> Auu_BC.bT;
-                     BCs >> Auu_BC.typeT;
+                     conditions >> Auu_BC.bT;
+                     conditions >> Auu_BC.typeT;
                   } else if (ls == string("Axx bBott")) {
-                     BCs >> Auu_BC.bB;
-                     BCs >> Auu_BC.typeB;
+                     conditions >> Auu_BC.bB;
+                     conditions >> Auu_BC.typeB;
                   }
 
                   // Auw
                   if (ls == string("Axz bTop")) {
-                     BCs >> Auw_BC.bT;
-                     BCs >> Auw_BC.typeT;
+                     conditions >> Auw_BC.bT;
+                     conditions >> Auw_BC.typeT;
                   } else if (ls == string("Axz bBott")) {
-                     BCs >> Auw_BC.bB;
-                     BCs >> Auw_BC.typeB;
+                     conditions >> Auw_BC.bB;
+                     conditions >> Auw_BC.typeB;
                   }
 
                   // Avv
                   else if (ls == string("Ayy bTop")) {
-                     BCs >> Avv_BC.bT;
-                     BCs >> Avv_BC.typeT;
+                     conditions >> Avv_BC.bT;
+                     conditions >> Avv_BC.typeT;
                   } else if (ls == string("Ayy bBott")) {
-                     BCs >> Avv_BC.bB;
-                     BCs >> Avv_BC.typeB;
+                     conditions >> Avv_BC.bB;
+                     conditions >> Avv_BC.typeB;
                   }
 
                   // Awu
                   if (ls == string("Azx bTop")) {
-                     BCs >> Awu_BC.bT;
-                     BCs >> Awu_BC.typeT;
+                     conditions >> Awu_BC.bT;
+                     conditions >> Awu_BC.typeT;
                   } else if (ls == string("Azx bBott")) {
-                     BCs >> Awu_BC.bB;
-                     BCs >> Awu_BC.typeB;
+                     conditions >> Awu_BC.bB;
+                     conditions >> Awu_BC.typeB;
                   }
 
                   // Aww
                   else if (ls == string("Azz bTop")) {
-                     BCs >> Aww_BC.bT;
-                     BCs >> Aww_BC.typeT;
+                     conditions >> Aww_BC.bT;
+                     conditions >> Aww_BC.typeT;
                   } else if (ls == string("Azz bBott")) {
-                     BCs >> Aww_BC.bB;
-                     BCs >> Aww_BC.typeB;
+                     conditions >> Aww_BC.bB;
+                     conditions >> Aww_BC.typeB;
                   }
                }
             }
 
-            BCs.close();
+            // read the K matrix
+            // const int K_size = OP_size;       // the size of the k-matrix
+            Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
+            K.resize(OP_size,OP_size);
+
+            Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+            Matrix2d K_temp(2,2); // the temporary k-matrix for importing
+
+            // find the line where the K matrix starts
+            while (line != "K MATRIX") getline(conditions,line);
+
+            // get K matrix elements from the file
+            for (int row = 0; row < OP_size && !conditions.eof(); row++) {
+               getline(conditions,line);
+
+               bool started = false; // to check if we're in a set of parentheses
+               int k_index = 0;      // index of the inner k-matrices
+               int col = 0;          // column number
+
+               for (int i = 0; i < line.length(); i++) {
+                  if (line[i] == '(') started = true; // toggle the started flag when "("
+                  if (line[i] == ')') {               // or ")" is reached
+                     started = false;
+                     k_index = 0; // and reset the index
+
+                     // if it was an empty set of parentheses...
+                     if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
+
+                     K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
+                     col++;               // increment for the next one's position
+                  }
+                  if (started) {
+                     if (isdigit(line[i])) {         // only if it's a number
+                        int r = floor(k_index/2);    // for some reason, we have to define the index
+                        int c = k_index%2;           //   values separately, then pass them in!
+                        K_temp(r,c) = line[i] - '0'; // add the number to the matrix
+                        k_index++;                   // increment for the next location in the matrix
+                     }
+                  }
+               } // end for (row)
+            } // end file open
+            
+            // // print the matrix, for debugging
+            // for (int row = 0; row < OP_size; row++) {
+            //    for (int col = 0; col < OP_size; col++) {
+            //    //    cout << "(" << row << ", " << col << "):\n" << K(row,col) << endl << endl;
+            //       cout << K(row,col)(1,1) << endl;
+            //    }
+            // }
+
+            conditions.close();
+            cout << "NOTICE: using " << method << " to solve." << endl;
          }
-         else cout << "Unable to open file:" << boundary_conditions_file << endl;
+         else cout << "Unable to open file:" << conditions_file << endl;
       }
    
       // ADD CODE IN THIS FUNCTION TO BUILD ADDITIONAL D-MATRICES

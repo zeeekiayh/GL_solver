@@ -12,7 +12,7 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
    {
       ReadConditions(conditions_file);
-      ReadBoundaryConditions(boundary_conditions_file);
+      // ReadBoundaryConditions(boundary_conditions_file);
       size = cond.SIZEu*cond.SIZEv;
    }
 
@@ -309,7 +309,7 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    Five_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
    {
       ReadConditions(conditions_file);
-      ReadBoundaryConditions(boundary_conditions_file);
+      // ReadBoundaryConditions(boundary_conditions_file);
       size = cond.SIZEu*cond.SIZEv;
    }
 

@@ -2,9 +2,7 @@
 
 int main()
 {
-    ImportKMatrix("K_matrix.txt");
-
-    // Complex-valued, 3-component GL solver
+    /*/ Complex-valued, 3-component GL solver
     VectorXcd guess_cplx;
     Three_Component_GL_Solver<dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
     // cout << "Initialized complex GL Solver" << endl;
@@ -37,7 +35,7 @@ int main()
     cout << "Free energy: " << gls_cplx.free_energy() << endl;
     //*/
 
-    /*/ Complex-valued, 5-component GL solver
+    // Complex-valued, 5-component GL solver
     VectorXcd guess_cplx;
     Five_Component_GL_Solver<dcomplex> gls_cplx("conditions.txt","boundary_conditions.txt");
     // cout << "Initialized complex GL Solver" << endl;
