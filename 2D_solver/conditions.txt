@@ -49,6 +49,8 @@ type:      Dirichlet OR Neumann
 #OP size
    5
 
+order these something like (1,1e-12) (0,1e12) (1,1) (1,2)
+
 #Axx bTop
    1
    Dirichlet
