@@ -99,8 +99,27 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
          bR = rhs.bR;
          return *this;
       }
+
+      ifstream& operator>> (ifstream& stream)
+      {
+         stream >> this->typeT;
+         stream >> this->bT;
+         stream >> this->typeB;
+         stream >> this->bB;
+         return stream;
+      }
+
    };
 // ===========================================
+
+ifstream& operator>> (ifstream& stream, Bound_Cond& BC)
+{
+   stream >> BC.typeT;
+   stream >> BC.bT;
+   stream >> BC.typeB;
+   stream >> BC.bB;
+   return stream;
+}
 
 
 // ========================================================
@@ -291,112 +310,40 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       // read in the conditions from the file
       void ReadConditions(string conditions_file)
       {
+         cout << "reading conditions..." << endl;
          string line;
          std::ifstream conditions(conditions_file);
 
          // get conditions from the file
          if (conditions.is_open()) {
-            // read in the initial conditions
-            int num_conditions = 0;
-            while (num_conditions < 12) {
-               getline(conditions,line);
-               if (line[0] == '#') {           // any good way for error handling here?
-                  num_conditions++; // count the inputs
-                  string ls = line.substr(1);
-                  if (ls == string("SIZE"))
-                  {
-                     // the sizes can never be 0, but we'll set them to one if = 0
-                     conditions >> cond.SIZEu;
-                     if (!cond.SIZEu) cond.SIZEu = 1;
-                     conditions >> cond.SIZEv;
-                     if (!cond.SIZEv) cond.SIZEv = 1;
-                  }
-                  else if (ls == string("METHOD"))    conditions >> method;
-                  else if (ls == string("update"))    conditions >> update;
-                  else if (ls == string("ACCUR"))     conditions >> cond.ACCUR;
-                  else if (ls == string("h"))         conditions >> cond.STEP;
-                  else if (ls == string("num loops")) conditions >> cond.N_loop;
-                  else if (ls == string("rel_p"))     conditions >> cond.rel_p;
-                  else if (ls == string("maxStore"))  conditions >> cond.maxStore;
-                  else if (ls == string("wait"))      conditions >> cond.wait;
-                  else if (ls == string("betas"))
-                  {
-                     conditions >> gl.B1;
-                     conditions >> gl.B2;
-                     conditions >> gl.B3;
-                     conditions >> gl.B4;
-                     conditions >> gl.B5;
-                  }
-                  else if (ls == string("alpha")) conditions >> gl.alpha;
-                  else if (ls == string("Ks"))
-                  {
-                     conditions >> gl.K1;
-                     conditions >> gl.K2;
-                     conditions >> gl.K3;
-                  }
-               }
-            }
-
-            // now read in the boundary conditions
-            while (line != "#OP size") getline(conditions,line); // find the line with the size
-            conditions >> OP_size;
+            // conditions >> method;
+            conditions >> method; conditions.ignore(256,'\n');
+            cout << "method = " << method << endl;
             
-            int num_BCs = 0; // to count the number of BC's read in
-            while (num_BCs < OP_size*2) {
-               getline(conditions,line);
-               if (line[0] == '#') {           // any good way for error handling here?
-                  num_BCs++;
-                  string ls = line.substr(1);
+            conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
+            if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to one if = 0
+            if (!cond.SIZEv) cond.SIZEv = 1;
 
-                  // Auu
-                  if (ls == string("Axx bTop")) {
-                     conditions >> Auu_BC.bT;
-                     conditions >> Auu_BC.typeT;
-                  } else if (ls == string("Axx bBott")) {
-                     conditions >> Auu_BC.bB;
-                     conditions >> Auu_BC.typeB;
-                  }
-
-                  // Auw
-                  if (ls == string("Axz bTop")) {
-                     conditions >> Auw_BC.bT;
-                     conditions >> Auw_BC.typeT;
-                  } else if (ls == string("Axz bBott")) {
-                     conditions >> Auw_BC.bB;
-                     conditions >> Auw_BC.typeB;
-                  }
-
-                  // Avv
-                  else if (ls == string("Ayy bTop")) {
-                     conditions >> Avv_BC.bT;
-                     conditions >> Avv_BC.typeT;
-                  } else if (ls == string("Ayy bBott")) {
-                     conditions >> Avv_BC.bB;
-                     conditions >> Avv_BC.typeB;
-                  }
-
-                  // Awu
-                  if (ls == string("Azx bTop")) {
-                     conditions >> Awu_BC.bT;
-                     conditions >> Awu_BC.typeT;
-                  } else if (ls == string("Azx bBott")) {
-                     conditions >> Awu_BC.bB;
-                     conditions >> Awu_BC.typeB;
-                  }
-
-                  // Aww
-                  else if (ls == string("Azz bTop")) {
-                     conditions >> Aww_BC.bT;
-                     conditions >> Aww_BC.typeT;
-                  } else if (ls == string("Azz bBott")) {
-                     conditions >> Aww_BC.bB;
-                     conditions >> Aww_BC.typeB;
-                  }
-               }
-            }
+            conditions >> cond.ACCUR; conditions.ignore(256,'\n');
+            conditions >> cond.STEP; conditions.ignore(256,'\n');
+            conditions >> cond.N_loop; conditions.ignore(256,'\n');
+            conditions >> cond.rel_p; conditions.ignore(256,'\n');
+            conditions >> cond.maxStore; conditions.ignore(256,'\n');
+            conditions >> cond.wait; conditions.ignore(256,'\n');
+            conditions >> update; conditions.ignore(256,'\n');
+            conditions >> OP_size; conditions.ignore(256,'\n');
+            cout << "initial conditions read in." << endl;
+            
+            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            getline(conditions,line);
+            conditions >> Auu_BC; conditions.ignore(256,'\n');
+            conditions >> Auw_BC; conditions.ignore(256,'\n');
+            conditions >> Avv_BC; conditions.ignore(256,'\n');
+            conditions >> Awu_BC; conditions.ignore(256,'\n');
+            conditions >> Aww_BC; conditions.ignore(256,'\n');
+            cout << "boundary conditions read in." << endl;
 
             // read the K matrix
-            // const int K_size = OP_size;       // the size of the k-matrix
             Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
             K.resize(OP_size,OP_size);
 
@@ -404,7 +351,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
             // find the line where the K matrix starts
-            while (line != "K MATRIX") getline(conditions,line);
+            while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -436,19 +383,12 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
                   }
                } // end for (row)
             } // end file open
-            
-            // // print the matrix, for debugging
-            // for (int row = 0; row < OP_size; row++) {
-            //    for (int col = 0; col < OP_size; col++) {
-            //    //    cout << "(" << row << ", " << col << "):\n" << K(row,col) << endl << endl;
-            //       cout << K(row,col)(1,1) << endl;
-            //    }
-            // }
+            cout << "K matrix read in." << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
          }
-         else cout << "Unable to open file:" << conditions_file << endl;
+         else cout << "Unable to open file: " << conditions_file << endl;
       }
    
       // ADD CODE IN THIS FUNCTION TO BUILD ADDITIONAL D-MATRICES
