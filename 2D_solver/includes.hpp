@@ -52,8 +52,7 @@ double abs2(double x) { return pow(abs(x),2); }
 // Insert the matrix "spMat" into the "location" (i,j) in
 //   a sparse matrix of size "size" and return the matrix
 template<typename Scalar_type>
-SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<Scalar_type> spMat)
-{
+SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<Scalar_type> spMat) {
    SparseMatrix<Scalar_type> Mij(size,size);
    Mij.insert(i,j) = 1.;
    return kroneckerProduct(Mij,spMat);
@@ -65,8 +64,7 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
 // ===========================================
 // Values used for set up, initial conditions,
 //   and algorithmic parameters
-   struct in_conditions
-   {
+   struct in_conditions {
       int SIZEu;    // the number of points...
       int SIZEv;    // "" ...
       int SIZEw;    // "" in orthogonal directions
@@ -82,8 +80,7 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
 
 // ===========================================
 // Boundary condition structure for a sigle OP
-   struct Bound_Cond
-   {
+   struct Bound_Cond {
       string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
       double bB, bT, bL, bR; // for Neumann BC:   slip length
                              // for Dirichlet BC: function value
@@ -112,15 +109,20 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
    };
 // ===========================================
 
-ifstream& operator>> (ifstream& stream, Bound_Cond& BC)
-{
+ifstream& operator>> (ifstream& stream, Bound_Cond& BC) {
    stream >> BC.typeT;
    stream >> BC.bT;
    stream >> BC.typeB;
    stream >> BC.bB;
    return stream;
 }
-
+ostream& operator<< (ostream& out, Bound_Cond& BC) {
+   out << "BC.typeT: " << BC.typeT << endl;
+   out << "BC.bT:    " << BC.bT << endl;
+   out << "BC.typeB: " << BC.typeB << endl;
+   out << "BC.bB:    " << BC.bB << endl;
+   return out;
+}
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
@@ -128,8 +130,7 @@ ifstream& operator>> (ifstream& stream, Bound_Cond& BC)
 //    double, or similar. If your order parameter is a
 //    matrix, it will be flattened as a VectorXcd.
    template <typename Scalar_type>
-   class OrderParam
-   {
+   class OrderParam {
       protected:
       // store it as a vector; the OP at one point
       int num_comp = 1; // we'll assume it's 1, unless in the derived class
@@ -246,13 +247,11 @@ ifstream& operator>> (ifstream& stream, Bound_Cond& BC)
 // A special function to access OP elements from a vector that
 //   has been flattened from a matrix of size 'sizeU' X 'sizeV'
 template<typename Scalar_type>
-OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, int u, int sizeV, int sizeU, int OPsize, bool debug = false)
-{
+OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, int u, int sizeV, int sizeU, int OPsize, bool debug = false) {
    OrderParam<Scalar_type> op;
    op.initialize(OPsize); // initialize the OP to return
    if (debug) cout << "size = " << sizeV*sizeU << endl;
-   for (int vi = 0; vi < OPsize; vi++)
-   {
+   for (int vi = 0; vi < OPsize; vi++) {
       if (debug) cout << "ID = " << ID(sizeU*sizeV,u,sizeU,v,vi) << endl;
       op(vi) = vec(ID(sizeU*sizeV,u,sizeU,v,vi)); // insert all OP components into the OrderParam object
    }
@@ -265,8 +264,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 //    the whole problem (matrices, rhs vector), and
 //    solves the system using (accelerated) relaxation
    template <class Scalar_type>
-   class GL_Solver
-   {
+   class GL_Solver {
       protected: // for variables and objects that will be used in derived classes
 
       int size; // number of mesh points (size of the D matrices or OP-component vectors)
@@ -341,7 +339,8 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             conditions >> Avv_BC; conditions.ignore(256,'\n');
             conditions >> Awu_BC; conditions.ignore(256,'\n');
             conditions >> Aww_BC; conditions.ignore(256,'\n');
-            cout << "boundary conditions read in." << endl;
+            cout << "boundary conditions read in:" << endl;
+            cout << "Auu_BC\n" << Auu_BC << endl;
 
             // read the K matrix
             Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
