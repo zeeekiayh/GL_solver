@@ -59,7 +59,7 @@ SparseMatrix<Scalar_type> Place_subMatrix(int i, int j, int size, SparseMatrix<S
 }
 
 // constants used in the GL equations
-struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha; };
+struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
 
 // ===========================================
 // Values used for set up, initial conditions,
@@ -259,6 +259,23 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
 }
 
 
+// Functions for the temperature- and pressure-dependent GL parameters
+double Alpha(double P, double T) {
+   // ...
+   return 1.0;
+}
+vector<double> Betas(double P, double T) {
+   // ...
+   vector<double> b;
+   b.push_back(1);
+   b.push_back(-2);
+   b.push_back(-2);
+   b.push_back(-2);
+   b.push_back(2);
+   return b;
+}
+
+
 // ====================================================
 // A class that holds the mesh of OP components, builds
 //    the whole problem (matrices, rhs vector), and
@@ -308,7 +325,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
       // read in the conditions from the file
       void ReadConditions(string conditions_file)
       {
-         cout << "reading conditions..." << endl;
+         // cout << "reading conditions..." << endl;
          string line;
          std::ifstream conditions(conditions_file);
 
@@ -316,31 +333,33 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
          if (conditions.is_open()) {
             // conditions >> method;
             conditions >> method; conditions.ignore(256,'\n');
-            cout << "method = " << method << endl;
+            // cout << "method = " << method << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to one if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
 
-            conditions >> cond.ACCUR; conditions.ignore(256,'\n');
-            conditions >> cond.STEP; conditions.ignore(256,'\n');
-            conditions >> cond.N_loop; conditions.ignore(256,'\n');
-            conditions >> cond.rel_p; conditions.ignore(256,'\n');
+            conditions >> cond.ACCUR;    conditions.ignore(256,'\n');
+            conditions >> cond.STEP;     conditions.ignore(256,'\n');
+            conditions >> cond.N_loop;   conditions.ignore(256,'\n');
+            conditions >> cond.rel_p;    conditions.ignore(256,'\n');
             conditions >> cond.maxStore; conditions.ignore(256,'\n');
-            conditions >> cond.wait; conditions.ignore(256,'\n');
-            conditions >> update; conditions.ignore(256,'\n');
-            conditions >> OP_size; conditions.ignore(256,'\n');
-            cout << "initial conditions read in." << endl;
+            conditions >> cond.wait;     conditions.ignore(256,'\n');
+            conditions >> update;        conditions.ignore(256,'\n');
+            conditions >> OP_size;       conditions.ignore(256,'\n');
+            conditions >> gl.T;          conditions.ignore(256,'\n');
+            conditions >> gl.P;          conditions.ignore(256,'\n');
+            // cout << "initial conditions read in." << endl;
             
-            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);cout<<"line="<<line<<endl;}
             getline(conditions,line);
             conditions >> Auu_BC; conditions.ignore(256,'\n');
             conditions >> Auw_BC; conditions.ignore(256,'\n');
             conditions >> Avv_BC; conditions.ignore(256,'\n');
             conditions >> Awu_BC; conditions.ignore(256,'\n');
             conditions >> Aww_BC; conditions.ignore(256,'\n');
-            cout << "boundary conditions read in:" << endl;
-            cout << "Auu_BC\n" << Auu_BC << endl;
+            // cout << "boundary conditions read in:" << endl;
+            // cout << "Auu_BC\n" << Auu_BC << endl;
 
             // read the K matrix
             Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
@@ -350,7 +369,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
             // find the line where the K matrix starts
-            while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            // while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -382,7 +401,7 @@ OrderParam<Scalar_type> matrix_operator(Matrix<Scalar_type,-1,1>& vec, int v, in
                   }
                } // end for (row)
             } // end file open
-            cout << "K matrix read in." << endl;
+            // cout << "K matrix read in." << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
