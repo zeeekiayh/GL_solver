@@ -300,8 +300,7 @@ vector<double> Betas(double P, double T) {
       public:
       // CONSTRUCTORS
       GL_Solver() {};
-      GL_Solver(string conditions_file)
-      {
+      GL_Solver(string conditions_file) {
          ReadConditions(conditions_file);
          size = cond.SIZEu*cond.SIZEv;
       }
@@ -323,8 +322,7 @@ vector<double> Betas(double P, double T) {
       in_conditions getConditions() const { return cond; }
 
       // read in the conditions from the file
-      void ReadConditions(string conditions_file)
-      {
+      void ReadConditions(string conditions_file) {
          // cout << "reading conditions..." << endl;
          string line;
          std::ifstream conditions(conditions_file);
@@ -351,7 +349,7 @@ vector<double> Betas(double P, double T) {
             conditions >> gl.P;          conditions.ignore(256,'\n');
             // cout << "initial conditions read in." << endl;
             
-            // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
             getline(conditions,line);
             conditions >> Auu_BC; conditions.ignore(256,'\n');
             conditions >> Auw_BC; conditions.ignore(256,'\n');
@@ -369,7 +367,7 @@ vector<double> Betas(double P, double T) {
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
             // find the line where the K matrix starts
-            // while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -411,8 +409,7 @@ vector<double> Betas(double P, double T) {
    
       // ADD CODE IN THIS FUNCTION TO BUILD ADDITIONAL D-MATRICES
       // Build the derivative matrices
-      void Build_D_Matrices()
-      {
+      void Build_D_Matrices() {
          // cout << "build matrices..." << endl;
          // make vectors to hold the triplets of coefficients
          vector<Tr> coeffs_u2, coeffs_w2, coeffs_uw; // coeffs_v2, coeffs_uv, coeffs_vw
@@ -456,22 +453,19 @@ vector<double> Betas(double P, double T) {
       }
 
       // Insert method for the Du^2 matrix derivatives
-      void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs)
-      {
+      void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs) {
          if (u == -1 || u == cond.SIZEu);
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEv,v,0),weight));
       }
 
       // insert method for the Dw^2 matrix derivatives
-      void InsertCoeff_Dw2(int id, int u, int v, double weight, vector<Tr>& coeffs)
-      {
+      void InsertCoeff_Dw2(int id, int u, int v, double weight, vector<Tr>& coeffs) {
          if (v == -1 || v == cond.SIZEv); // would add boundary conditions here, but
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight)); // we'll use ghost points, so do nothing
       }
 
       // insert method for the mixed derivative matrices
-      void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs)
-      {
+      void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs) {
               if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
          else if (v == -1 || v == cond.SIZEv); //  but we'll use ghost points, so do nothing
          else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
@@ -481,8 +475,7 @@ vector<double> Betas(double P, double T) {
 
       // ?still needs fixed? I think it's good
       // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
-      SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num)
-      {
+      SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDu2_BD()" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
@@ -540,8 +533,7 @@ vector<double> Betas(double P, double T) {
       }
 
       // derivative matrix: 2nd-order of 3rd coordinate (i.e. z)
-      SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num)
-      {
+      SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDw2_BD" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Dw2_copy = Dw2;// the matrix that we will edit and return to not modify the original
@@ -600,8 +592,7 @@ vector<double> Betas(double P, double T) {
 
       // still needs fixed?
       // mixed derivative: of 1st and 3rd coordinates (i.e. x & z)
-      SparseMatrix<Scalar_type> Duw_BD(Bound_Cond BC, int op_elem_num)
-      {
+      SparseMatrix<Scalar_type> Duw_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDuw_BD" << endl;
          // the matrix that we will edit and return to not modify the original
          SparseMatrix<Scalar_type> Duw_copy = Duw;
@@ -748,8 +739,7 @@ vector<double> Betas(double P, double T) {
    
       // WRITE ADDITIONAL 'D**_BD' METHODS HERE
 
-      void BuildProblem()
-      {
+      void BuildProblem() {
          Build_D_Matrices();
          // cout << "build matrices: done" << endl;
          op_vector.resize(size*OP_size); // initialize OP vetor
@@ -759,8 +749,7 @@ vector<double> Betas(double P, double T) {
       }
 
       // use the relaxation method and Anderson Acceleration to solve
-      void Solve(Matrix<Scalar_type,-1,1>& guess)
-      {
+      void Solve(Matrix<Scalar_type,-1,1>& guess) {
          cout << "solving..." << endl;
          auto start = std::chrono::system_clock::now();
          Matrix<Scalar_type,-1,1> f = makeGuess(guess), df(guess.size()); // initialize vectors
@@ -832,8 +821,7 @@ vector<double> Betas(double P, double T) {
       //             __x__|__y__|_Auu_|_Auv_| ...
       //              ... | ... | ... | ... | ...
       // separates the components from solution...storing real and imag parts ==> up to 18
-      void WriteToFile(Matrix<Scalar_type,-1,1>& vec, string file_name)
-      {
+      void WriteToFile(Matrix<Scalar_type,-1,1>& vec, string file_name) {
          std::ofstream data (file_name);
          if (data.is_open())
          {
@@ -857,8 +845,7 @@ vector<double> Betas(double P, double T) {
          else cout << "Unable to open file: " << file_name << endl;
       }
 
-      void WriteToFile_single_vector(VectorXd& vec, string file_name)
-      {
+      void WriteToFile_single_vector(VectorXd& vec, string file_name) {
          std::ofstream data (file_name);
          if (data.is_open()) {
             for (int i = 0; i < vec.size(); i++) {
@@ -869,8 +856,7 @@ vector<double> Betas(double P, double T) {
          else cout << "Unable to open file: " << file_name << endl;
       }
 
-      void WriteToFile_single_vector(VectorXcd& vec, string file_name)
-      {
+      void WriteToFile_single_vector(VectorXcd& vec, string file_name) {
          std::ofstream data (file_name);
          if (data.is_open()) {
             for (int i = 0; i < vec.size(); i++) {
