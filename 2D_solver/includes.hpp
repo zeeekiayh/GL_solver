@@ -82,47 +82,46 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
 // Boundary condition structure for a sigle OP
    struct Bound_Cond {
       string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
-      double bB, bT, bL, bR; // for Neumann BC:   slip length
-                             // for Dirichlet BC: function value
+      double valB, valT, valL, valR; // for Neumann BC:   slip length
+                                     // for Dirichlet BC: function value
       Bound_Cond& operator= (Bound_Cond& rhs)
       {
          typeB = rhs.typeB;
          typeT = rhs.typeT;
          typeL = rhs.typeL;
          typeR = rhs.typeR;
-         bB = rhs.bB;
-         bT = rhs.bT;
-         bL = rhs.bL;
-         bR = rhs.bR;
+         valB = rhs.valB;
+         valT = rhs.valT;
+         valL = rhs.valL;
+         valR = rhs.valR;
          return *this;
       }
-
-      ifstream& operator>> (ifstream& stream)
-      {
-         stream >> this->typeT;
-         stream >> this->bT;
-         stream >> this->typeB;
-         stream >> this->bB;
-         return stream;
-      }
-
    };
-// ===========================================
 
-ifstream& operator>> (ifstream& stream, Bound_Cond& BC) {
-   stream >> BC.typeT;
-   stream >> BC.bT;
-   stream >> BC.typeB;
-   stream >> BC.bB;
-   return stream;
-}
-ostream& operator<< (ostream& out, Bound_Cond& BC) {
-   out << "BC.typeT: " << BC.typeT << endl;
-   out << "BC.bT:    " << BC.bT << endl;
-   out << "BC.typeB: " << BC.typeB << endl;
-   out << "BC.bB:    " << BC.bB << endl;
-   return out;
-}
+   ifstream& operator>> (ifstream& stream, Bound_Cond& BC) {
+      stream >> BC.typeT;
+      stream >> BC.valT;
+      stream >> BC.typeB;
+      stream >> BC.valB;
+      stream >> BC.typeL;
+      stream >> BC.valL;
+      stream >> BC.typeR;
+      stream >> BC.valR;
+      return stream;
+   }
+   
+   ostream& operator<< (ostream& out, Bound_Cond& BC) {
+      out << "BC.typeT: " << BC.typeT << endl;
+      out << "BC.valT:  " << BC.valT << endl;
+      out << "BC.typeB: " << BC.typeB << endl;
+      out << "BC.valB:  " << BC.valB << endl;
+      out << "BC.typeL: " << BC.typeL << endl;
+      out << "BC.valL:  " << BC.valL << endl;
+      out << "BC.typeR: " << BC.typeR << endl;
+      out << "BC.valR:  " << BC.valR << endl;
+      return out;
+   }
+// ===========================================
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
@@ -295,7 +294,7 @@ vector<double> Betas(double P, double T) {
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices: ADD D-MATRIX NAMES HERE
-      Bound_Cond Auu_BC,Auw_BC,Avv_BC,Awu_BC,Aww_BC; // boundary conditions for OP components
+      Bound_Cond Auu_BC, Auw_BC, Avv_BC, Awu_BC, Aww_BC; // boundary conditions for OP components
 
       public:
       // CONSTRUCTORS
@@ -329,45 +328,37 @@ vector<double> Betas(double P, double T) {
 
          // get conditions from the file
          if (conditions.is_open()) {
-            // conditions >> method;
-            conditions >> method; conditions.ignore(256,'\n');
-            // cout << "method = " << method << endl;
+            // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); getline(conditions,line); cout << "line = " << line << endl;
+            conditions >> Auu_BC; conditions.ignore(256,'\n');
+            conditions >> Avv_BC; conditions.ignore(256,'\n');
+            conditions >> Aww_BC; conditions.ignore(256,'\n');
+            conditions >> Auw_BC; conditions.ignore(256,'\n');
+            conditions >> Awu_BC; conditions.ignore(256,'\n');
+            cout << "boundary conditions read in:" << endl;
+            cout << "Auu_BC\n" << Auu_BC << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to one if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
-
-            conditions >> cond.ACCUR;    conditions.ignore(256,'\n');
-            conditions >> cond.STEP;     conditions.ignore(256,'\n');
-            conditions >> cond.N_loop;   conditions.ignore(256,'\n');
-            conditions >> cond.rel_p;    conditions.ignore(256,'\n');
-            conditions >> cond.maxStore; conditions.ignore(256,'\n');
-            conditions >> cond.wait;     conditions.ignore(256,'\n');
-            conditions >> update;        conditions.ignore(256,'\n');
-            conditions >> OP_size;       conditions.ignore(256,'\n');
-            conditions >> gl.T;          conditions.ignore(256,'\n');
-            conditions >> gl.P;          conditions.ignore(256,'\n');
-            // cout << "initial conditions read in." << endl;
-            
-            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
-            getline(conditions,line);
-            conditions >> Auu_BC; conditions.ignore(256,'\n');
-            conditions >> Auw_BC; conditions.ignore(256,'\n');
-            conditions >> Avv_BC; conditions.ignore(256,'\n');
-            conditions >> Awu_BC; conditions.ignore(256,'\n');
-            conditions >> Aww_BC; conditions.ignore(256,'\n');
-            // cout << "boundary conditions read in:" << endl;
-            // cout << "Auu_BC\n" << Auu_BC << endl;
+            conditions >> cond.STEP; conditions.ignore(256,'\n');
+            conditions >> OP_size;   conditions.ignore(256,'\n');
+            conditions >> gl.T;      conditions.ignore(256,'\n');
+            conditions >> gl.P;      conditions.ignore(256,'\n');
 
             // read the K matrix
             Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
+            cout << "here 1" << endl;
             K.resize(OP_size,OP_size);
+            cout << "here 2" << endl;
 
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+            cout << "here 3" << endl;
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
+            cout << "here 4" << endl;
 
             // find the line where the K matrix starts
-            while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -399,7 +390,19 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
-            // cout << "K matrix read in." << endl;
+            cout << "K matrix read in." << endl;
+
+            // conditions >> method;
+            conditions >> method; conditions.ignore(256,'\n');
+            cout << "method = " << method << endl;
+
+            conditions >> cond.ACCUR;    conditions.ignore(256,'\n');
+            conditions >> cond.N_loop;   conditions.ignore(256,'\n');
+            conditions >> cond.rel_p;    conditions.ignore(256,'\n');
+            conditions >> cond.maxStore; conditions.ignore(256,'\n');
+            conditions >> cond.wait;     conditions.ignore(256,'\n');
+            conditions >> update;        conditions.ignore(256,'\n');
+            cout << "initial conditions read in." << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
@@ -494,7 +497,7 @@ vector<double> Betas(double P, double T) {
             //   and depending on what kind of BC we have there
             if (BC.typeB == string("Neumann"))
             {
-               Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.bB;
+               Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
             else if (BC.typeB == string("Dirichlet"))
@@ -506,7 +509,7 @@ vector<double> Betas(double P, double T) {
 
             if (BC.typeT == string("Neumann"))
             {
-               Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.bT;
+               Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valT;
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeT == string("Dirichlet"))
@@ -552,7 +555,7 @@ vector<double> Betas(double P, double T) {
             //   and depending on what kind of BC we have there
             if (BC.typeB == string("Neumann"))
             {
-               Dw2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.bB;
+               Dw2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(id0,id0_connect) = 2.;
             }
             else if (BC.typeB == string("Dirichlet"))
@@ -564,7 +567,7 @@ vector<double> Betas(double P, double T) {
 
             if (BC.typeT == string("Neumann"))
             {
-               Dw2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.bT;
+               Dw2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(idN,idN_connect) = 2.;
             }
             else if (BC.typeT == string("Dirichlet"))
@@ -620,16 +623,16 @@ vector<double> Betas(double P, double T) {
             if (BC.typeL == string("Neumann"))
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
-               Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL);
-               // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.bL) (BC.bL >= pow(10,-7) ? cond.STEP/(2.*BC.bL) : 0);
-               Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.bL);
+               Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL);
+               // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL) (BC.valL >= pow(10,-7) ? cond.STEP/(2.*BC.valL) : 0);
+               Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.valL);
             }
             else if (BC.typeL == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
             if (BC.typeR == string("Neumann"))
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
-               Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.bR);
-               Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.bR);
+               Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.valR);
+               Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.valR);
             }
             else if (BC.typeR == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
 
@@ -667,15 +670,15 @@ vector<double> Betas(double P, double T) {
             if (BC.typeB == string("Neumann"))
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
-               Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.bB);
-               Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.bB);
+               Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.valB);
+               Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.valB);
             }
             else if (BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
             if (BC.typeT == string("Neumann"))
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
-               Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.bT);
-               Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.bT);
+               Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.valB);
+               Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.valB);
             }
             else if (BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
 
@@ -698,7 +701,7 @@ vector<double> Betas(double P, double T) {
          id = ID(size,0,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(size,1,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bT);
+              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
          else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
                // TODO: determine if this assumption is correct, that
                //    if the function value is given for one side, we
@@ -709,21 +712,21 @@ vector<double> Betas(double P, double T) {
          id = ID(size,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bT);
+              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
          else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
 
          // Bottom left
          id = ID(size,0,cond.SIZEu,0,0);
          id_disconnect = ID(size,1,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bL*BC.bB);
+              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
          else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
 
          // Bottom right
          id = ID(size,cond.SIZEu-1,cond.SIZEu,0,0);
          id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.bR*BC.bB);
+              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
       
          // // If we know the VALUE at the point, add the index of it of the guess/solution

@@ -1,23 +1,16 @@
-acceleration   method
-300 300        mesh size
-1e-6           accuracy
-0.05           h (step size)
-200            number loops
-0.006          rel_p
-7              maxStore
-1              wait
-1              update
-5              OP size
-0.5e-4         temperature
-1e5            pressure
-
 BOUNDARY CONDITIONS
- top      bottom
-D  1     N  1e10  #Axx
-D  1     N  1e10  #Ayy
-N  1e10  D  0     #Azz
-D  1     N  1e10  #Axz
-D  1     N  1e10  #Azx
+ top     bottom    left  right
+D  1     N  1e10   D 1   N 1e10 # Axx
+D  1     N  1e10   D 1   N 1e10 # Ayy
+N  1e10  D  0      D 1   N 1e10 # Azz
+D  1     N  1e10   D 1   N 1e10 # Axz
+D  1     N  1e10   D 1   N 1e10 # Azx
+
+300 300 # mesh size
+0.05    # h (step size)
+5       # OP size
+0.5e-4  # temperature
+1e5     # pressure
 
 K MATRIX
 (3,0,0,1) ()        ()        ()        (0,1,1,0)
@@ -25,3 +18,11 @@ K MATRIX
 ()        ()        (1,0,0,3) (0,1,1,0) ()
 ()        ()        (0,1,1,0) (3,0,0,1) ()
 (0,1,1,0) ()        ()        ()        (1,0,0,3)
+
+acceleration   method
+1e-6           accuracy
+200            number loops
+0.006          rel_p
+7              maxStore
+1              wait
+1              update

@@ -52,8 +52,8 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
-                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.bB;
-               else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
+                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
+               else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.valT;
                else
                {
                   auto a = matrix_operator(op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
@@ -82,26 +82,26 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    {
       // Auu (xx) BC's
       if (Auu_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.valB;
       }
       if (Auu_BC.typeT == string("Dirichlet")) {
-         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
+         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.valT;
       }
       
       // Avv (yy) BC's
       if (Avv_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.valB;
       }
       if (Avv_BC.typeT == string("Dirichlet")) {
-         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.bT;
+         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.valT;
       }
       
       // Aww (zz) BC's
       if (Aww_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.valB;
       }
       if (Aww_BC.typeT == string("Dirichlet")) {
-         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.bT;
+         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.valT;
       } return g;
    }
 
@@ -210,10 +210,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         //    is there a way to work around that?
                         // use BC values to calculate the gradient terms
                         if (j == 0) { // x-derivative
-                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bL;
-                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bR;
-                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bL;
-                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bR;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajj = A(a,j)/temp_bc_j.valL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajj = A(a,j)/temp_bc_j.valR;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakj = A(a,k)/temp_bc_k.valL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakj = A(a,k)/temp_bc_k.valR;
 
                            if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajj = ( A_vup(j) - A_vu(j) )/cond.STEP;
                            if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakj = ( A_vup(k) - A_vu(k) )/cond.STEP;
@@ -222,10 +222,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         }
                         // if (j == 1) // y derivative
                         if (j == 2) { // z-derivative
-                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bB;
-                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.bT;
-                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bB;
-                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.bT;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajj = A(a,j)/temp_bc_j.valB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajj = A(a,j)/temp_bc_j.valT;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakj = A(a,k)/temp_bc_k.valB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakj = A(a,k)/temp_bc_k.valT;
 
                            if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajj = ( A_vpu(j) - A_vu(j) )/cond.STEP;
                            if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakj = ( A_vpu(k) - A_vu(k) )/cond.STEP;
@@ -234,10 +234,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         }
 
                         if (k == 0) { // x-derivative
-                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bL;
-                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bR;
-                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bL;
-                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bR;
+                           if (n_u == 0 &&            temp_bc_j.typeL == string("Neumann")) Aajk = A(a,j)/temp_bc_j.valL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_j.typeR == string("Neumann")) Aajk = A(a,j)/temp_bc_j.valR;
+                           if (n_u == 0 &&            temp_bc_k.typeL == string("Neumann")) Aakk = A(a,k)/temp_bc_k.valL;
+                           if (n_u == cond.SIZEu-1 && temp_bc_k.typeR == string("Neumann")) Aakk = A(a,k)/temp_bc_k.valR;
 
                            if (n_u == 0 &&            temp_bc_j.typeL == string("Dirichlet")) Aajk = ( A_vup(j) - A_vu(j) )/cond.STEP;
                            if (n_u == 0 &&            temp_bc_k.typeL == string("Dirichlet")) Aakk = ( A_vup(k) - A_vu(k) )/cond.STEP;
@@ -246,10 +246,10 @@ class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                         }
                         // if (k == 1) // y derivative
                         if (k == 2) { // z-derivative
-                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bB;
-                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.bT;
-                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bB;
-                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.bT;
+                           if (n_v == 0 &&            temp_bc_j.typeB == string("Neumann")) Aajk = A(a,j)/temp_bc_j.valB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_j.typeT == string("Neumann")) Aajk = A(a,j)/temp_bc_j.valT;
+                           if (n_v == 0 &&            temp_bc_k.typeB == string("Neumann")) Aakk = A(a,k)/temp_bc_k.valB;
+                           if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Neumann")) Aakk = A(a,k)/temp_bc_k.valT;
 
                            if (n_v == 0 &&            temp_bc_j.typeB == string("Dirichlet")) Aajk = ( A_vpu(j) - A_vu(j) )/cond.STEP;
                            if (n_v == 0 &&            temp_bc_k.typeB == string("Dirichlet")) Aakk = ( A_vpu(k) - A_vu(k) )/cond.STEP;
@@ -379,8 +379,8 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
                int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                dcomplex val;
 
-                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.bB;
-               else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.bT;
+                    if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
+               else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.valT;
                else
                {
                   auto a = matrix_operator(this->op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
@@ -436,24 +436,24 @@ class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex>
    VectorXcd makeGuess(VectorXcd& g)
    {
       if (Auu_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Auu_BC.valB;
       }
       if (Auu_BC.typeT == string("Dirichlet")) {
-         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.bT;
+         for (int i = 0; i < cond.SIZEu; i++) g(i) = Auu_BC.valT;
       }
       
       if (Avv_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Avv_BC.valB;
       }
       if (Avv_BC.typeT == string("Dirichlet")) {
-         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.bT;
+         for (int i = size; i < cond.SIZEu+size; i++) g(i) = Avv_BC.valT;
       }
       
       if (Aww_BC.typeB == string("Dirichlet")) {
-         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.bB;
+         for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Aww_BC.valB;
       }
       if (Aww_BC.typeT == string("Dirichlet")) {
-         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.bT;
+         for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Aww_BC.valT;
       } return g;
    }
 };

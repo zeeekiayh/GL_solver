@@ -52,11 +52,6 @@ class converg_acceler{
 		void print_component(unsigned int n);
 };
 
-
-
-
-
-
 /* ===================================================================================================
  	the .cpp source for the template class functions has to be included into .hpp file,
  	otherwise problems arize at linkage and compilation
