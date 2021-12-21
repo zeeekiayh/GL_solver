@@ -19,10 +19,10 @@ K MATRIX
 ()        ()        (0,1,1,0) (3,0,0,1) ()
 (0,1,1,0) ()        ()        ()        (1,0,0,3)
 
-acceleration   method
 1e-6           accuracy
 200            number loops
-0.006          rel_p
-7              maxStore
-1              wait
-1              update
+#acceleration   method
+#0.006          rel_p
+#7              maxStore
+#1              wait
+#1              update

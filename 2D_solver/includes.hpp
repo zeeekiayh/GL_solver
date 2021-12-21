@@ -288,11 +288,11 @@ vector<double> Betas(double P, double T) {
 
       int size; // number of mesh points (size of the D matrices or OP-component vectors)
       int OP_size; // number of OP components
-      bool update; // says whether or not to use the no_update vector
       GL_param gl; // temperature-dependent parameters for the GL equation
-      string method; // if Solve will use normal relaxtion or the accelerated
+      bool update = 1; // says whether or not to use the no_update vector
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
+      string method = "acceleration"; // if Solve will use normal relaxtion or the accelerated
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
@@ -344,8 +344,8 @@ vector<double> Betas(double P, double T) {
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
-            // conditions >> cond.STEP; conditions.ignore(256,'\n');
-            fscanf("%le",&cond.STEP);
+            conditions >> cond.STEP; conditions.ignore(256,'\n');
+            // fscanf("%le",&cond.STEP);
             conditions >> OP_size;   conditions.ignore(256,'\n');
             conditions >> gl.T;      conditions.ignore(256,'\n');
             conditions >> gl.P;      conditions.ignore(256,'\n');
@@ -396,16 +396,15 @@ vector<double> Betas(double P, double T) {
             } // end file open
             cout << "K matrix read in." << endl;
 
-            // conditions >> method;
-            conditions >> method; conditions.ignore(256,'\n');
-            cout << "method = " << method << endl;
+            // conditions >> method; conditions.ignore(256,'\n');
+            // cout << "method = " << method << endl;
 
             conditions >> cond.ACCUR;    conditions.ignore(256,'\n');
             conditions >> cond.N_loop;   conditions.ignore(256,'\n');
-            conditions >> cond.rel_p;    conditions.ignore(256,'\n');
-            conditions >> cond.maxStore; conditions.ignore(256,'\n');
-            conditions >> cond.wait;     conditions.ignore(256,'\n');
-            conditions >> update;        conditions.ignore(256,'\n');
+            // conditions >> cond.rel_p;    conditions.ignore(256,'\n');
+            // conditions >> cond.maxStore; conditions.ignore(256,'\n');
+            // conditions >> cond.wait;     conditions.ignore(256,'\n');
+            // conditions >> update;        conditions.ignore(256,'\n');
             cout << "initial conditions read in." << endl;
 
             conditions.close();
@@ -770,8 +769,7 @@ vector<double> Betas(double P, double T) {
 
          // check to see if the solver failed
          if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
-         else if (solver.info() == Eigen::NumericalIssue) // for debugging non-invertable matrices
-         {
+         else if (solver.info() == Eigen::NumericalIssue) { // for debugging non-invertable matrices
             cout << "Solver: numerical issues" << endl;
             // for (int k=0; k < SolverMatrix.outerSize(); ++k) for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
             return;
@@ -789,7 +787,7 @@ vector<double> Betas(double P, double T) {
          Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
 
          // the acceleration object
-         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(no_update); // Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update)
          
          // loop until f converges or until it's gone too long
          do { // use relaxation
@@ -826,7 +824,7 @@ vector<double> Betas(double P, double T) {
 
       // Write all components of the OP, all into one file, of the form:
       //             __x__|__y__|_Eta_uu_|_Eta_uv_| ...
-      //              ... | ... |  ...  |  ...  | ...
+      //              ... | ... |  ...   |   ...  | ...
       // separates the components from solution...storing real and imag parts ==> up to 18
       void WriteToFile(Matrix<Scalar_type,-1,1>& vec, string file_name) {
          std::ofstream data (file_name);

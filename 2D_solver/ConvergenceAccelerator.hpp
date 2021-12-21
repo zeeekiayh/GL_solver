@@ -42,7 +42,7 @@ class converg_acceler{
 
 		//constructor 
 		converg_acceler () {Nstored=0;}; // default constructor
-		converg_acceler (int maxstor, int wtcnt, double rlxp, const vector<int> no_update); 
+		converg_acceler (const vector<int> no_update, int mxstr=7, int wtX=1, double rlxp=0.006); 
 		//destructor
 		~converg_acceler () {};
 
@@ -72,7 +72,7 @@ class converg_acceler{
 
 //constructor for base class
 template <class T>
-converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vector<int> no_update) 
+converg_acceler<T>::converg_acceler (const vector<int> no_update, int mxstr, int wtX, double rlxp) 
 {
 	Nstored=0; 
 	if ( MaxStored < mxstr ) MaxStored=mxstr;
