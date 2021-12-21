@@ -109,7 +109,10 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
       stream >> BC.valR;
       return stream;
    }
-   
+
+   // while (fscanf(ptr,"%*s %*s %s ",buf)==1)
+   //      printf("%s\n", buf);
+
    ostream& operator<< (ostream& out, Bound_Cond& BC) {
       out << "BC.typeT: " << BC.typeT << endl;
       out << "BC.valT:  " << BC.valT << endl;
@@ -223,20 +226,20 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
       dcomplex F_Bulk(GL_param gl)
       {
          // calculate the used forms of A
-         auto A = GetMatrixForm();
-         auto A_tran = A.transpose();
-         auto A_conj = A.conjugate();
-         auto A_dag  = A.adjoint();
+         auto Eta_ = GetMatrixForm();
+         auto Eta_tran = Eta_.transpose();
+         auto Eta_conj = Eta_.conjugate();
+         auto Eta_dag  = Eta_.adjoint();
 
          double Beta_B = gl.B1+gl.B2 + (gl.B3+gl.B4+gl.B5)/3.; // the bulk beta value
 
-         return -( gl.B1*pow( abs((A * A_tran).trace()), 2)
-                  +gl.B2*pow( (A * A_dag).trace(), 2)
-                  +gl.B3*(A * A_tran * A_conj * A_dag).trace()
-                  +gl.B4*(A * A_dag * A * A_dag).trace()
-                  +gl.B5*(A * A_dag * A_conj * A_tran).trace()
+         return -( gl.B1*pow( abs((Eta_ * Eta_tran).trace()), 2)
+                  +gl.B2*pow( (Eta_ * Eta_dag).trace(), 2)
+                  +gl.B3*(Eta_ * Eta_tran * Eta_conj * Eta_dag).trace()
+                  +gl.B4*(Eta_ * Eta_dag * Eta_ * Eta_dag).trace()
+                  +gl.B5*(Eta_ * Eta_dag * Eta_conj * Eta_tran).trace()
                   )/(Beta_B * 9.)
-                  +2./3.*(A * A_dag).trace();
+                  +2./3.*(Eta_ * Eta_dag).trace();
          // TODO: return just the real part...
       }
    };
@@ -294,7 +297,7 @@ vector<double> Betas(double P, double T) {
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices: ADD D-MATRIX NAMES HERE
-      Bound_Cond Auu_BC, Auw_BC, Avv_BC, Awu_BC, Aww_BC; // boundary conditions for OP components
+      Bound_Cond Eta_uu_BC, Eta_uw_BC, Eta_vv_BC, Eta_wu_BC, Eta_ww_BC; // boundary conditions for OP components
 
       public:
       // CONSTRUCTORS
@@ -329,19 +332,20 @@ vector<double> Betas(double P, double T) {
          // get conditions from the file
          if (conditions.is_open()) {
             // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
-            getline(conditions,line); getline(conditions,line); cout << "line = " << line << endl;
-            conditions >> Auu_BC; conditions.ignore(256,'\n');
-            conditions >> Avv_BC; conditions.ignore(256,'\n');
-            conditions >> Aww_BC; conditions.ignore(256,'\n');
-            conditions >> Auw_BC; conditions.ignore(256,'\n');
-            conditions >> Awu_BC; conditions.ignore(256,'\n');
+            getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+            conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+            conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+            conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+            conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+            conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
             cout << "boundary conditions read in:" << endl;
-            cout << "Auu_BC\n" << Auu_BC << endl;
+            cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
-            if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to one if = 0
+            if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
-            conditions >> cond.STEP; conditions.ignore(256,'\n');
+            // conditions >> cond.STEP; conditions.ignore(256,'\n');
+            fscanf("%le",&cond.STEP);
             conditions >> OP_size;   conditions.ignore(256,'\n');
             conditions >> gl.T;      conditions.ignore(256,'\n');
             conditions >> gl.P;      conditions.ignore(256,'\n');
@@ -358,7 +362,7 @@ vector<double> Betas(double P, double T) {
             cout << "here 4" << endl;
 
             // find the line where the K matrix starts
-            while (line != "K MATRIX") {getline(conditions,line);cout<<"line="<<line<<endl;}
+            while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -821,8 +825,8 @@ vector<double> Betas(double P, double T) {
       }
 
       // Write all components of the OP, all into one file, of the form:
-      //             __x__|__y__|_Auu_|_Auv_| ...
-      //              ... | ... | ... | ... | ...
+      //             __x__|__y__|_Eta_uu_|_Eta_uv_| ...
+      //              ... | ... |  ...  |  ...  | ...
       // separates the components from solution...storing real and imag parts ==> up to 18
       void WriteToFile(Matrix<Scalar_type,-1,1>& vec, string file_name) {
          std::ofstream data (file_name);

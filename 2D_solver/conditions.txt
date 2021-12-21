@@ -8,7 +8,7 @@ D  1     N  1e10   D 1   N 1e10 # Azx
 
 300 300 # mesh size
 0.05    # h (step size)
-5       # OP size
+5       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
 1e5     # pressure
 
