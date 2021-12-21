@@ -327,6 +327,7 @@ vector<double> Betas(double P, double T) {
       void ReadConditions(string conditions_file) {
          // cout << "reading conditions..." << endl;
          string line;
+         char ln [20];
          std::ifstream conditions(conditions_file);
 
          // get conditions from the file
@@ -338,28 +339,41 @@ vector<double> Betas(double P, double T) {
             conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
             conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
             conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
-            cout << "boundary conditions read in:" << endl;
-            cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
+
+            // cout << "boundary conditions read in:" << endl;
+            // cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
+            // cout << "Eta_vv_BC\n" << Eta_vv_BC << endl;
+            // cout << "Eta_ww_BC\n" << Eta_ww_BC << endl;
+            // cout << "Eta_uw_BC\n" << Eta_uw_BC << endl;
+            // cout << "Eta_wu_BC\n" << Eta_wu_BC << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
-            conditions >> cond.STEP; conditions.ignore(256,'\n');
-            // fscanf("%le",&cond.STEP);
-            conditions >> OP_size;   conditions.ignore(256,'\n');
-            conditions >> gl.T;      conditions.ignore(256,'\n');
-            conditions >> gl.P;      conditions.ignore(256,'\n');
+
+            // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
+            // cout << "step = " << cond.STEP << endl;
+
+            conditions >> cond.STEP;   conditions.ignore(256,'\n');
+            conditions >> OP_size;     conditions.ignore(256,'\n');
+            conditions >> gl.T;        conditions.ignore(256,'\n');
+            conditions >> gl.P;        conditions.ignore(256,'\n');
+            conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
+            conditions >> cond.N_loop; conditions.ignore(256,'\n');
+
+            // cout << "size = " << cond.SIZEu << ", " << cond.SIZEv << endl;
+            // cout << "step = " << cond.STEP << endl;
+            // cout << "OP_size = " << OP_size << endl;
+            // cout << "T = " << gl.T << endl;
+            // cout << "P = " << gl.P << endl;
+            // cout << "initial conditions read in." << endl;
 
             // read the K matrix
             Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
-            cout << "here 1" << endl;
             K.resize(OP_size,OP_size);
-            cout << "here 2" << endl;
 
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
-            cout << "here 3" << endl;
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
-            cout << "here 4" << endl;
 
             // find the line where the K matrix starts
             while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
@@ -394,18 +408,7 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
-            cout << "K matrix read in." << endl;
-
-            // conditions >> method; conditions.ignore(256,'\n');
-            // cout << "method = " << method << endl;
-
-            conditions >> cond.ACCUR;    conditions.ignore(256,'\n');
-            conditions >> cond.N_loop;   conditions.ignore(256,'\n');
-            // conditions >> cond.rel_p;    conditions.ignore(256,'\n');
-            // conditions >> cond.maxStore; conditions.ignore(256,'\n');
-            // conditions >> cond.wait;     conditions.ignore(256,'\n');
-            // conditions >> update;        conditions.ignore(256,'\n');
-            cout << "initial conditions read in." << endl;
+            // cout << "K matrix read in." << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;

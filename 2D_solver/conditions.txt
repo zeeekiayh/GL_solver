@@ -11,6 +11,8 @@ D  1     N  1e10   D 1   N 1e10 # Azx
 5       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
 1e5     # pressure
+1e-6    # accuracy
+200     # number loops
 
 K MATRIX
 (3,0,0,1) ()        ()        ()        (0,1,1,0)
@@ -18,11 +20,3 @@ K MATRIX
 ()        ()        (1,0,0,3) (0,1,1,0) ()
 ()        ()        (0,1,1,0) (3,0,0,1) ()
 (0,1,1,0) ()        ()        ()        (1,0,0,3)
-
-1e-6           accuracy
-200            number loops
-#acceleration   method
-#0.006          rel_p
-#7              maxStore
-#1              wait
-#1              update
