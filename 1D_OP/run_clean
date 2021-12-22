@@ -1,4 +1,0 @@
-clear
-g++ Simple_1D_ode.cpp -fopenmp
-./a.out
-./points_plot.py

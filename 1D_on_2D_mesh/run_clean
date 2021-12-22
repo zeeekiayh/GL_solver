@@ -1,4 +1,0 @@
-clear
-g++ Dist_B_Phase.cpp
-./a.out
-./points_plot.py
