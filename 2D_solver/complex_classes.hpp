@@ -14,14 +14,14 @@
       {
          ReadConditions(conditions_file);
          // ReadBoundaryConditions(boundary_conditions_file);
-         size = cond.SIZEu*cond.SIZEv;
+         mSize = cond.SIZEu*cond.SIZEv;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
       SpMat_cd BuildSolverMatrix()
       {
          // the matrix to be used by the solver
-         SpMat_cd solver_mat(size*OP_size,size*OP_size);
+         SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
 
          // initialize each non-zero 'element'
          SpMat_cd elem_00 = Dw2_BD(Eta_uu_BC,0);
@@ -43,7 +43,7 @@
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
             // decide which BC to use
-               if (vi == 0) temp_BC = Eta_uu_BC;
+                 if (vi == 0) temp_BC = Eta_uu_BC;
             else if (vi == 1) temp_BC = Eta_vv_BC;
             else if (vi == 2) temp_BC = Eta_ww_BC;
             else cout << "RHS ERROR: OP index out of bounds." << endl;
@@ -53,7 +53,7 @@
                   int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                   dcomplex val;
 
-                     if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
+                       if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
                   else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.valT;
                   else
                   {
@@ -83,7 +83,7 @@
       {
          // Eta_uu (xx) BC's
          if (Eta_uu_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Eta_uu_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1); i < mSize; i++) g(i) = Eta_uu_BC.valB;
          }
          if (Eta_uu_BC.typeT == string("Dirichlet")) {
             for (int i = 0; i < cond.SIZEu; i++) g(i) = Eta_uu_BC.valT;
@@ -91,18 +91,18 @@
          
          // Eta_vv (yy) BC's
          if (Eta_vv_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Eta_vv_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+mSize; i < 2*mSize; i++) g(i) = Eta_vv_BC.valB;
          }
          if (Eta_vv_BC.typeT == string("Dirichlet")) {
-            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Eta_vv_BC.valT;
+            for (int i = mSize; i < cond.SIZEu+mSize; i++) g(i) = Eta_vv_BC.valT;
          }
          
          // Eta_ww (zz) BC's
          if (Eta_ww_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Eta_ww_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*mSize; i < 3*mSize; i++) g(i) = Eta_ww_BC.valB;
          }
          if (Eta_ww_BC.typeT == string("Dirichlet")) {
-            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Eta_ww_BC.valT;
+            for (int i = 2*mSize; i < cond.SIZEu+2*mSize; i++) g(i) = Eta_ww_BC.valT;
          } return g;
       }
 
@@ -121,7 +121,7 @@
          dcomplex k1, k2, k3; // the 3 derivative values
          Matrix3cd Eta_, Eta__tran, Eta__dag, Eta__conj;
          VectorXd I_vals(cond.SIZEv); // value of the integral over distance in z
-         VectorXcd I_bulk(size), I_grad(size);
+         VectorXcd I_bulk(mSize), I_grad(mSize);
          OrderParam<dcomplex> Eta__prev_x, Eta__next_x, Eta__prev_z, Eta__next_z; // the Eta_'s for the gradient terms
          dcomplex Eta_ajk = 0., Eta_akj = 0., Eta_ajj = 0., Eta_akk = 0.;
          Bound_Cond temp_bc_j, temp_bc_k;
@@ -175,7 +175,7 @@
                            }
 
                            // sum up over the indexes
-                           k1 += abs2(Eta_ajk);
+                           k1 += norm(Eta_ajk);
                            k2 += conj(Eta_ajj)*Eta_akk;
                            k3 += conj(Eta_ajk)*Eta_akj;
 
@@ -258,7 +258,7 @@
                               if (n_v == cond.SIZEv-1 && temp_bc_k.typeT == string("Dirichlet")) Eta_akk = ( Eta__vu(k) - Eta__vmu(k) )/cond.STEP;
                            }
 
-                           k1 += abs2(Eta_ajk);
+                           k1 += norm(Eta_ajk);
                            k2 += conj(Eta_ajj)*Eta_akk;
                            k3 += conj(Eta_ajk)*Eta_akj;
 
@@ -272,18 +272,18 @@
                // add them all together to get the gradient term for this OP
                f_grad = -2./3.*(k1 + k2 + k3);
                // f_grad = gl.K1*k1 + gl.K2*k2 + gl.K3*k3; // the general way
-               I_grad(ID(size,n_u,cond.SIZEu,n_v,0)) = f_grad;
+               I_grad(ID(mSize,n_u,cond.SIZEu,n_v,0)) = f_grad;
                
                // this value is not normalized, while the values put into here have been...this can only be used if the GL equations we solve are not normalized
-               // f_bulk = gl.B1*abs2((Eta_*Eta__tran).trace()) + gl.B2*pow((Eta_*Eta__dag).trace(),2) + gl.B3*(Eta_*Eta__tran*Eta__conj*Eta__dag).trace() + gl.B4*(Eta_*Eta__dag*Eta_*Eta__dag).trace() + gl.B5*(Eta_*Eta__dag*Eta__conj*Eta__tran).trace() + gl.alpha*(Eta_*Eta__dag).trace();
+               // f_bulk = gl.B1*norm((Eta_*Eta__tran).trace()) + gl.B2*pow((Eta_*Eta__dag).trace(),2) + gl.B3*(Eta_*Eta__tran*Eta__conj*Eta__dag).trace() + gl.B4*(Eta_*Eta__dag*Eta_*Eta__dag).trace() + gl.B5*(Eta_*Eta__dag*Eta__conj*Eta__tran).trace() + gl.alpha*(Eta_*Eta__dag).trace();
                
-               f_bulk = (gl.B1*abs2((Eta_ * Eta__tran).trace())
+               f_bulk = (gl.B1*norm((Eta_ * Eta__tran).trace())
                         +gl.B2*pow( (Eta_ * Eta__dag).trace(), 2)
                         +gl.B3*(Eta_ * Eta__tran * Eta__conj * Eta__dag).trace()
                         +gl.B4*(Eta_ * Eta__dag * Eta_ * Eta__dag).trace()
                         +gl.B5*(Eta_ * Eta__dag * Eta__conj * Eta__tran).trace()
                         )*-1./(beta_B*9) + 2./3.*(Eta_ * Eta__dag).trace();
-               I_bulk(ID(size,n_u,cond.SIZEu,n_v,0)) = f_bulk;
+               I_bulk(ID(mSize,n_u,cond.SIZEu,n_v,0)) = f_bulk;
 
                I += ( (f_bulk + f_grad) - 1. )*cond.STEP;
             }
@@ -314,7 +314,7 @@
       {
          ReadConditions(conditions_file);
          // ReadBoundaryConditions(boundary_conditions_file);
-         size = cond.SIZEu*cond.SIZEv;
+         mSize = cond.SIZEu*cond.SIZEv;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
@@ -326,7 +326,7 @@
          double K123 = gl.K1+gl.K2+gl.K3;
 
          // the matrix to be used by the solver
-         SpMat_cd solver_mat(size*OP_size,size*OP_size);
+         SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
          // cout << "\t\tsolver_mat initialized" << endl;
 
          // initialize each non-zero 'element'
@@ -397,26 +397,26 @@
                      switch (vi)
                      {
                      case 0: // Eta_xx                                                                   b2 here?            and                b3 here?
-                        val = axx + axx/beta_bulk * 2.*( beta_1_5*abs2(axx) + beta_245*abs2(axz) + gl.B2*abs2(ayy) + beta_234*abs2(azx) + gl.B3*abs2(azz) )
+                        val = axx + axx/beta_bulk * 2.*( beta_1_5*norm(axx) + beta_245*norm(axz) + gl.B2*norm(ayy) + beta_234*norm(azx) + gl.B3*norm(azz) )
                               + 2./beta_bulk*( gl.B4*axz*azx*conj(azz) + gl.B3*axz*conj(azx)*azz + gl.B5*conj(axz)*azx*azz )
                               + 2.*conj(axx)/beta_bulk*( beta_13*pow(axz,2) + gl.B1*(pow(ayy,2)+pow(azz,2)) + beta_15*pow(azx,2) );
                         break;
                      case 1: // Eta_xz
-                        val = axz + axz/beta_bulk * 2.*( beta_245*abs2(axx) + beta_1_5*abs2(axz) + gl.B2*abs2(ayy) + gl.B2*abs2(azx) + beta_234*abs2(azz) )
+                        val = axz + axz/beta_bulk * 2.*( beta_245*norm(axx) + beta_1_5*norm(axz) + gl.B2*norm(ayy) + gl.B2*norm(azx) + beta_234*norm(azz) )
                               + 2./beta_bulk*( gl.B3*axx*azx*conj(azz) + gl.B4*axx*conj(azx)*azz + gl.B5*conj(axx)*azx*azz )
                               + 2.*conj(axz)/beta_bulk*( beta_13*pow(axx,2) + gl.B1*(pow(ayy,2)+pow(azx,2)) + beta_15*pow(azz,2) );
                         break;
                      case 2: // Eta_yy
-                        val = ayy + 2.*ayy*gl.B2/beta_bulk * (abs2(axx) + abs2(axz) + abs2(azx) + abs2(azz)) + 2.*beta_1_5/beta_bulk*ayy*abs2(ayy)
+                        val = ayy + 2.*ayy*gl.B2/beta_bulk * (norm(axx) + norm(axz) + norm(azx) + norm(azz)) + 2.*beta_1_5/beta_bulk*ayy*norm(ayy)
                               + 2.*gl.B1*conj(ayy)/beta_bulk*(pow(axx,2) + pow(axz,2) + pow(azx,2) + pow(azz,2));
                         break;
                      case 3: // Eta_zx
-                        val = azx + azx/beta_bulk * 2.*( beta_234*abs2(axx) + gl.B2*abs2(axz) + gl.B2*abs2(ayy) + beta_1_5*abs2(azx) + beta_245*abs2(azz) )
+                        val = azx + azx/beta_bulk * 2.*( beta_234*norm(axx) + gl.B2*norm(axz) + gl.B2*norm(ayy) + beta_1_5*norm(azx) + beta_245*norm(azz) )
                               + 2./beta_bulk*( gl.B5*axx*axz*conj(azz) + gl.B4*axx*conj(axz)*azz + gl.B3*conj(axx)*axz*azz )
                               + 2.*conj(azx)/beta_bulk*( beta_15*pow(axx,2) + gl.B1*(pow(axz,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
                         break;
                      case 4: // Eta_zz
-                        val = azz + azz/beta_bulk * 2.*( gl.B2*abs2(axx) + beta_234*abs2(axz) + gl.B2*abs2(ayy) + beta_245*abs2(azx) + beta_1_5*abs2(azz) )
+                        val = azz + azz/beta_bulk * 2.*( gl.B2*norm(axx) + beta_234*norm(axz) + gl.B2*norm(ayy) + beta_245*norm(azx) + beta_1_5*norm(azz) )
                               + 2./beta_bulk*( gl.B5*axx*azx*conj(azx) + gl.B3*axx*conj(azx)*azx + gl.B4*conj(axx)*azx*azx )
                               + 2.*conj(azz)/beta_bulk*( beta_15*pow(axz,2) + gl.B1*(pow(axx,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
                         break;
@@ -440,24 +440,24 @@
       VectorXcd makeGuess(VectorXcd& g)
       {
          if (Eta_uu_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < size; i++) g(i) = Eta_uu_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1); i < mSize; i++) g(i) = Eta_uu_BC.valB;
          }
          if (Eta_uu_BC.typeT == string("Dirichlet")) {
             for (int i = 0; i < cond.SIZEu; i++) g(i) = Eta_uu_BC.valT;
          }
          
          if (Eta_vv_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+size; i < 2*size; i++) g(i) = Eta_vv_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+mSize; i < 2*mSize; i++) g(i) = Eta_vv_BC.valB;
          }
          if (Eta_vv_BC.typeT == string("Dirichlet")) {
-            for (int i = size; i < cond.SIZEu+size; i++) g(i) = Eta_vv_BC.valT;
+            for (int i = mSize; i < cond.SIZEu+mSize; i++) g(i) = Eta_vv_BC.valT;
          }
          
          if (Eta_ww_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*size; i < 3*size; i++) g(i) = Eta_ww_BC.valB;
+            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*mSize; i < 3*mSize; i++) g(i) = Eta_ww_BC.valB;
          }
          if (Eta_ww_BC.typeT == string("Dirichlet")) {
-            for (int i = 2*size; i < cond.SIZEu+2*size; i++) g(i) = Eta_ww_BC.valT;
+            for (int i = 2*mSize; i < cond.SIZEu+2*mSize; i++) g(i) = Eta_ww_BC.valT;
          } return g;
       }
    };

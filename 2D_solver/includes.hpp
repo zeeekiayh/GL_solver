@@ -31,11 +31,11 @@ typedef SparseMatrix<dcomplex> SpMat_cd;
 //    n_u: mesh index along u
 //    n_v: mesh index along v
 //    i:   vector (OP) index
-//    size: num elements in mesh
-int ID(int size, int n_u, int n_u_max, int n_v, int i) { return size*i + n_u_max*n_v + n_u; }
+//    mSize: num elements in mesh
+int ID(int mSize, int n_u, int n_u_max, int n_v, int i) { return mSize*i + n_u_max*n_v + n_u; }
 
-double abs2(dcomplex x) { return pow(abs(x),2); }
-double abs2(double x) { return pow(abs(x),2); }
+// double abs2(dcomplex x) { return pow(abs(x),2); }
+// double abs2(double x) { return pow(abs(x),2); }
 
 // // To see a small portion of a (sparse) matrix; for debugging
 // void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
@@ -125,6 +125,107 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
       return out;
    }
 // ===========================================
+
+
+// ==============================
+   // void ReadFile(string file_name, Matrix<Matrix2d,-1,-1>& K) {
+   //    string line;
+   //    std::ifstream file(file_name);
+
+   //    if (file.is_open()) {
+   //       // find the line where the K matrix starts
+   //       while (line != "K MATRIX") {getline(file,line);/*cout<<"line="<<line<<endl;*/}
+
+   //       // read the K matrix
+   //       K.resize(OP_size,OP_size);
+   //       Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+   //       Matrix2d K_temp(2,2); // the temporary k-matrix for importing
+
+   //       // get K matrix elements from the file
+   //       for (int row = 0; row < OP_size && !file.eof(); row++) {
+   //          getline(file,line);
+
+   //          bool started = false; // to check if we're in a set of parentheses
+   //          int k_index = 0;      // index of the inner k-matrices
+   //          int col = 0;          // column number
+
+   //          for (int i = 0; i < line.length(); i++) {
+   //             if (line[i] == '(') started = true; // toggle the started flag when "("
+   //             if (line[i] == ')') {               // or ")" is reached
+   //                started = false;
+   //                k_index = 0; // and reset the index
+
+   //                // if it was an empty set of parentheses...
+   //                if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
+
+   //                K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
+   //                col++;               // increment for the next one's position
+   //             }
+   //             if (started) {
+   //                if (isdigit(line[i])) {         // only if it's a number
+   //                   int r = floor(k_index/2);    // for some reason, we have to define the index
+   //                   int c = k_index%2;           //   values separately, then pass them in!
+   //                   K_temp(r,c) = line[i] - '0'; // add the number to the matrix
+   //                   k_index++;                   // increment for the next location in the matrix
+   //                }
+   //             }
+   //          } // end for (row)
+   //       } // end file open
+   //       // cout << "K matrix read in." << endl;
+   //    }
+   //    else cout << "Unable to open file: " << file_name << endl;
+   // }
+// ==============================
+// read in the conditions from the file
+// void ReadConditions(string conditions_file) {
+//    // cout << "reading conditions..." << endl;
+//    string line;
+//    char ln [20];
+//    std::ifstream conditions(conditions_file);
+
+//    // get conditions from the file
+//    if (conditions.is_open()) {
+//       // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+//       getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+//       conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+//       conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+//       conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+//       conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+//       conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+
+//       // cout << "boundary conditions read in:" << endl;
+//       // cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
+//       // cout << "Eta_vv_BC\n" << Eta_vv_BC << endl;
+//       // cout << "Eta_ww_BC\n" << Eta_ww_BC << endl;
+//       // cout << "Eta_uw_BC\n" << Eta_uw_BC << endl;
+//       // cout << "Eta_wu_BC\n" << Eta_wu_BC << endl;
+      
+//       conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
+//       if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
+//       if (!cond.SIZEv) cond.SIZEv = 1;
+
+//       // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
+//       // cout << "step = " << cond.STEP << endl;
+
+//       conditions >> cond.STEP;   conditions.ignore(256,'\n');
+//       conditions >> OP_size;     conditions.ignore(256,'\n');
+//       conditions >> gl.T;        conditions.ignore(256,'\n');
+//       conditions >> gl.P;        conditions.ignore(256,'\n');
+//       conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
+//       conditions >> cond.N_loop; conditions.ignore(256,'\n');
+
+//       // cout << "size = " << cond.SIZEu << ", " << cond.SIZEv << endl;
+//       // cout << "step = " << cond.STEP << endl;
+//       // cout << "OP_size = " << OP_size << endl;
+//       // cout << "T = " << gl.T << endl;
+//       // cout << "P = " << gl.P << endl;
+//       // cout << "initial conditions read in." << endl;
+
+//       conditions.close();
+//       cout << "NOTICE: using " << method << " to solve." << endl;
+//    }
+//    else cout << "Unable to open file: " << conditions_file << endl;
+// }
 
 // ========================================================
 // A class for the Order Parameter component; just at one 
@@ -286,12 +387,13 @@ vector<double> Betas(double P, double T) {
    class GL_Solver {
       protected: // for variables and objects that will be used in derived classes
 
-      int size; // number of mesh points (size of the D matrices or OP-component vectors)
+      int mSize; // number of mesh points (size of the D matrices or OP-component vectors)
       int OP_size; // number of OP components
       GL_param gl; // temperature-dependent parameters for the GL equation
       bool update = 1; // says whether or not to use the no_update vector
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
+      Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
       string method = "acceleration"; // if Solve will use normal relaxtion or the accelerated
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
@@ -304,7 +406,7 @@ vector<double> Betas(double P, double T) {
       GL_Solver() {};
       GL_Solver(string conditions_file) {
          ReadConditions(conditions_file);
-         size = cond.SIZEu*cond.SIZEv;
+         mSize = cond.SIZEu*cond.SIZEv;
       }
 
       // Virtual Functions; to be defined in derived classes.
@@ -339,13 +441,6 @@ vector<double> Betas(double P, double T) {
             conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
             conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
             conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
-
-            // cout << "boundary conditions read in:" << endl;
-            // cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
-            // cout << "Eta_vv_BC\n" << Eta_vv_BC << endl;
-            // cout << "Eta_ww_BC\n" << Eta_ww_BC << endl;
-            // cout << "Eta_uw_BC\n" << Eta_uw_BC << endl;
-            // cout << "Eta_wu_BC\n" << Eta_wu_BC << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
@@ -361,17 +456,8 @@ vector<double> Betas(double P, double T) {
             conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
             conditions >> cond.N_loop; conditions.ignore(256,'\n');
 
-            // cout << "size = " << cond.SIZEu << ", " << cond.SIZEv << endl;
-            // cout << "step = " << cond.STEP << endl;
-            // cout << "OP_size = " << OP_size << endl;
-            // cout << "T = " << gl.T << endl;
-            // cout << "P = " << gl.P << endl;
-            // cout << "initial conditions read in." << endl;
-
             // read the K matrix
-            Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
             K.resize(OP_size,OP_size);
-
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
@@ -408,7 +494,6 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
-            // cout << "K matrix read in." << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
@@ -429,7 +514,7 @@ vector<double> Betas(double P, double T) {
          // Loop through the entire mesh--row/col order does not matter here
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) {
             for (int n_v = 0; n_v < cond.SIZEv; n_v++) {
-               int id = ID(size,n_u,cond.SIZEu,n_v,0);
+               int id = ID(mSize,n_u,cond.SIZEu,n_v,0);
                
                InsertCoeff_Du2(id, n_u,   n_v, -2., coeffs_u2);
                InsertCoeff_Du2(id, n_u-1, n_v,  1., coeffs_u2);
@@ -448,10 +533,10 @@ vector<double> Betas(double P, double T) {
 
          // cout << "looped successfully" << endl;
 
-         // initialize the D's by size
-         Du2.resize(size,size);
-         Dw2.resize(size,size);
-         Duw.resize(size,size);
+         // initialize the D's by mSize
+         Du2.resize(mSize,mSize);
+         Dw2.resize(mSize,mSize);
+         Duw.resize(mSize,mSize);
 
          // build all the D's from their coefficient triplet-vectors
          Du2.setFromTriplets(coeffs_u2.begin(), coeffs_u2.end());
@@ -464,20 +549,20 @@ vector<double> Betas(double P, double T) {
       // Insert method for the Du^2 matrix derivatives
       void InsertCoeff_Du2(int id, int u, int v, double weight, vector<Tr>& coeffs) {
          if (u == -1 || u == cond.SIZEu);
-         else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEv,v,0),weight));
+         else coeffs.push_back(Tr(id,ID(mSize,u,cond.SIZEv,v,0),weight));
       }
 
       // insert method for the Dw^2 matrix derivatives
       void InsertCoeff_Dw2(int id, int u, int v, double weight, vector<Tr>& coeffs) {
          if (v == -1 || v == cond.SIZEv); // would add boundary conditions here, but
-         else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight)); // we'll use ghost points, so do nothing
+         else coeffs.push_back(Tr(id,ID(mSize,u,cond.SIZEu,v,0),weight)); // we'll use ghost points, so do nothing
       }
 
       // insert method for the mixed derivative matrices
       void InsertCoeff_Duw(int id, int u, int v, double weight, vector<Tr>& coeffs) {
               if (u == -1 || u == cond.SIZEu); // would add boundary conditions here,
          else if (v == -1 || v == cond.SIZEv); //  but we'll use ghost points, so do nothing
-         else coeffs.push_back(Tr(id,ID(size,u,cond.SIZEu,v,0),weight));
+         else coeffs.push_back(Tr(id,ID(mSize,u,cond.SIZEu,v,0),weight));
       }
    
       // WRITE ADDITIONAL 'InsertCoeff_D**' METHODS HERE
@@ -492,12 +577,12 @@ vector<double> Betas(double P, double T) {
          for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the top and bottom boundary points of the mesh
          {
             // indexes for the points on the bottom side
-            int id0 =         ID(size, 0, cond.SIZEu, n_v, 0),
-                id0_connect = ID(size, 1, cond.SIZEu, n_v, 0);
+            int id0 =         ID(mSize, 0, cond.SIZEu, n_v, 0),
+                id0_connect = ID(mSize, 1, cond.SIZEu, n_v, 0);
             
             // indexes for the points on the top side
-            int idN =         ID(size, cond.SIZEu-1, cond.SIZEu, n_v, 0),
-                idN_connect = ID(size, cond.SIZEv-2, cond.SIZEu, n_v, 0);
+            int idN =         ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v, 0),
+                idN_connect = ID(mSize, cond.SIZEv-2, cond.SIZEu, n_v, 0);
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
@@ -509,7 +594,7 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeB == string("Dirichlet"))
             {
                Du2_copy.coeffRef(id0,id0) = 1.;
-               if (!update) no_update.push_back(ID(size,0,cond.SIZEu,n_v,op_elem_num));
+               if (!update) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
                Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -521,7 +606,7 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeT == string("Dirichlet"))
             {
                Du2_copy.coeffRef(idN,idN) = 1.;
-               if (!update) no_update.push_back(ID(size,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+               if (!update) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
                Du2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -550,12 +635,12 @@ vector<double> Betas(double P, double T) {
          for (int n_u = 0; n_u < cond.SIZEu; n_u++) // loop through just the top and bottom boundary points of the mesh
          {
             // indexes for the points on the bottom side
-            int id0 =         ID(size, n_u, cond.SIZEu, 0, 0),
-                id0_connect = ID(size, n_u, cond.SIZEu, 1, 0);
+            int id0 =         ID(mSize, n_u, cond.SIZEu, 0, 0),
+                id0_connect = ID(mSize, n_u, cond.SIZEu, 1, 0);
             
             // indexes for the points on the top side
-            int idN =         ID(size, n_u, cond.SIZEu, cond.SIZEv-1, 0),
-                idN_connect = ID(size, n_u, cond.SIZEu, cond.SIZEv-2, 0);
+            int idN =         ID(mSize, n_u, cond.SIZEu, cond.SIZEv-1, 0),
+                idN_connect = ID(mSize, n_u, cond.SIZEu, cond.SIZEv-2, 0);
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
@@ -567,7 +652,7 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeB == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(id0,id0) = 1.;
-               if (!update) no_update.push_back(ID(size,n_u,cond.SIZEu,0,op_elem_num));
+               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
                Dw2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -579,7 +664,7 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeT == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(idN,idN) = 1.;
-               if (!update) no_update.push_back(ID(size,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
                Dw2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -610,20 +695,20 @@ vector<double> Betas(double P, double T) {
          for (int n_v = 1; n_v < cond.SIZEv-1; n_v++) // loop through the left and right boundary points of the mesh
          {
             // indexes for the left side
-            int id0 =             ID(size, 0, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
-                id0_connectB =    ID(size, 0, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
-                id0_connectT =    ID(size, 0, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
+            int id0 =             ID(mSize, 0, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
+                id0_connectB =    ID(mSize, 0, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
+                id0_connectT =    ID(mSize, 0, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
                 // we need to disconnect from the points that the default D matrix has
-                id0_disconnectB = ID(size, 1, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
-                id0_disconnectT = ID(size, 1, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
+                id0_disconnectB = ID(mSize, 1, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
+                id0_disconnectT = ID(mSize, 1, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
             
             // indexes for the right side
-            int idN =             ID(size, cond.SIZEu-1, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
-                idN_connectB =    ID(size, cond.SIZEu-1, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
-                idN_connectT =    ID(size, cond.SIZEu-1, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
+            int idN =             ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v,   0), // the index of the mesh point we're at
+                idN_connectB =    ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v-1, 0), // index of the bottom point to connect to
+                idN_connectT =    ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v+1, 0), // index of the top point to connect to
                 // we need to disconnect from the points that the default D matrix has
-                idN_disconnectB = ID(size, cond.SIZEu-2, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
-                idN_disconnectT = ID(size, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
+                idN_disconnectB = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v-1, 0), // index of the bottom point to disconnect from
+                idN_disconnectT = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
             
             // set the values at these indexes using the ghost points
             if (BC.typeL == string("Neumann"))
@@ -650,27 +735,27 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to update them
-            if (!update && BC.typeL == string("Dirichlet")) no_update.push_back(ID(size,0,cond.SIZEu,n_v,op_elem_num));
-            if (!update && BC.typeR == string("Dirichlet")) no_update.push_back(ID(size,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+            if (!update && BC.typeL == string("Dirichlet")) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
+            if (!update && BC.typeR == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
          }
 
          for (int n_u = 1; n_u < cond.SIZEu-1; n_u++) // loop through the top and bottom boundary points of the mesh
          {
             // indexes for the bottom side
-            int id0 =             ID(size, n_u,   cond.SIZEu, 0, 0), // the index of the mesh point we're at
-                id0_connectL =    ID(size, n_u-1, cond.SIZEu, 0, 0), // index of the left point to connect to
-                id0_connectR =    ID(size, n_u+1, cond.SIZEu, 0, 0), // index of the right point to connect to
+            int id0 =             ID(mSize, n_u,   cond.SIZEu, 0, 0), // the index of the mesh point we're at
+                id0_connectL =    ID(mSize, n_u-1, cond.SIZEu, 0, 0), // index of the left point to connect to
+                id0_connectR =    ID(mSize, n_u+1, cond.SIZEu, 0, 0), // index of the right point to connect to
                 // we need to disconnect from the points that the default D matrix has
-                id0_disconnectL = ID(size, n_u-1, cond.SIZEu, 1, 0), // index of the left point to disconnect from
-                id0_disconnectR = ID(size, n_u+1, cond.SIZEu, 1, 0); // index of the right point to disconnect from
+                id0_disconnectL = ID(mSize, n_u-1, cond.SIZEu, 1, 0), // index of the left point to disconnect from
+                id0_disconnectR = ID(mSize, n_u+1, cond.SIZEu, 1, 0); // index of the right point to disconnect from
             
             // indexes for the top side
-            int idN =             ID(size, n_u,   cond.SIZEu, cond.SIZEv-1, 0), // the index of the mesh point we're at
-                idN_connectL =    ID(size, n_u-1, cond.SIZEu, cond.SIZEv-1, 0), // index of the left point to connect to
-                idN_connectR =    ID(size, n_u+1, cond.SIZEu, cond.SIZEv-1, 0), // index of the right point to connect to
+            int idN =             ID(mSize, n_u,   cond.SIZEu, cond.SIZEv-1, 0), // the index of the mesh point we're at
+                idN_connectL =    ID(mSize, n_u-1, cond.SIZEu, cond.SIZEv-1, 0), // index of the left point to connect to
+                idN_connectR =    ID(mSize, n_u+1, cond.SIZEu, cond.SIZEv-1, 0), // index of the right point to connect to
                 // we need to disconnect from the points that the default D matrix has
-                idN_disconnectL = ID(size, n_u-1, cond.SIZEu, cond.SIZEv-2, 0), // index of the left point to disconnect from
-                idN_disconnectR = ID(size, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
+                idN_disconnectL = ID(mSize, n_u-1, cond.SIZEu, cond.SIZEv-2, 0), // index of the left point to disconnect from
+                idN_disconnectR = ID(mSize, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
             if (BC.typeB == string("Neumann"))
@@ -696,16 +781,16 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to update them
-            if (!update && BC.typeB == string("Dirichlet")) no_update.push_back(ID(size,n_u,cond.SIZEu,0,op_elem_num));
-            if (!update && BC.typeT == string("Dirichlet")) no_update.push_back(ID(size,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+            if (!update && BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
+            if (!update && BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
          }
 
          // special case for the corners
          int id, id_disconnect;
 
          // Top left
-         id = ID(size,0,cond.SIZEu,cond.SIZEv-1,0);
-         id_disconnect = ID(size,1,cond.SIZEu,cond.SIZEv-2,0);
+         id = ID(mSize,0,cond.SIZEu,cond.SIZEv-1,0);
+         id_disconnect = ID(mSize,1,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
          else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
@@ -715,22 +800,22 @@ vector<double> Betas(double P, double T) {
                //    (x4, below)
          
          // Top right
-         id = ID(size,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
-         id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
+         id = ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
+         id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
          else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
 
          // Bottom left
-         id = ID(size,0,cond.SIZEu,0,0);
-         id_disconnect = ID(size,1,cond.SIZEu,1,0);
+         id = ID(mSize,0,cond.SIZEu,0,0);
+         id_disconnect = ID(mSize,1,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
          else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
 
          // Bottom right
-         id = ID(size,cond.SIZEu-1,cond.SIZEu,0,0);
-         id_disconnect = ID(size,cond.SIZEu-2,cond.SIZEu,1,0);
+         id = ID(mSize,cond.SIZEu-1,cond.SIZEu,0,0);
+         id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
               if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
@@ -738,9 +823,9 @@ vector<double> Betas(double P, double T) {
          // // If we know the VALUE at the point, add the index of it of the guess/solution
          // //   vector that we already know, i.e. we don't need to update them
          // if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,cond.SIZEv-1,op_elem_num));
-         // if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
          // if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
-         // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,size[0]-1,cond.SIZEu,0,        op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,0,        op_elem_num));
 
          // cout << "\t\t\tDuw_BD: success" << endl;
          return Duw_copy;
@@ -751,7 +836,7 @@ vector<double> Betas(double P, double T) {
       void BuildProblem() {
          Build_D_Matrices();
          // cout << "build matrices: done" << endl;
-         op_vector.resize(size*OP_size); // initialize OP vetor
+         op_vector.resize(mSize*OP_size); // initialize OP vetor
          // cout << "op_vector resize: done" << endl;
          SolverMatrix = BuildSolverMatrix();
          // cout << "solver matrix: done" << endl;
@@ -840,10 +925,10 @@ vector<double> Betas(double P, double T) {
                               + to_string(n_v*cond.STEP) + string("\t"); // add the position components
 
                   for (int vi = 0; vi < OP_size; vi++) {
-                     dcomplex element = solution(ID(size,n_u,cond.SIZEu,n_v,vi));
+                     dcomplex element = solution(ID(mSize,n_u,cond.SIZEu,n_v,vi));
                      line += to_string(element.real())                 // add the real and imaginary
                            + string("\t") + to_string(element.imag()); //   components of the solution vector
-                     if (vi+1 < size) line += string("\t");
+                     if (vi+1 < mSize) line += string("\t");
                   }
 
                   data << line << endl;
