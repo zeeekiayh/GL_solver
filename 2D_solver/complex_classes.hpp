@@ -10,7 +10,7 @@
    template<>
    class Three_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex> {
       public:
-      Three_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
+      Three_Component_GL_Solver(string conditions_file)
       {
          ReadConditions(conditions_file);
          // ReadBoundaryConditions(boundary_conditions_file);
@@ -310,7 +310,7 @@
    template<>
    class Five_Component_GL_Solver<dcomplex> : public GL_Solver<dcomplex> {
       public:
-      Five_Component_GL_Solver(string conditions_file, string boundary_conditions_file)
+      Five_Component_GL_Solver(string conditions_file)
       {
          ReadConditions(conditions_file);
          // ReadBoundaryConditions(boundary_conditions_file);

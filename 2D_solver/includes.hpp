@@ -385,6 +385,7 @@ vector<double> Betas(double P, double T) {
 //    solves the system using (accelerated) relaxation
    template <class Scalar_type>
    class GL_Solver {
+
       protected: // for variables and objects that will be used in derived classes
 
       int mSize; // number of mesh points (size of the D matrices or OP-component vectors)
@@ -833,12 +834,32 @@ vector<double> Betas(double P, double T) {
    
       // WRITE ADDITIONAL 'D**_BD' METHODS HERE
 
+      SpMat_cd BuildSolverMatrix_Test() {
+
+         // define the solver matrix to be built
+         SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
+         int x = 0, z = 1;
+
+         // loop through the size of the OP, i.e. the size of the K matrix
+         for (int m = 0; m < OP_size; m++) {
+            // use the equation:
+            //  [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
+            for (int n = 0; n < OP_size; n++) {
+               SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(Eta_uu_BC,m) + K(m,n)(z,z) * Dw2_BD(Eta_uu_BC,m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(Eta_uu_BC,m);
+               solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
+            }
+         }
+
+         return solver_mat;
+      }
+
       void BuildProblem() {
          Build_D_Matrices();
          // cout << "build matrices: done" << endl;
          op_vector.resize(mSize*OP_size); // initialize OP vetor
          // cout << "op_vector resize: done" << endl;
-         SolverMatrix = BuildSolverMatrix();
+         SolverMatrix = BuildSolverMatrix_Test();
+         // SolverMatrix = BuildSolverMatrix();
          // cout << "solver matrix: done" << endl;
       }
 
