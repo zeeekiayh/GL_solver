@@ -6,9 +6,7 @@ Using FEM to solve the GL equations. I am open for any suggestions and help.
 
 The Ginzburg-Landau (GL) theory is often used to determine the stability of superfluid phases. We are interested in some phases of He-3 that that are manifest in confined geometries. We design and implement the finite element method to solve the coupled differential equations derived from the GL theory. We discuss methods for handling boundary conditions, building the matrix equation, and methods of relaxation.
 
-#### Ideas for presentation:
-
-Brainstorming:
+#### Description from presentaion:
 * What did we want to accomplish? Why did we do this research?
   - We wanted to see if we could explain why the "polka-dot" phase appeared (in the experiment by Levitin et. al, 2019) when the stripped phase was predicted (by Vorontsov and Sauls).
 * What did I do? I solved the Ginzburg-Landau Equations for Helium-3.
@@ -54,9 +52,6 @@ Brainstorming:
   - fix/finish the 5-component Cartesian solver
   - Make the cylindrical solver and calculate free-energy
   - Figure out how to use the general gl equation form in the code (to calculate the rhs and the free-energy) rather than simplifying everything by hand and normalizing...or is that possible? What might the values be like if they're not normalized?
-* Results and Conclusions: - What conclusions (if any) did you reach?
-  - ...?
-  - plots and free-energy values
 * Sources:
   - Anton Vorontsov
   - list all papers
