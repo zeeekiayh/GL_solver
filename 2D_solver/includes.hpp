@@ -34,9 +34,6 @@ typedef SparseMatrix<dcomplex> SpMat_cd;
 //    mSize: num elements in mesh
 int ID(int mSize, int n_u, int n_u_max, int n_v, int i) { return mSize*i + n_u_max*n_v + n_u; }
 
-// double abs2(dcomplex x) { return pow(abs(x),2); }
-// double abs2(double x) { return pow(abs(x),2); }
-
 // // To see a small portion of a (sparse) matrix; for debugging
 // void Matrix_SubView(SpMat_d matrix, int n_u, int n_v, int width, int height)
 // {
@@ -176,55 +173,55 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
    //    else cout << "Unable to open file: " << file_name << endl;
    // }
 // ==============================
-// read in the conditions from the file
-// void ReadConditions(string conditions_file) {
-//    // cout << "reading conditions..." << endl;
-//    string line;
-//    char ln [20];
-//    std::ifstream conditions(conditions_file);
+   // read in the conditions from the file
+   // void ReadConditions(string conditions_file) {
+   //    // cout << "reading conditions..." << endl;
+   //    string line;
+   //    char ln [20];
+   //    std::ifstream conditions(conditions_file);
 
-//    // get conditions from the file
-//    if (conditions.is_open()) {
-//       // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
-//       getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
-//       conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
-//       conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
-//       conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
-//       conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
-//       conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+   //    // get conditions from the file
+   //    if (conditions.is_open()) {
+   //       // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+   //       getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+   //       conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+   //       conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+   //       conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+   //       conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+   //       conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
 
-//       // cout << "boundary conditions read in:" << endl;
-//       // cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
-//       // cout << "Eta_vv_BC\n" << Eta_vv_BC << endl;
-//       // cout << "Eta_ww_BC\n" << Eta_ww_BC << endl;
-//       // cout << "Eta_uw_BC\n" << Eta_uw_BC << endl;
-//       // cout << "Eta_wu_BC\n" << Eta_wu_BC << endl;
-      
-//       conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
-//       if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
-//       if (!cond.SIZEv) cond.SIZEv = 1;
+   //       // cout << "boundary conditions read in:" << endl;
+   //       // cout << "Eta_uu_BC\n" << Eta_uu_BC << endl;
+   //       // cout << "Eta_vv_BC\n" << Eta_vv_BC << endl;
+   //       // cout << "Eta_ww_BC\n" << Eta_ww_BC << endl;
+   //       // cout << "Eta_uw_BC\n" << Eta_uw_BC << endl;
+   //       // cout << "Eta_wu_BC\n" << Eta_wu_BC << endl;
+         
+   //       conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
+   //       if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
+   //       if (!cond.SIZEv) cond.SIZEv = 1;
 
-//       // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
-//       // cout << "step = " << cond.STEP << endl;
+   //       // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
+   //       // cout << "step = " << cond.STEP << endl;
 
-//       conditions >> cond.STEP;   conditions.ignore(256,'\n');
-//       conditions >> OP_size;     conditions.ignore(256,'\n');
-//       conditions >> gl.T;        conditions.ignore(256,'\n');
-//       conditions >> gl.P;        conditions.ignore(256,'\n');
-//       conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
-//       conditions >> cond.N_loop; conditions.ignore(256,'\n');
+   //       conditions >> cond.STEP;   conditions.ignore(256,'\n');
+   //       conditions >> OP_size;     conditions.ignore(256,'\n');
+   //       conditions >> gl.T;        conditions.ignore(256,'\n');
+   //       conditions >> gl.P;        conditions.ignore(256,'\n');
+   //       conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
+   //       conditions >> cond.N_loop; conditions.ignore(256,'\n');
 
-//       // cout << "size = " << cond.SIZEu << ", " << cond.SIZEv << endl;
-//       // cout << "step = " << cond.STEP << endl;
-//       // cout << "OP_size = " << OP_size << endl;
-//       // cout << "T = " << gl.T << endl;
-//       // cout << "P = " << gl.P << endl;
-//       // cout << "initial conditions read in." << endl;
+   //       // cout << "size = " << cond.SIZEu << ", " << cond.SIZEv << endl;
+   //       // cout << "step = " << cond.STEP << endl;
+   //       // cout << "OP_size = " << OP_size << endl;
+   //       // cout << "T = " << gl.T << endl;
+   //       // cout << "P = " << gl.P << endl;
+   //       // cout << "initial conditions read in." << endl;
 
-//       conditions.close();
-//       cout << "NOTICE: using " << method << " to solve." << endl;
-//    }
-//    else cout << "Unable to open file: " << conditions_file << endl;
+   //       conditions.close();
+   //       cout << "NOTICE: using " << method << " to solve." << endl;
+   //    }
+   //    else cout << "Unable to open file: " << conditions_file << endl;
 // }
 
 // ========================================================
@@ -401,6 +398,7 @@ vector<double> Betas(double P, double T) {
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
       SparseMatrix<Scalar_type> Du2, Dw2, Duw; // derivative matrices: ADD D-MATRIX NAMES HERE
       Bound_Cond Eta_uu_BC, Eta_uw_BC, Eta_vv_BC, Eta_wu_BC, Eta_ww_BC; // boundary conditions for OP components
+      vector<Bound_Cond> etaBC;
 
       public:
       // CONSTRUCTORS
@@ -428,42 +426,65 @@ vector<double> Betas(double P, double T) {
 
       // read in the conditions from the file
       void ReadConditions(string conditions_file) {
+         cout << "here6" << endl;
          // cout << "reading conditions..." << endl;
          string line;
          char ln [20];
+         cout << "here7" << endl;
          std::ifstream conditions(conditions_file);
+         cout << "here8" << endl;
 
          // get conditions from the file
          if (conditions.is_open()) {
-            // while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
-            getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
-            conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
-            conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
-            conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
-            conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
-            conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+            cout << "\there11" << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
+            cout << "\there12" << endl;
 
             // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
             // cout << "step = " << cond.STEP << endl;
 
             conditions >> cond.STEP;   conditions.ignore(256,'\n');
             conditions >> OP_size;     conditions.ignore(256,'\n');
+            cout << "op size = " << OP_size << endl;
             conditions >> gl.T;        conditions.ignore(256,'\n');
             conditions >> gl.P;        conditions.ignore(256,'\n');
             conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
             conditions >> cond.N_loop; conditions.ignore(256,'\n');
+            cout << "\there13" << endl;
 
             // read the K matrix
             K.resize(OP_size,OP_size);
+            cout << "\there14" << endl;
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+            cout << "\there15" << endl;
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
+
+            cout << "\there9" << endl;
+            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+            cout << "\there10" << endl;
+
+            Bound_Cond bc; // a temporary BC
+            for(int i = 0; i < OP_size; i++) {
+               cout << "i = " << i << endl;
+               // read in the same number of BC as OP components
+               conditions >> bc; conditions.ignore(256,'\n');
+               etaBC.push_back(bc);
+            }
+            // conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+            cout << "\there16" << endl;
 
             // find the line where the K matrix starts
             while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); // get one more...
+            cout << "\there17" << endl;
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -495,6 +516,7 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
+            cout << "\there18" << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
@@ -835,6 +857,7 @@ vector<double> Betas(double P, double T) {
       // WRITE ADDITIONAL 'D**_BD' METHODS HERE
 
       SpMat_cd BuildSolverMatrix_Test() {
+         cout << "In test build solver matrix" << endl;
 
          // define the solver matrix to be built
          SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
@@ -845,6 +868,8 @@ vector<double> Betas(double P, double T) {
             // use the equation:
             //  [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
             for (int n = 0; n < OP_size; n++) {
+               cout << "K(m,n) =\n" << K(m,n) << endl;
+
                SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(Eta_uu_BC,m) + K(m,n)(z,z) * Dw2_BD(Eta_uu_BC,m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(Eta_uu_BC,m);
                solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
             }

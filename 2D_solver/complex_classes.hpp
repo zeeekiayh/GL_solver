@@ -12,9 +12,12 @@
       public:
       Three_Component_GL_Solver(string conditions_file)
       {
+         cout << "here3" << endl;
          ReadConditions(conditions_file);
+         cout << "here4" << endl;
          // ReadBoundaryConditions(boundary_conditions_file);
          mSize = cond.SIZEu*cond.SIZEv;
+         cout << "here5" << endl;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector
@@ -371,7 +374,7 @@
          // loop through all the OP components in the mesh
          for (int vi = 0; vi < OP_size; vi++) {
             // decide which BC to use
-               if (vi == 0) temp_BC = Eta_uu_BC;
+                 if (vi == 0) temp_BC = Eta_uu_BC;
             else if (vi == 1) temp_BC = Eta_uw_BC;
             else if (vi == 2) temp_BC = Eta_vv_BC;
             else if (vi == 3) temp_BC = Eta_wu_BC;
@@ -383,7 +386,7 @@
                   int id = ID(cond.SIZEu*cond.SIZEv,n_u,cond.SIZEu,n_v,vi);
                   dcomplex val;
 
-                     if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
+                       if (temp_BC.typeB == string("Dirichlet") && n_v == 0) val = temp_BC.valB;
                   else if (temp_BC.typeT == string("Dirichlet") && n_v == cond.SIZEv-1) val = temp_BC.valT;
                   else
                   {

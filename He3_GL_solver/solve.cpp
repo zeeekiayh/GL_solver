@@ -1,7 +1,8 @@
 #include "solve.hpp"
 
 // use the relaxation method and Anderson Acceleration to solve
-VectorXcd Solve_Matrix_Equation(SpMat_cd& SolverMatrix, VectorXcd& guess, SC_op& OP, in_conditions cond, vector<int> no_update, string method) {
+template <class GL_Solver>
+VectorXcd Solve_Matrix_Equation(SpMat_cd& SolverMatrix, VectorXcd& guess, GL_Solver& OP, in_conditions cond, vector<int> no_update, string method) {
     
     cout << "============" << endl;
     cout << " Solving... " << endl;
