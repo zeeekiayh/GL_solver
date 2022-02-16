@@ -1,6 +1,6 @@
 # Ginzburg-Landau equation solver
 
-Using FEM to solve the GL equations. I am open for any suggestions and help.
+Using FDM to solve the GL equations. I am open for any suggestions and help.
 
 #### Abstract
 
