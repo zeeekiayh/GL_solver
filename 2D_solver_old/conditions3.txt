@@ -6,13 +6,13 @@
 1e-6    # accuracy
 200     # number loops
 
-K MATRIX
-(1,0,0,1) ()        ()
-()        (1,0,0,1) ()
-()        ()        (1,0,0,1)
-
 BOUNDARY CONDITIONS
  top     bottom    left  right
 D  1     N  1e10   D 1   N 1e10 # Axx
 D  1     N  1e10   D 1   N 1e10 # Ayy
 N  1e10  D  0      D 1   N 1e10 # Azz
+
+K MATRIX
+(1,0,0,1) ()        ()
+()        (1,0,0,1) ()
+()        ()        (1,0,0,1)

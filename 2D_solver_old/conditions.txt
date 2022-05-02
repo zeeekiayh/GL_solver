@@ -1,4 +1,12 @@
-100 100 # mesh size
+BOUNDARY CONDITIONS
+ top     bottom    left  right
+D  1     N  1e10   D 1   N 1e10 # Axx
+D  1     N  1e10   D 1   N 1e10 # Ayy
+N  1e10  D  0      D 1   N 1e10 # Azz
+D  1     N  1e10   D 1   N 1e10 # Axz
+D  1     N  1e10   D 1   N 1e10 # Azx
+
+300 300 # mesh size
 0.05    # h (step size)
 5       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
@@ -12,11 +20,3 @@ K MATRIX
 ()        ()        (1,0,0,3) (0,1,1,0) ()
 ()        ()        (0,1,1,0) (3,0,0,1) ()
 (0,1,1,0) ()        ()        ()        (1,0,0,3)
-
-BOUNDARY CONDITIONS
- top     bottom    left  right
-D  1     N  1e10   D 1   N 1e10 # Axx
-D  1     N  1e10   D 1   N 1e10 # Ayy
-N  1e10  D  0      D 1   N 1e10 # Azz
-D  1     N  1e10   D 1   N 1e10 # Axz
-D  1     N  1e10   D 1   N 1e10 # Azx

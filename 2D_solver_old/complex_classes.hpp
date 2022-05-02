@@ -12,9 +12,12 @@
       public:
       Three_Component_GL_Solver(string conditions_file)
       {
+         cout << "here3" << endl;
          ReadConditions(conditions_file);
+         cout << "here4" << endl;
          // ReadBoundaryConditions(boundary_conditions_file);
          mSize = cond.SIZEu*cond.SIZEv;
+         cout << "here5" << endl;
       }
 
       // User-defined methods to build the solver matrix and the rhs vector

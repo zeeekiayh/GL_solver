@@ -10,7 +10,7 @@
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
-#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker tensor product
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product
 #include "ConvergenceAccelerator.hpp"
 
 using std::cout;
@@ -426,37 +426,65 @@ vector<double> Betas(double P, double T) {
 
       // read in the conditions from the file
       void ReadConditions(string conditions_file) {
-         // c out << "reading conditions..." << endl;
+         cout << "here6" << endl;
+         // cout << "reading conditions..." << endl;
          string line;
          char ln [20];
+         cout << "here7" << endl;
          std::ifstream conditions(conditions_file);
+         cout << "here8" << endl;
 
          // get conditions from the file
          if (conditions.is_open()) {
+            cout << "\there11" << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
+            cout << "\there12" << endl;
 
             // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
+            // cout << "step = " << cond.STEP << endl;
 
             conditions >> cond.STEP;   conditions.ignore(256,'\n');
             conditions >> OP_size;     conditions.ignore(256,'\n');
+            cout << "op size = " << OP_size << endl;
             conditions >> gl.T;        conditions.ignore(256,'\n');
             conditions >> gl.P;        conditions.ignore(256,'\n');
             conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
             conditions >> cond.N_loop; conditions.ignore(256,'\n');
+            cout << "\there13" << endl;
 
             // read the K matrix
             K.resize(OP_size,OP_size);
+            cout << "\there14" << endl;
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+            cout << "\there15" << endl;
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
+            cout << "\there9" << endl;
+            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+            cout << "\there10" << endl;
+
+            Bound_Cond bc; // a temporary BC
+            for(int i = 0; i < OP_size; i++) {
+               cout << "i = " << i << endl;
+               // read in the same number of BC as OP components
+               conditions >> bc; conditions.ignore(256,'\n');
+               etaBC.push_back(bc);
+            }
+            // conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+            cout << "\there16" << endl;
+
             // find the line where the K matrix starts
-            while (line != "K MATRIX") {
-               getline(conditions,line);
-               }
-            // getline(conditions,line); // get one more...
+            while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); // get one more...
+            cout << "\there17" << endl;
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -468,13 +496,12 @@ vector<double> Betas(double P, double T) {
 
                for (int i = 0; i < line.length(); i++) {
                   if (line[i] == '(') started = true; // toggle the started flag when "("
-                  if (line[i] == ')') {               //     or ")" is reached
+                  if (line[i] == ')') {               // or ")" is reached
                      started = false;
                      k_index = 0; // and reset the index
 
                      // if it was an empty set of parentheses...
                      if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
-                     // cout << "K_temp =\n" << K_temp << endl;
 
                      K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
                      col++;               // increment for the next one's position
@@ -489,19 +516,7 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
-
-            while (line != "BOUNDARY CONDITIONS") {
-               getline(conditions,line);
-            }
-            getline(conditions,line); getline(conditions,line);
-
-            Bound_Cond bc; // a temporary BC
-            for(int i = 0; i < OP_size; i++) {
-               // read in the same number of BC as OP components
-               conditions >> bc; conditions.ignore(256,'\n');
-               etaBC.push_back(bc);
-               cout << "bc =\n" << bc << endl;
-            }
+            cout << "\there18" << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
@@ -850,25 +865,15 @@ vector<double> Betas(double P, double T) {
 
          // loop through the size of the OP, i.e. the size of the K matrix
          for (int m = 0; m < OP_size; m++) {
-            // use the equation (15) in the new LaTeX:
+            // use the equation:
             //  [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
             for (int n = 0; n < OP_size; n++) {
-               // cout << "K(" << m << "," << n << ") =\n" << K(m,n) << endl;
+               cout << "K(m,n) =\n" << K(m,n) << endl;
 
                SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(Eta_uu_BC,m) + K(m,n)(z,z) * Dw2_BD(Eta_uu_BC,m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(Eta_uu_BC,m);
-               // cout << "toInsert =\n" << toInsert << endl;
                solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
             }
          }
-
-         // CONTINUE HERE!     https://stackoverflow.com/questions/28854640/eigen-sparse-matrix-get-indices-of-nonzero-elements
-         cout << "solver_mat:\n";
-         // for (int r = 0; r < mSize; r++) {
-         //    for (int c = 0; c < mSize; c++) {
-         //       cout << solver_mat.coeff(r,c);
-         //    }
-         //    cout << endl;
-         // }
 
          return solver_mat;
       }

@@ -8,7 +8,7 @@ gs = gridspec.GridSpec(22,30)
 # read in the conditions from the file
 conditions = []
 line_count = 0
-for line in open('conditions3.txt'):
+for line in open('conditions5.txt'):
    num = list(map(str, line.split()))  # put all the values into a list
    if len(num) > 0 and line_count < 3:
       if line_count == 0:
@@ -23,8 +23,7 @@ size_x = conditions[0]
 size_y = conditions[1]
 step   = conditions[2]
 opSize = conditions[3]
-if not opSize == 3:
-   print(f"WARNING: this python3 code has not been written to handle {opSize} components.")
+if not opSize == 5: print(f"WARNING: this python3 code has not been written to handle {opSize} components.")
 
 # print(f'{conditions = }')
 
