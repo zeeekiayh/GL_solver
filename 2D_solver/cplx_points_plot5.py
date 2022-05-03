@@ -57,6 +57,8 @@ ylabel = r'$z/\xi_\perp$ (right)'
 # convert all the OP components to 2D arrays
 # and plot them in a grid of plots
 
+# TODO: edit the following to show all 5 components!
+
 # Axx:     real
 ax1 = fig.add_subplot(gs[:6,13:20])
 Axx_real = unFlatten(data[:,2])

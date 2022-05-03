@@ -23,8 +23,7 @@ size_x = conditions[0]
 size_y = conditions[1]
 step   = conditions[2]
 opSize = conditions[3]
-if not opSize == 3:
-   print(f"WARNING: this python3 code has not been written to handle {opSize} components.")
+if not opSize == 3: print(f"WARNING: this python3 code has not been written to handle {opSize} components.")
 
 # print(f'{conditions = }')
 
