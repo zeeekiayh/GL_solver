@@ -14,9 +14,9 @@ K MATRIX
 (0,1,1,0) ()        ()        ()        (1,0,0,3)
 
 BOUNDARY CONDITIONS
- top     bottom    left  right
-D  1     N  1e10   D 1   N 1e10 # Axx
-D  1     N  1e10   D 1   N 1e10 # Ayy
-N  1e10  D  0      D 1   N 1e10 # Azz
-D  1     N  1e10   D 1   N 1e10 # Axz
-D  1     N  1e10   D 1   N 1e10 # Azx
+ top     bottom   left     right
+D  1     N  1e10  D  1e10  N  1e10   # Axx
+D  1     N  1e10  D  1     N  1e10   # Ayy
+N  1e10  D  0     D  1     N  1e10   # Azz
+D  1     N  1e10  D  1     N  1e10   # Axz
+D  1     N  1e10  D  1     N  1e10   # Azx
