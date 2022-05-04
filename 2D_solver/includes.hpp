@@ -509,6 +509,11 @@ vector<double> Betas(double P, double T) {
                // cout << "bc =\n" << bc << endl;
             }
 
+            // cout << "etaBC vector filled;";
+            // for (auto it = etaBC.begin(); it != etaBC.end(); it++) {
+            //    cout << *it << endl;
+            // }
+
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
          }
@@ -583,41 +588,46 @@ vector<double> Betas(double P, double T) {
 
       // ?still needs fixed? I think it's good
       // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
+      //   For out problem, we've chosen the x-direction to be L/R;
+      //   so the x-derivatives will only include BC's involving the
+      //   left and the right.
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDu2_BD()" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
-         for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the top and bottom boundary points of the mesh
+         for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the left and right boundary points of the mesh
          {
-            // indexes for the points on the bottom side
-            int id0 =         ID(mSize, 0, cond.SIZEu, n_v, 0),
-                id0_connect = ID(mSize, 1, cond.SIZEu, n_v, 0);
+            // indexes for the points on the left side
+            int id0 =         ID(mSize, 0, cond.SIZEu, n_v, 0), // here, we treat the OP element index as 0 because each
+                id0_connect = ID(mSize, 1, cond.SIZEu, n_v, 0); //   D matrix is only large enough for one component,
+                                                                //   and will be put into the correct size when constructing
+                                                                //   the big solver matrix.
             
-            // indexes for the points on the top side
+            // indexes for the points on the right side
             int idN =         ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v, 0),
-                idN_connect = ID(mSize, cond.SIZEv-2, cond.SIZEu, n_v, 0);
+                idN_connect = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v, 0);
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
-            if (BC.typeB == string("Neumann"))
+            if (BC.typeL == string("Neumann"))
             {
                Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeB == string("Dirichlet"))
+            else if (BC.typeL == string("Dirichlet"))
             {
                Du2_copy.coeffRef(id0,id0) = 1.;
                if (!update) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
                Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            if (BC.typeT == string("Neumann"))
+            if (BC.typeR == string("Neumann"))
             {
                Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valT;
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeT == string("Dirichlet"))
+            else if (BC.typeR == string("Dirichlet"))
             {
                Du2_copy.coeffRef(idN,idN) = 1.;
                if (!update) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
@@ -641,6 +651,9 @@ vector<double> Betas(double P, double T) {
       }
 
       // derivative matrix: 2nd-order of 3rd coordinate (i.e. z)
+      //   For out problem, we've chosen the z-direction to be up/down;
+      //   so the z-derivatives will only include BC's involving the
+      //   top and the bottom.
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDw2_BD" << endl;
          // vector<int> indexes_to_visit; // vector for debugging
@@ -861,13 +874,12 @@ vector<double> Betas(double P, double T) {
             for (int n = 0; n < OP_size; n++) {
                // cout << "K(" << m << "," << n << ") =\n" << K(m,n) << endl;
 
-               SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(Eta_uu_BC,m) + K(m,n)(z,z) * Dw2_BD(Eta_uu_BC,m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(Eta_uu_BC,m);
+               SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(this->etaBC[n],m) + K(m,n)(z,z) * Dw2_BD(this->etaBC[n],m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(this->etaBC[n],m);
                // cout << "toInsert =\n" << toInsert << endl;
                solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
             }
          }
 
-         // CONTINUE HERE!     https://stackoverflow.com/questions/28854640/eigen-sparse-matrix-get-indices-of-nonzero-elements
          // cout << "solver_mat:\n";
          // for (int r = 0; r < mSize; r++) {
          //    for (int c = 0; c < mSize; c++) {
@@ -945,14 +957,14 @@ vector<double> Betas(double P, double T) {
             // for (int i = 0; i < f.size(); i++) if ((i+1)%cond.SIZEu==0) cout << "\tf(" << i << ") = " << f(i) << endl;
 
             // output approx. percent completed
-            cout << "\033[A\33[2K\r" << "estimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
+            cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
 
          } while(err > cond.ACCUR && cts < cond.N_loop);
 
-         if (err < cond.ACCUR) cout << "Found solution:" << endl;
-         else cout << "Result did not converge satifactorily:" << endl;
-         cout << "\titerations = " << cts << endl;
-         cout << "\trelative error = " << err << endl;
+         if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
+         else cout << "\tResult did not converge satifactorily:" << endl;
+         cout << "\t\titerations = " << cts << endl;
+         cout << "\t\trelative error = " << err << endl;
 
          solution = f;
       }
