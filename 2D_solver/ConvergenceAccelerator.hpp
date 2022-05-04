@@ -85,7 +85,7 @@ class converg_acceler{
 		vector<keep_in_memory<T>> stored; // default constructor called, storage organized 
 		T vec_min, dev_min, vec_prev;
 		vector<int> no_update_points; 
-		bool details=0;
+		bool details=1;
 		FILE *record;
 	public:
 

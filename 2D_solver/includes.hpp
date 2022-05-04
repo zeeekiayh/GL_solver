@@ -392,7 +392,7 @@ vector<double> Betas(double P, double T) {
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
-      string method = "acceleration"; // if Solve will use normal relaxtion or the accelerated
+      string method = "relaxation"; // 'acceleration' if Solve will use normal relaxtion or the accelerated
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
@@ -406,6 +406,12 @@ vector<double> Betas(double P, double T) {
       GL_Solver(string conditions_file) {
          ReadConditions(conditions_file);
          mSize = cond.SIZEu*cond.SIZEv;
+
+         // set the acceleration parameters
+         // (these should not need to change for different problems)
+         this->cond.maxStore = 1;
+         this->rel_p = 0.006;
+         this->wait = 1;
       }
 
       // Virtual Functions; to be defined in derived classes.
@@ -500,7 +506,7 @@ vector<double> Betas(double P, double T) {
                // read in the same number of BC as OP components
                conditions >> bc; conditions.ignore(256,'\n');
                etaBC.push_back(bc);
-               cout << "bc =\n" << bc << endl;
+               // cout << "bc =\n" << bc << endl;
             }
 
             conditions.close();
@@ -842,7 +848,7 @@ vector<double> Betas(double P, double T) {
       // WRITE ADDITIONAL 'D**_BD' METHODS HERE
 
       SpMat_cd BuildSolverMatrix_Test() {
-         cout << "In test build solver matrix" << endl;
+         // cout << "In test build solver matrix" << endl;
 
          // define the solver matrix to be built
          SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
@@ -862,7 +868,7 @@ vector<double> Betas(double P, double T) {
          }
 
          // CONTINUE HERE!     https://stackoverflow.com/questions/28854640/eigen-sparse-matrix-get-indices-of-nonzero-elements
-         cout << "solver_mat:\n";
+         // cout << "solver_mat:\n";
          // for (int r = 0; r < mSize; r++) {
          //    for (int c = 0; c < mSize; c++) {
          //       cout << solver_mat.coeff(r,c);
@@ -916,7 +922,7 @@ vector<double> Betas(double P, double T) {
          Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
 
          // the acceleration object
-         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(no_update); // Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update)
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); //Con_Acc(no_update)
          
          // loop until f converges or until it's gone too long
          do { // use relaxation
@@ -926,7 +932,7 @@ vector<double> Betas(double P, double T) {
             if (method == string("acceleration")) Con_Acc.template next_vector<Matrix<Scalar_type,-1,-1>>(f,df,err); // use Anderson Acceleration to converge faster
             else if (method == string("relaxation")) // use normal relaxation
             {
-               f += cond.rel_p*df;
+               f += 0.05*df;
                err = df.norm()/f.norm();
             }
             else { cout << "ERROR: Unknown method type given." << endl; return; }

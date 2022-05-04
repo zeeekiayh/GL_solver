@@ -66,7 +66,6 @@
                      // the Eta_uu_BC or Eta_vv_BC: parallel
                      else if (vi == 0 || vi == 1) val = -1./5.*( 2.*pow(axx,2)+pow(azz,2) )*conj(axx) + 2./5.*( 2.*pow(abs(axx),2)+pow(abs(azz),2) )*axx + 2./5.*pow(abs(axx),2)*axx - axx;
 
-
                      val *= pow(cond.STEP,2); // because we multiplied the matrix by h^2
                   }
 
@@ -361,7 +360,7 @@
          Bound_Cond temp_BC;
 
          // define common values for brevity
-         double beta_bulk = 5.*(gl.B1+gl.B2)+17./5.*(gl.B3+gl.B4+gl.B5);
+         double beta_bulk = (50.*(gl.B1+gl.B2)+34.*(gl.B3+gl.B4+gl.B5))/5.;
          double beta_1_5 = gl.B1 + gl.B2 + gl.B3 + gl.B4 + gl.B5;
          double beta_234 = gl.B2 + gl.B3 + gl.B4;
          double beta_245 = gl.B2 + gl.B4 + gl.B5;
@@ -388,37 +387,37 @@
                   else
                   {
                      auto a = matrix_operator(this->op_vector,n_v,n_u,cond.SIZEv,cond.SIZEu,OP_size);
-                     auto axx = a(0);
-                     auto axz = a(1);
-                     auto ayy = a(2);
-                     auto azx = a(3);
-                     auto azz = a(4);
+                     auto eta_1 = a(0); // axx
+                     auto eta_2 = a(1); // ayy
+                     auto eta_3 = a(2); // axz
+                     auto eta_4 = a(3); // azx
+                     auto eta_5 = a(4); // azz
 
                      switch (vi)
                      {
                      case 0: // Eta_xx                                                                   b2 here?            and                b3 here?
-                        val = axx + axx/beta_bulk * 2.*( beta_1_5*norm(axx) + beta_245*norm(axz) + gl.B2*norm(ayy) + beta_234*norm(azx) + gl.B3*norm(azz) )
-                              + 2./beta_bulk*( gl.B4*axz*azx*conj(azz) + gl.B3*axz*conj(azx)*azz + gl.B5*conj(axz)*azx*azz )
-                              + 2.*conj(axx)/beta_bulk*( beta_13*pow(axz,2) + gl.B1*(pow(ayy,2)+pow(azz,2)) + beta_15*pow(azx,2) );
+                        val = eta_1 + eta_1/beta_bulk * 2.*( beta_1_5*norm(eta_1) + beta_245*norm(eta_5) + gl.B2*norm(eta_2) + beta_234*norm(eta_4) + gl.B3*norm(eta_3) )
+                              + 2./beta_bulk*( gl.B4*eta_5*eta_4*conj(eta_3) + gl.B3*eta_5*conj(eta_4)*eta_3 + gl.B5*conj(eta_5)*eta_4*eta_3 )
+                              + 2.*conj(eta_1)/beta_bulk*( beta_13*pow(eta_5,2) + gl.B1*(pow(eta_2,2)+pow(eta_3,2)) + beta_15*pow(eta_4,2) );
                         break;
                      case 1: // Eta_xz
-                        val = axz + axz/beta_bulk * 2.*( beta_245*norm(axx) + beta_1_5*norm(axz) + gl.B2*norm(ayy) + gl.B2*norm(azx) + beta_234*norm(azz) )
-                              + 2./beta_bulk*( gl.B3*axx*azx*conj(azz) + gl.B4*axx*conj(azx)*azz + gl.B5*conj(axx)*azx*azz )
-                              + 2.*conj(axz)/beta_bulk*( beta_13*pow(axx,2) + gl.B1*(pow(ayy,2)+pow(azx,2)) + beta_15*pow(azz,2) );
+                        val = eta_5 + eta_5/beta_bulk * 2.*( beta_245*norm(eta_1) + beta_1_5*norm(eta_5) + gl.B2*norm(eta_2) + gl.B2*norm(eta_4) + beta_234*norm(eta_3) )
+                              + 2./beta_bulk*( gl.B3*eta_1*eta_4*conj(eta_3) + gl.B4*eta_1*conj(eta_4)*eta_3 + gl.B5*conj(eta_1)*eta_4*eta_3 )
+                              + 2.*conj(eta_5)/beta_bulk*( beta_13*pow(eta_1,2) + gl.B1*(pow(eta_2,2)+pow(eta_4,2)) + beta_15*pow(eta_3,2) );
                         break;
                      case 2: // Eta_yy
-                        val = ayy + 2.*ayy*gl.B2/beta_bulk * (norm(axx) + norm(axz) + norm(azx) + norm(azz)) + 2.*beta_1_5/beta_bulk*ayy*norm(ayy)
-                              + 2.*gl.B1*conj(ayy)/beta_bulk*(pow(axx,2) + pow(axz,2) + pow(azx,2) + pow(azz,2));
+                        val = eta_2 + 2.*eta_2*gl.B2/beta_bulk * (norm(eta_1) + norm(eta_5) + norm(eta_4) + norm(eta_3)) + 2.*beta_1_5/beta_bulk*eta_2*norm(eta_2)
+                              + 2.*gl.B1*conj(eta_2)/beta_bulk*(pow(eta_1,2) + pow(eta_5,2) + pow(eta_4,2) + pow(eta_3,2));
                         break;
                      case 3: // Eta_zx
-                        val = azx + azx/beta_bulk * 2.*( beta_234*norm(axx) + gl.B2*norm(axz) + gl.B2*norm(ayy) + beta_1_5*norm(azx) + beta_245*norm(azz) )
-                              + 2./beta_bulk*( gl.B5*axx*axz*conj(azz) + gl.B4*axx*conj(axz)*azz + gl.B3*conj(axx)*axz*azz )
-                              + 2.*conj(azx)/beta_bulk*( beta_15*pow(axx,2) + gl.B1*(pow(axz,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
+                        val = eta_4 + eta_4/beta_bulk * 2.*( beta_234*norm(eta_1) + gl.B2*norm(eta_5) + gl.B2*norm(eta_2) + beta_1_5*norm(eta_4) + beta_245*norm(eta_3) )
+                              + 2./beta_bulk*( gl.B5*eta_1*eta_5*conj(eta_3) + gl.B4*eta_1*conj(eta_5)*eta_3 + gl.B3*conj(eta_1)*eta_5*eta_3 )
+                              + 2.*conj(eta_4)/beta_bulk*( beta_15*pow(eta_1,2) + gl.B1*(pow(eta_5,2)+pow(eta_2,2)) + beta_13*pow(eta_4,2) );
                         break;
                      case 4: // Eta_zz
-                        val = azz + azz/beta_bulk * 2.*( gl.B2*norm(axx) + beta_234*norm(axz) + gl.B2*norm(ayy) + beta_245*norm(azx) + beta_1_5*norm(azz) )
-                              + 2./beta_bulk*( gl.B5*axx*azx*conj(azx) + gl.B3*axx*conj(azx)*azx + gl.B4*conj(axx)*azx*azx )
-                              + 2.*conj(azz)/beta_bulk*( beta_15*pow(axz,2) + gl.B1*(pow(axx,2)+pow(ayy,2)) + beta_13*pow(azx,2) );
+                        val = eta_3 + eta_3/beta_bulk * 2.*( gl.B2*norm(eta_1) + beta_234*norm(eta_5) + gl.B2*norm(eta_2) + beta_245*norm(eta_4) + beta_1_5*norm(eta_3) )
+                              + 2./beta_bulk*( gl.B5*eta_1*eta_4*conj(eta_4) + gl.B3*eta_1*conj(eta_4)*eta_4 + gl.B4*conj(eta_1)*eta_4*eta_4 )
+                              + 2.*conj(eta_3)/beta_bulk*( beta_15*pow(eta_5,2) + gl.B1*(pow(eta_1,2)+pow(eta_2,2)) + beta_13*pow(eta_4,2) );
                         break;
                      
                      default:

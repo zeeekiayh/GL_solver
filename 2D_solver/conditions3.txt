@@ -1,4 +1,4 @@
-300 300 # mesh size
+200 200 # mesh size
 0.05    # h (step size)
 3       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
