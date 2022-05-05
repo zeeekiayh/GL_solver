@@ -85,7 +85,7 @@ class converg_acceler{
 		vector<keep_in_memory<T>> stored; // default constructor called, storage organized 
 		T vec_min, dev_min, vec_prev;
 		vector<int> no_update_points; 
-		bool details=1;
+		bool details=0;
 		FILE *record;
 	public:
 
@@ -209,6 +209,10 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 
 	// print out stored norms
 	if(details){ printf("norms(dv):\t"); for(i=0; i<Nstored; i++){ printf("(%.4f)  ", stored[i].norm );} printf("\n"); }
+
+	if(details){ printf("Nstored: %d\n", Nstored); }
+	if(details){ printf("waitcount: %d\n", waitcount); }
+	if(details){ printf("waitXiter: %d\n", waitXiter); }
 
 	// Now we determine the mapping coefficients by minimizing the distance from dev=zero to the dev-hypersurface 
 	if( Nstored>1 &&  waitcount > waitXiter ){
