@@ -13,6 +13,6 @@ K MATRIX
 
 BOUNDARY CONDITIONS
 top     bottom  left    right
-N 1e10  D 1     D 1     N 1e10 # Axx
-N 1e10  D 1     D 1     N 1e10 # Ayy
-D 0     D 3     D 1     N 1e10 # Azz
+D 1     N 1e10  D 1     N 1e10 # Axx
+D 1     N 1e10  D 1     N 1e10 # Ayy
+D 1     D 0     D 1     N 1e10 # Azz
