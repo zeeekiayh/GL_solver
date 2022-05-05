@@ -11,7 +11,7 @@
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
 #include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker tensor product
-#include "ConvergenceAccelerator.hpp"
+#include "new_ConvergenceAccelerator.hpp"
 
 using std::cout;
 using std::endl;
@@ -66,11 +66,11 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
       int SIZEv;    // "" ...
       int SIZEw;    // "" in orthogonal directions
       int N_loop;   // count limit for iterations
-      int maxStore; // max num vectors kept in accerleration
-      int wait;     // iterations to wait before using acceleration
+      int maxStore=4; // max num vectors kept in accerleration
+      int wait=2;     // iterations to wait before using acceleration
       double ACCUR; // the minimum desired accuracy
       double STEP;  // step size
-      double rel_p; // relaxation param
+      double rel_p=0.1; // relaxation param
    };
 // ===========================================
 
@@ -409,9 +409,9 @@ vector<double> Betas(double P, double T) {
 
          // set the acceleration parameters
          // (these should not need to change for different problems)
-         this->cond.maxStore = 1;
-         this->rel_p = 0.006;
-         this->wait = 1;
+         // this->cond.maxStore = 4;
+         // this->cond.rel_p = 0.1;
+         // this->cond.wait = 2;
       }
 
       // Virtual Functions; to be defined in derived classes.
@@ -611,32 +611,32 @@ vector<double> Betas(double P, double T) {
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
-            if (BC.typeL == string("Neumann"))
+            if (BC.typeL == string("N")) // Neumann
             {
                Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeL == string("Dirichlet"))
+            else if (BC.typeL == string("D"))  // D -> Dirichlet
             {
                Du2_copy.coeffRef(id0,id0) = 1.;
                if (!this->update) {
                   no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
-                  cout << "Adding to the no_update vector..." << endl;
+                  // cout << "Adding to the no_update vector..." << endl;
                }
                Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            if (BC.typeR == string("Neumann"))
+            if (BC.typeR == string("N")) // Neumann
             {
                Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valT;
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeR == string("Dirichlet"))
+            else if (BC.typeR == string("D"))  // D -> Dirichlet
             {
                Du2_copy.coeffRef(idN,idN) = 1.;
                if (!this->update) {
                   no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
-                  cout << "Adding to the no_update vector..." << endl;
+                  // cout << "Adding to the no_update vector..." << endl;
                }
                Du2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
@@ -679,32 +679,32 @@ vector<double> Betas(double P, double T) {
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
-            if (BC.typeB == string("Neumann"))
+            if (BC.typeB == string("N")) // Neumann
             {
                Dw2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeB == string("Dirichlet"))
+            else if (BC.typeB == string("D")) // D  // D -> Dirichlet
             {
                Dw2_copy.coeffRef(id0,id0) = 1.;
                if (!this->update) {
                   no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
-                  cout << "Adding to the no_update vector..." << endl;
+                  // cout << "Adding to the no_update vector..." << endl;
                }
                Dw2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            if (BC.typeT == string("Neumann"))
+            if (BC.typeT == string("N")) // Neumann
             {
                Dw2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeT == string("Dirichlet"))
+            else if (BC.typeT == string("D")) // D  // D -> Dirichlet
             {
                Dw2_copy.coeffRef(idN,idN) = 1.;
                if (!this->update) {
                   no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-                  cout << "Adding to the no_update vector..." << endl;
+                  // cout << "Adding to the no_update vector..." << endl;
                }
                Dw2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
@@ -751,21 +751,21 @@ vector<double> Betas(double P, double T) {
                 idN_disconnectT = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
             
             // set the values at these indexes using the ghost points
-            if (BC.typeL == string("Neumann"))
+            if (BC.typeL == string("N")) // Neumann
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL);
                // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL) (BC.valL >= pow(10,-7) ? cond.STEP/(2.*BC.valL) : 0);
                Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.valL);
             }
-            else if (BC.typeL == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
-            if (BC.typeR == string("Neumann"))
+            else if (BC.typeL == string("D")) Duw_copy.coeffRef(id0,id0) = 1.;  // D -> Dirichlet
+            if (BC.typeR == string("N")) // Neumann
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.valR);
                Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.valR);
             }
-            else if (BC.typeR == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
+            else if (BC.typeR == string("D")) Duw_copy.coeffRef(idN,idN) = 1.;  // D -> Dirichlet
 
             // disconnect from default connections
             Duw_copy.coeffRef(id0,id0_disconnectB) = 0.;
@@ -775,13 +775,13 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to this->update them
-            if (!this->update && BC.typeL == string("Dirichlet")) {
+            if (!this->update && BC.typeL == string("D")) {  // D -> Dirichlet
                no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
-               cout << "Adding to the no_update vector..." << endl;
+               // cout << "Adding to the no_update vector..." << endl;
             }
-            if (!this->update && BC.typeR == string("Dirichlet")) {
+            if (!this->update && BC.typeR == string("D")) {  // D -> Dirichlet
                no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
-               cout << "Adding to the no_update vector..." << endl;
+               // cout << "Adding to the no_update vector..." << endl;
             }
          }
 
@@ -804,20 +804,20 @@ vector<double> Betas(double P, double T) {
                 idN_disconnectR = ID(mSize, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
-            if (BC.typeB == string("Neumann"))
+            if (BC.typeB == string("N")) // Neumann
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.valB);
                Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.valB);
             }
-            else if (BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
-            if (BC.typeT == string("Neumann"))
+            else if (BC.typeB == string("D")) Duw_copy.coeffRef(id0,id0) = 1.;  // D -> Dirichlet
+            if (BC.typeT == string("N")) // Neumann
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.valB);
                Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.valB);
             }
-            else if (BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
+            else if (BC.typeT == string("D")) Duw_copy.coeffRef(idN,idN) = 1.;  // D -> Dirichlet
 
             // disconnect from default connections
             Duw_copy.coeffRef(id0,id0_disconnectL) = 0.;
@@ -827,13 +827,13 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to update them
-            if (!this->update && BC.typeB == string("Dirichlet")) {
+            if (!this->update && BC.typeB == string("D")) {  // D -> Dirichlet
                no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
-               cout << "Adding to the no_update vector..." << endl;
+               // cout << "Adding to the no_update vector..." << endl;
             }
-            if (!this->update && BC.typeT == string("Dirichlet")) {
+            if (!this->update && BC.typeT == string("D")) {  // D -> Dirichlet
                no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-               cout << "Adding to the no_update vector..." << endl;
+               // cout << "Adding to the no_update vector..." << endl;
             }
          }
 
@@ -844,8 +844,8 @@ vector<double> Betas(double P, double T) {
          id = ID(mSize,0,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(mSize,1,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
-         else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
+              if (BC.typeL == string("N") && BC.typeT == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB); // Neumann
+         else if (BC.typeL == string("D") || BC.typeT == string("D")) Duw_copy.coeffRef(id,id) = 1.;  // D -> Dirichlet
                // TODO: determine if this assumption is correct, that
                //    if the function value is given for one side, we
                //    don't have to worry about the derivative condition.
@@ -855,31 +855,31 @@ vector<double> Betas(double P, double T) {
          id = ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
-         else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
+              if (BC.typeR == string("N") && BC.typeT == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB); // Neumann
+         else if (BC.typeR == string("D") || BC.typeT == string("D")) Duw_copy.coeffRef(id,id) = 1.; // here...  // D -> Dirichlet
 
          // Bottom left
          id = ID(mSize,0,cond.SIZEu,0,0);
          id_disconnect = ID(mSize,1,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
-         else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
+              if (BC.typeL == string("N") && BC.typeB == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB); // Neumann
+         else if (BC.typeL == string("D") || BC.typeB == string("D")) Duw_copy.coeffRef(id,id) = 1.; //...here...  // D -> Dirichlet
 
          // Bottom right
          id = ID(mSize,cond.SIZEu-1,cond.SIZEu,0,0);
          id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
-         else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
+              if (BC.typeR == string("N") && BC.typeB == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB); // Neumann
+         else if (BC.typeR == string("D") || BC.typeB == string("D")) Duw_copy.coeffRef(id,id) = 1.; //...and here  // D -> Dirichlet
       
          // If we know the VALUE at the point, add the index of it of the guess/solution
          //   vector that we already know, i.e. we don't need to update them
          if (!this->update) {
-            cout << "Adding to the no_update vector..." << endl;
-            if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,0,           cond.SIZEu,cond.SIZEv-1,op_elem_num));
-            if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-            if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,0,           cond.SIZEu,0,           op_elem_num));
-            if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,0,           op_elem_num));
+            // cout << "Adding to the no_update vector..." << endl;
+            if (BC.typeL == string("D") || BC.typeT == string("D")) no_update.push_back(ID(mSize,0,           cond.SIZEu,cond.SIZEv-1,op_elem_num));  // D -> Dirichlet
+            if (BC.typeR == string("D") || BC.typeT == string("D")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));  // D -> Dirichlet
+            if (BC.typeL == string("D") || BC.typeB == string("D")) no_update.push_back(ID(mSize,0,           cond.SIZEu,0,           op_elem_num));  // D -> Dirichlet
+            if (BC.typeR == string("D") || BC.typeB == string("D")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,0,           op_elem_num));  // D -> Dirichlet
          }
 
          // cout << "\t\t\tDuw_BD: success" << endl;
@@ -933,6 +933,8 @@ vector<double> Betas(double P, double T) {
          auto start = std::chrono::system_clock::now();
          Matrix<Scalar_type,-1,1> f = makeGuess(guess), df(guess.size()); // initialize vectors
 
+         // cout << "Guess:\n" << f << endl;
+
          if (no_update.size()) cout << "using no_update" << endl;
 
          // use LU decomposition to solve the system
@@ -959,8 +961,11 @@ vector<double> Betas(double P, double T) {
          double err;  // to store current error
          Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
 
+         printf("this->cond.maxStore: %d\n", this->cond.maxStore);
+         printf("this->cond.wait: %d\n", this->cond.wait);
+         printf("this->cond.rel_p: %f\n", this->cond.rel_p);
          // the acceleration object
-         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(no_update); //Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update)
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(this->cond.maxStore,this->cond.wait,this->cond.rel_p,no_update); //Con_Acc(no_update)
          
          // loop until f converges or until it's gone too long
          do { // use relaxation
