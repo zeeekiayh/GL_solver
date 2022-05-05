@@ -80,29 +80,16 @@
       // make an educated guess using the boundary conditions
       VectorXcd makeGuess(VectorXcd& g)
       {
-         // Eta_uu (xx) BC's
-         if (Eta_uu_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1); i < mSize; i++) g(i) = Eta_uu_BC.valB;
+         for (int n = 0; n < OP_size; n++) {
+            // Eta_uu (xx) BC's
+            if (etaBC[n].typeB == string("D")) {
+               for (int i = cond.SIZEu*(cond.SIZEv-1) + n*mSize; i < (n+1)*mSize; i++) g(i) = etaBC[n].valB;
+            }
+            if (etaBC[n].typeT == string("D")) {
+               for (int i = n*mSize; i < cond.SIZEu + n*mSize; i++) g(i) = etaBC[n].valT;
+            }
          }
-         if (Eta_uu_BC.typeT == string("Dirichlet")) {
-            for (int i = 0; i < cond.SIZEu; i++) g(i) = Eta_uu_BC.valT;
-         }
-         
-         // Eta_vv (yy) BC's
-         if (Eta_vv_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+mSize; i < 2*mSize; i++) g(i) = Eta_vv_BC.valB;
-         }
-         if (Eta_vv_BC.typeT == string("Dirichlet")) {
-            for (int i = mSize; i < cond.SIZEu+mSize; i++) g(i) = Eta_vv_BC.valT;
-         }
-         
-         // Eta_ww (zz) BC's
-         if (Eta_ww_BC.typeB == string("Dirichlet")) {
-            for (int i = cond.SIZEu*(cond.SIZEv-1)+2*mSize; i < 3*mSize; i++) g(i) = Eta_ww_BC.valB;
-         }
-         if (Eta_ww_BC.typeT == string("Dirichlet")) {
-            for (int i = 2*mSize; i < cond.SIZEu+2*mSize; i++) g(i) = Eta_ww_BC.valT;
-         } return g;
+         return g;
       }
 
       double free_energy()
