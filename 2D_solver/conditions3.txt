@@ -1,5 +1,5 @@
 200 200 # mesh size
-0.05    # h (step size)
+0.08    # h (step size)
 3       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
 1e5     # pressure
@@ -7,12 +7,12 @@
 200     # number loops
 
 K MATRIX
-(1,0,0,1) ()        ()
-()        (1,0,0,1) ()
-()        ()        (1,0,0,1)
+(0,0,0,1) ()        ()
+()        (0,0,0,1) ()
+()        ()        (0,0,0,3)
 
 BOUNDARY CONDITIONS
- top     bottom    left    right
-D  1     N  1e10   N 1e10  N 1    # Axx
-D  2     N  1e10   D 1     N 1e10 # Ayy
-N  1e10  D  0      D 1     N 1e10 # Azz
+top     bottom  left    right
+N 1e10  D 1     D 1     N 1e10 # Axx
+N 1e10  D 1     D 1     N 1e10 # Ayy
+D 0     D 3     D 1     N 1e10 # Azz
