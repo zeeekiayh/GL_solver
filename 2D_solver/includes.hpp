@@ -388,11 +388,11 @@ vector<double> Betas(double P, double T) {
       int mSize; // number of mesh points (size of the D matrices or OP-component vectors)
       int OP_size; // number of OP components
       GL_param gl; // temperature-dependent parameters for the GL equation
-      bool update = 1; // says whether or not to use the no_update vector
+      bool update = false; // says whether or not to use the no_update vector
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
-      string method = "relaxation"; // 'acceleration' if Solve will use normal relaxtion or the accelerated
+      string method = "acceleration"; // 'relaxation' if Solve will use normal relaxtion or the accelerated
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
@@ -586,13 +586,14 @@ vector<double> Betas(double P, double T) {
    
       // WRITE ADDITIONAL 'InsertCoeff_D**' METHODS HERE
 
-      // ?still needs fixed? I think it's good
+      // ?still needs fixed?
       // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
       //   For out problem, we've chosen the x-direction to be L/R;
       //   so the x-derivatives will only include BC's involving the
       //   left and the right.
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDu2_BD()" << endl;
+         // cout << "\t\t\tBC:\n" << BC << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
@@ -618,7 +619,10 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeL == string("Dirichlet"))
             {
                Du2_copy.coeffRef(id0,id0) = 1.;
-               if (!update) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
+               if (!this->update) {
+                  no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
+                  cout << "Adding to the no_update vector..." << endl;
+               }
                Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -630,7 +634,10 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeR == string("Dirichlet"))
             {
                Du2_copy.coeffRef(idN,idN) = 1.;
-               if (!update) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+               if (!this->update) {
+                  no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+                  cout << "Adding to the no_update vector..." << endl;
+               }
                Du2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -656,6 +663,7 @@ vector<double> Betas(double P, double T) {
       //   top and the bottom.
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDw2_BD" << endl;
+         // cout << "\t\t\tBC:\n" << BC << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Dw2_copy = Dw2;// the matrix that we will edit and return to not modify the original
 
@@ -679,7 +687,10 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeB == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(id0,id0) = 1.;
-               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
+               if (!this->update) {
+                  no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
+                  cout << "Adding to the no_update vector..." << endl;
+               }
                Dw2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -691,7 +702,10 @@ vector<double> Betas(double P, double T) {
             else if (BC.typeT == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(idN,idN) = 1.;
-               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+               if (!this->update) {
+                  no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+                  cout << "Adding to the no_update vector..." << endl;
+               }
                Dw2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -706,8 +720,7 @@ vector<double> Betas(double P, double T) {
          //    cout << endl << "mini view:" << endl;
          //    Matrix_SubView(Dw2_copy,*it-2,*it-2,7,7);
          // }
-
-         // cout << "\t\t\tDw2_BD: success" << endl;
+         
          return Dw2_copy;
       }
 
@@ -761,9 +774,15 @@ vector<double> Betas(double P, double T) {
             Duw_copy.coeffRef(idN,idN_disconnectT) = 0.;
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
-            //   vector that we already know, i.e. we don't need to update them
-            if (!update && BC.typeL == string("Dirichlet")) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
-            if (!update && BC.typeR == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+            //   vector that we already know, i.e. we don't need to this->update them
+            if (!this->update && BC.typeL == string("Dirichlet")) {
+               no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
+               cout << "Adding to the no_update vector..." << endl;
+            }
+            if (!this->update && BC.typeR == string("Dirichlet")) {
+               no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
+               cout << "Adding to the no_update vector..." << endl;
+            }
          }
 
          for (int n_u = 1; n_u < cond.SIZEu-1; n_u++) // loop through the top and bottom boundary points of the mesh
@@ -808,8 +827,14 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to update them
-            if (!update && BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
-            if (!update && BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+            if (!this->update && BC.typeB == string("Dirichlet")) {
+               no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
+               cout << "Adding to the no_update vector..." << endl;
+            }
+            if (!this->update && BC.typeT == string("Dirichlet")) {
+               no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+               cout << "Adding to the no_update vector..." << endl;
+            }
          }
 
          // special case for the corners
@@ -847,12 +872,15 @@ vector<double> Betas(double P, double T) {
               if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
          else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
       
-         // // If we know the VALUE at the point, add the index of it of the guess/solution
-         // //   vector that we already know, i.e. we don't need to update them
-         // if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,cond.SIZEv-1,op_elem_num));
-         // if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-         // if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
-         // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,0,        op_elem_num));
+         // If we know the VALUE at the point, add the index of it of the guess/solution
+         //   vector that we already know, i.e. we don't need to update them
+         if (!this->update) {
+            cout << "Adding to the no_update vector..." << endl;
+            if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,0,           cond.SIZEu,cond.SIZEv-1,op_elem_num));
+            if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+            if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,0,           cond.SIZEu,0,           op_elem_num));
+            if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,0,           op_elem_num));
+         }
 
          // cout << "\t\t\tDuw_BD: success" << endl;
          return Duw_copy;
@@ -874,19 +902,18 @@ vector<double> Betas(double P, double T) {
             for (int n = 0; n < OP_size; n++) {
                // cout << "K(" << m << "," << n << ") =\n" << K(m,n) << endl;
 
-               SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(this->etaBC[n],m) + K(m,n)(z,z) * Dw2_BD(this->etaBC[n],m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(this->etaBC[n],m);
-               // cout << "toInsert =\n" << toInsert << endl;
+               SpMat_cd toInsert(mSize,mSize); // sparse zero matrix
+               // add the matrices w/ BC's if their coefficients are not zero
+               if (K(m,n)(x,x) != 0) toInsert += K(m,n)(x,x) * Du2_BD(this->etaBC[n],m);
+               if (K(m,n)(z,z) != 0) toInsert += K(m,n)(z,z) * Dw2_BD(this->etaBC[n],m);
+               if (K(m,n)(x,z) + K(m,n)(z,x) != 0) toInsert += (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(this->etaBC[n],m);
+
+               // cout << "toInsert =   " << K(m,n)(x,x) << " * Du2_BD(etaBC[" << n << "], " << m << " ) + " << K(m,n)(z,z) << " * Dw2_BD(etaBC[" << n << "], " << m << " ) + (" << K(m,n)(x,z) << " + " << K(m,n)(z,x) << ")" << " * Duw_BD(etaBC[" << n << "], " << m << " )" << endl;
+               
+               // put the matrix at the correct place, corresponding to the OP component that it acts on
                solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
             }
          }
-
-         // cout << "solver_mat:\n";
-         // for (int r = 0; r < mSize; r++) {
-         //    for (int c = 0; c < mSize; c++) {
-         //       cout << solver_mat.coeff(r,c);
-         //    }
-         //    cout << endl;
-         // }
 
          return solver_mat;
       }
@@ -897,7 +924,6 @@ vector<double> Betas(double P, double T) {
          op_vector.resize(mSize*OP_size); // initialize OP vetor
          // cout << "op_vector resize: done" << endl;
          SolverMatrix = BuildSolverMatrix_Test();
-         // SolverMatrix = BuildSolverMatrix();
          // cout << "solver matrix: done" << endl;
       }
 
@@ -934,7 +960,7 @@ vector<double> Betas(double P, double T) {
          Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
 
          // the acceleration object
-         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); //Con_Acc(no_update)
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(no_update); //Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update)
          
          // loop until f converges or until it's gone too long
          do { // use relaxation
@@ -1029,7 +1055,7 @@ vector<double> Betas(double P, double T) {
    class Five_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 // ==================================================================
 
-// Now include the real and comples class header files,
+// Now include the real and complex class header files,
 //   since the parent class are defined
 // #include "real_classes.hpp"
 #include "complex_classes.hpp"
