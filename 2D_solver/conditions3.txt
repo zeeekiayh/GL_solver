@@ -1,10 +1,10 @@
 3       # OP size (make sure that this is consistant with the K matrix below)
 
 BOUNDARY CONDITIONS
-top            bottom         left            right     ( D/N : slip : value )
-D  1e-10  1    N  1e10   1    D  1e10  0.5    D  1e10  0.5  # Axx
-D  1e-10  1    N  1e10   1    D  1e10  0.5    D  1e10  0.5  # Ayy
-N  1e10   1    D  1e-10  0    D  1e10  0.5    D  1e10  0.5  # Azz
+top            bottom         left           right     ( D/N : slip : value )
+D  1e-10  1    N  1e10   1    D  1e-10  1    D  1e-10  1  # Axx
+D  1e-10  1    N  1e10   1    D  1e-10  1    D  1e-10  1  # Ayy
+N  1e10   1    D  1e-10  0    D  1e-10  1    D  1e-10  1  # Azz
 
 K MATRIX
 (0,0,0,1) ()        ()
