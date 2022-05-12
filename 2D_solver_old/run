@@ -1,4 +1,4 @@
 ./a.out
 ./points_plot.py
-./cplx_points_plot.py
-./integrand_plot.py
+python3 cplx_points_plot.py
+python3 integrand_plot.py

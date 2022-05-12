@@ -1,5 +1,5 @@
 clear
 g++ Dist_B_Phase.cpp -O3
 ./a.out
-./cplx_points_plot.py
-./integrand_plot.py
+python3 cplx_points_plot.py
+python3 integrand_plot.py

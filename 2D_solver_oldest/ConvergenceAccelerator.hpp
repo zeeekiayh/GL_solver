@@ -1,52 +1,3 @@
-/* =================================================================================================
-	Anton Vorontsov
-	Montana State University, Jan 2022 
-
- We are solving self-consistently system of equations 
-
- 	f = RHS(f)    where f is  N-component vector (real or complex) 
- 	
-	equations for RHS have to be provided separately, and usually it is a complicated function; 
-     	solution for f is searched by iterations, but the acceleration makes educated guesses 
-	for next vector f based on a stored Nstored previous vectors f
-
-In the main file:
-
-#include "ConvergenceAccelerator.hpp" 
-
-In the source, declare the vectors and their sizes 
-	VectorXd f(N), df(N); // the iteration vectors
-	VectorXd rhs(N); // right-hand side of the self-consistency
-	vector<int> no_update; // provide list of vector components that need not be updated
-				// leave empty if all components of f are updated;
-				// e.g. if f(3) need to be kept fixed, no_update.push_back( 3 );
-
-	// Initiate the convergence acceleration: declaration and constructor for the convergence acceleration subroutine:
-      converg_acceler<VectorXd> AndrAcclr(Nstored, initIter, rlxp, no_update);
-      	// parameters (found by experimenting for fastest convergence for a given problem): 
-		// Nstored - how many previous vectors to keep in memory (usually 4-10) 
-		// initIter - number of simple relaxation iterations in the beginning (1-10) 
-		// rlxp - simple relaxation parameter (0.001 - 0.1)
-		// no_update - the vector list of vector components that need no updating 
-
-	// provide initial guess for f, e.g.
-	for (int i=0; i<N; i++) f(i)= initial guess;
-
-	do{ // iterations
-		f_new_guess = RHS(f); // find f_new_guess for current f
-		df = f_new_guess-f;  // deviation from the self-consistency, df=0 when self-consistent solution is found
-		df = f - f_new_guess;  // better definition for SC OP equation, for relaxation stability 
-
-            AndrAcclr.next_vector<MatrixXd>( f, df, err ); // smart guess
-			// on input it sends just calculated f and df, 
-            	// and on output it gives the next f=f_new to try, 
-			// and the relative error <double> err=norm(f_new-f_input)/norm(f_new);
-
-	} while( some condition on self-consistency convergence, e.g. err > 1e-3);
-
-For complex vectors replace VectorXd, MatrixXd -> VectorXcd,MatrixXcd
-=================================================================================================*/
-
 #ifndef ConvergenceAccelerator_hpp_
 #define ConvergenceAccelerator_hpp_
 
@@ -77,7 +28,7 @@ struct keep_in_memory{
 template <class T>
 class converg_acceler{
 	protected:
-		int MaxStored=2;  // number of vectors used for next guess
+		int MaxStored=3;  // number of vectors used for next guess
 		int waitcount=0, waitXiter=1; // start smart guessing on second iteration 
 		int Nstored;
 		double relax_param=0.1; // simple relaxation parameter
@@ -91,7 +42,7 @@ class converg_acceler{
 
 		//constructor 
 		converg_acceler () {Nstored=0;}; // default constructor
-		converg_acceler (int maxstor, int wtcnt, double rlxp, const vector<int> no_update); 
+		converg_acceler (const vector<int> no_update, int mxstr=7, int wtX=1, double rlxp=0.006); 
 		//destructor
 		~converg_acceler () {};
 
@@ -101,14 +52,10 @@ class converg_acceler{
 		void print_component(unsigned int n);
 };
 
-
-
-
-
-
 /* ===================================================================================================
  	the .cpp source for the template class functions has to be included into .hpp file,
- 	otherwise problems arise at linkage and compilation
+ 	otherwise problems arize at linkage and compilation
+ 	#include "AcceleratorConverge_implementation.cpp" below	
  ================================================================================================= */
 
 #include <iostream>
@@ -125,7 +72,7 @@ class converg_acceler{
 
 //constructor for base class
 template <class T>
-converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vector<int> no_update) 
+converg_acceler<T>::converg_acceler (const vector<int> no_update, int mxstr, int wtX, double rlxp) 
 {
 	Nstored=0; 
 	if ( MaxStored < mxstr ) MaxStored=mxstr;
@@ -169,32 +116,30 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 // on output we return the next guess for v
 // algorithm of the acceleration is described in M.Eschrig notes 
 {
-	int i, go_random=0;
+	int i, bad_vector=0, go_random=0;
 	int dimension = (int) v.size();
-	//double norm_dev_min_prev=dev_min.norm();
+	double norm_dev_min_prev=dev_min.norm();
 	double guess_coupl, fix_coupl, coupl_param; 
 	T devi(dimension);
 
-	if(MaxStored > dimension+1){ 
-		MaxStored = dimension+1;
-		cout << " \n !!! Anderson Acceleration: reducing number of stored vectors to avoid singular matrices. !!! \n " << endl;
-	}
-
-	vec_prev=v; // we'll remember the incoming vector to later find change error on this update 
+	vec_prev=v; // we'll remember the incoming vector to compare against later
 	double norm_new=dvz.norm();
 	if(details) printf("OP update: new vector with deviation =%.4f\n", norm_new);
 	waitcount++;
 
-	if(Nstored >= MaxStored) // we reached max storage capacity; and we need to get rid of something
+	if(Nstored>=MaxStored) // we reached max storage capacity; and we need to get rid of something
 	{
 		if( norm_new < 0.1*stored[0].norm) {
 			// new vector is a really good guess, so get rid of last half 
-			i=(int) MaxStored/2.0;
+			i=(int) MaxStored/2.0 +1;
 			stored.erase( stored.end()-i, stored.end() );
 		} else if( norm_new > stored[MaxStored-1].norm){ 
-			// we went the wrong way completely on the Jump, so remove some bad last vectors 
-			i=(int) MaxStored/2.0;
+			bad_vector=1;
+			// we went the wrong way completely on the Jump, so remove the very last vector in storage 
+			i=1; 
 			stored.erase( stored.end()-i, stored.end() );
+			// ... do the usual smart step but sometimes go random to get out of any loop that might develop 
+			if ( 1.0*rand()/(RAND_MAX) <0.25) go_random=1;
 		} else{
 			// if nothing unusual, just get rid of the last element with the largest norm 
 			// (sorting will be done at the end of the subroutine)
@@ -203,12 +148,14 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 	}
 
 	// add the currently supplied (v,dvz,norm_new) to the end of the storage vector if everything is OK
-	stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
+	if(! bad_vector ){
+		stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
+	}
 
 	Nstored=stored.size(); 
 
 	// print out stored norms
-	if(details){ printf("norms(dv):\t"); for(i=0; i<Nstored; i++){ printf("(%.4f)  ", stored[i].norm );} printf("\n"); }
+	if(details){ for(i=0; i<Nstored; i++){ printf("(%.3f)  ", stored[i].norm );} printf("\n"); }
 
 	// Now we determine the mapping coefficients by minimizing the distance from dev=zero to the dev-hypersurface 
 	if( Nstored>1 &&  waitcount > waitXiter ){
@@ -217,44 +164,45 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 		T c(Nstored-1), r(Nstored-1); 
 		U M(Nstored-1,Nstored-1);
 
-		// the reference vector does not play role for linear equations, we take the one that we just added 
+		// the reference vector does not play role for linear equations, we take the last one 
 		int ref_v=Nstored-1;
 
-		for ( i=0; i < Nstored; i++ ){ 
-			if(i==ref_v) continue;
+		for ( i=0; i<Nstored-1; i++ ){
 			devi = stored[i].dev -stored[ref_v].dev;
-			for(int j=0; j < Nstored; j++){
-				if(j==ref_v) continue;
-				M(i,j) = devi.dot( stored[j].dev-stored[ref_v].dev );
+			r(i) = - devi.adjoint().dot( stored[ref_v].dev );
+			for(int j=0; j<Nstored-1; j++){
+				M(i,j) = devi.adjoint() * (stored[j].dev-stored[ref_v].dev);
 			}
-			r(i) = - devi.dot( stored[ref_v].dev );
 		}
 
-		// find the coefficients that will minimize the norm 
-		c = M.colPivHouseholderQr().solve(r); 
-		// find the relative error to estimate if the matrix is singular (this should be real small if M is invertible)
-		double relative_error = (M*c - r).norm() / r.norm();
+		// find average magnitude of matrix M elements, and normalize the elements by their average
+		double avrgElmM = sqrt( M.squaredNorm() )/(Nstored-1);
+		M /= avrgElmM;
+		r /= avrgElmM;
+		double detM = abs(M.determinant());
 
-		if( relative_error > 1e-6 ){ 
-			if(details) cout << " Andrs Accel. has singular matrix. Det(M) = " << M.determinant() << endl; 
+		if( detM < 1e-12 || isnan(detM) ){ 
+			if(details) cout << " Too close to a Degenerate Matrix =" << M.determinant() << endl; 
 			// degeneracy of vectors: the last one is equal to a previous one,
-			// or matrix exploded: we eliminate the last one 
-			stored.erase( stored.end()-1, stored.end() );
+			// or matrix exploded: we eliminate a couple of last ones... 
+			i=2; 
+			stored.erase( stored.end()-i, stored.end() );
 			// ... and will use a random step later on
 			go_random=1;
 		}
 		else{ 
+			// everything is ok, we can do inversion
+			c = M.inverse() * r; // the coefficients for optimal=minimal distance from the Origin
+			
 			if(details){ 
-				cout << "c = \n" << c.transpose() << endl;
+				cout << "c= " << c.transpose() << endl;
 				double avrgnorm=0; for ( i=0; i<Nstored; i++ ) avrgnorm += stored[i].norm/Nstored;
-				fprintf(record, "%d \t%e \t%e \t%e \t%e \t%e \n", waitcount, dev_min.norm(), dvz.norm(), avrgnorm, relative_error, abs(M.determinant()) );
-				//fprintf(record, "%d \t%e \t%e \t%e \t%e \t%e \n", waitcount, dev_min.norm(), dvz.norm(), avrgnorm, avrgElmM, log10(detM));
+				fprintf(record, "%d \t%e \t%e \t%e \t%e \t%e \n", waitcount, dev_min.norm(), dvz.norm(), avrgnorm, avrgElmM, log10(detM));
 			}
 
 			vec_min=stored[ref_v].vec;
 			dev_min=stored[ref_v].dev;
-			for(i=0; i < Nstored; i++){
-				if(i==ref_v) continue;
+			for(i=0; i < Nstored-1; i++){
 				vec_min += c(i) * (stored[i].vec - stored[ref_v].vec); 
 				dev_min += c(i) * (stored[i].dev - stored[ref_v].dev); 
 			}
@@ -262,7 +210,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 			devi = vec_min - v;
 			guess_coupl = devi.norm()/dvz.norm();
 
-			fix_coupl = 1.0; //norm_dev_min_prev/norm_new ; // correction if we did overshoot the last time
+			fix_coupl = norm_dev_min_prev/norm_new ; // correction if we did overshoot the last time
 			if (fix_coupl>1) fix_coupl=1;
 			
 			coupl_param=guess_coupl*fix_coupl;
@@ -306,6 +254,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 		i=no_update_points[j];
 		v(i) = vec_prev(i);
 	}
+
 
 	devi = v-vec_prev; // difference between the new guess and the previous vector 
 	error = devi.norm()/v.norm();

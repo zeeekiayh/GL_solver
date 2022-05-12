@@ -10,8 +10,8 @@
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
-#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker tensor product
-#include "new_ConvergenceAccelerator.hpp"
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product
+#include "ConvergenceAccelerator.hpp"
 
 using std::cout;
 using std::endl;
@@ -66,11 +66,11 @@ struct GL_param { double K1, K2, K3, B1, B2, B3, B4, B5, alpha, P, T; };
       int SIZEv;    // "" ...
       int SIZEw;    // "" in orthogonal directions
       int N_loop;   // count limit for iterations
-      int maxStore=4; // max num vectors kept in accerleration
-      int wait=2;     // iterations to wait before using acceleration
+      int maxStore; // max num vectors kept in accerleration
+      int wait;     // iterations to wait before using acceleration
       double ACCUR; // the minimum desired accuracy
       double STEP;  // step size
-      double rel_p=0.1; // relaxation param
+      double rel_p; // relaxation param
    };
 // ===========================================
 
@@ -388,11 +388,11 @@ vector<double> Betas(double P, double T) {
       int mSize; // number of mesh points (size of the D matrices or OP-component vectors)
       int OP_size; // number of OP components
       GL_param gl; // temperature-dependent parameters for the GL equation
-      bool update = false; // says whether or not to use the no_update vector
+      bool update = 1; // says whether or not to use the no_update vector
       in_conditions cond; // struct of all the BC's and other parameters for the methods
       vector<int> no_update; // stores all the indeces that will not be modified in the RHS
       Matrix<Matrix2d,-1,-1> K; // define the k-matrix: matrix of matrices
-      string method = "acceleration"; // 'relaxation' if Solve will use normal relaxtion or the accelerated
+      string method = "acceleration"; // if Solve will use normal relaxtion or the accelerated
       Matrix<Scalar_type,-1,1> solution; // to store the solution to the GL equ. (in the single vector form)
       Matrix<Scalar_type,-1,1> op_vector; // the vector form of the op_matrix
       SparseMatrix<Scalar_type> SolverMatrix; // solver matrix
@@ -406,12 +406,6 @@ vector<double> Betas(double P, double T) {
       GL_Solver(string conditions_file) {
          ReadConditions(conditions_file);
          mSize = cond.SIZEu*cond.SIZEv;
-
-         // set the acceleration parameters
-         // (these should not need to change for different problems)
-         // this->cond.maxStore = 4;
-         // this->cond.rel_p = 0.1;
-         // this->cond.wait = 2;
       }
 
       // Virtual Functions; to be defined in derived classes.
@@ -432,37 +426,65 @@ vector<double> Betas(double P, double T) {
 
       // read in the conditions from the file
       void ReadConditions(string conditions_file) {
-         // c out << "reading conditions..." << endl;
+         cout << "here6" << endl;
+         // cout << "reading conditions..." << endl;
          string line;
          char ln [20];
+         cout << "here7" << endl;
          std::ifstream conditions(conditions_file);
+         cout << "here8" << endl;
 
          // get conditions from the file
          if (conditions.is_open()) {
+            cout << "\there11" << endl;
             
             conditions >> cond.SIZEu >> cond.SIZEv; conditions.ignore(256,'\n');
             if (!cond.SIZEu) cond.SIZEu = 1; // the sizes can never be 0; set them to 1 if = 0
             if (!cond.SIZEv) cond.SIZEv = 1;
+            cout << "\there12" << endl;
 
             // if(getline(conditions,ln)) sscanf(ln,"%le",&cond.STEP);
+            // cout << "step = " << cond.STEP << endl;
 
             conditions >> cond.STEP;   conditions.ignore(256,'\n');
             conditions >> OP_size;     conditions.ignore(256,'\n');
+            cout << "op size = " << OP_size << endl;
             conditions >> gl.T;        conditions.ignore(256,'\n');
             conditions >> gl.P;        conditions.ignore(256,'\n');
             conditions >> cond.ACCUR;  conditions.ignore(256,'\n');
             conditions >> cond.N_loop; conditions.ignore(256,'\n');
+            cout << "\there13" << endl;
 
             // read the K matrix
             K.resize(OP_size,OP_size);
+            cout << "\there14" << endl;
             Matrix2d K0 = MatrixXd::Zero(2,2); // the basic 0-matrix
+            cout << "\there15" << endl;
             Matrix2d K_temp(2,2); // the temporary k-matrix for importing
 
+            cout << "\there9" << endl;
+            while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); getline(conditions,line); //cout << "line = " << line << endl;
+            cout << "\there10" << endl;
+
+            Bound_Cond bc; // a temporary BC
+            for(int i = 0; i < OP_size; i++) {
+               cout << "i = " << i << endl;
+               // read in the same number of BC as OP components
+               conditions >> bc; conditions.ignore(256,'\n');
+               etaBC.push_back(bc);
+            }
+            // conditions >> Eta_uu_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_vv_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_ww_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_uw_BC; conditions.ignore(256,'\n');
+            // conditions >> Eta_wu_BC; conditions.ignore(256,'\n');
+            cout << "\there16" << endl;
+
             // find the line where the K matrix starts
-            while (line != "K MATRIX") {
-               getline(conditions,line);
-               }
-            // getline(conditions,line); // get one more...
+            while (line != "K MATRIX") {getline(conditions,line);/*cout<<"line="<<line<<endl;*/}
+            getline(conditions,line); // get one more...
+            cout << "\there17" << endl;
 
             // get K matrix elements from the file
             for (int row = 0; row < OP_size && !conditions.eof(); row++) {
@@ -474,13 +496,12 @@ vector<double> Betas(double P, double T) {
 
                for (int i = 0; i < line.length(); i++) {
                   if (line[i] == '(') started = true; // toggle the started flag when "("
-                  if (line[i] == ')') {               //     or ")" is reached
+                  if (line[i] == ')') {               // or ")" is reached
                      started = false;
                      k_index = 0; // and reset the index
 
                      // if it was an empty set of parentheses...
                      if (line[i-1] == '(') K_temp = K0; // add the zero-matrix
-                     // cout << "K_temp =\n" << K_temp << endl;
 
                      K(row,col) = K_temp; // if we just got to the end of a set, add the inner K matrix
                      col++;               // increment for the next one's position
@@ -495,24 +516,7 @@ vector<double> Betas(double P, double T) {
                   }
                } // end for (row)
             } // end file open
-
-            while (line != "BOUNDARY CONDITIONS") {
-               getline(conditions,line);
-            }
-            getline(conditions,line); getline(conditions,line);
-
-            Bound_Cond bc; // a temporary BC
-            for(int i = 0; i < OP_size; i++) {
-               // read in the same number of BC as OP components
-               conditions >> bc; conditions.ignore(256,'\n');
-               etaBC.push_back(bc);
-               // cout << "bc =\n" << bc << endl;
-            }
-
-            // cout << "etaBC vector filled;";
-            // for (auto it = etaBC.begin(); it != etaBC.end(); it++) {
-            //    cout << *it << endl;
-            // }
+            cout << "\there18" << endl;
 
             conditions.close();
             cout << "NOTICE: using " << method << " to solve." << endl;
@@ -586,58 +590,46 @@ vector<double> Betas(double P, double T) {
    
       // WRITE ADDITIONAL 'InsertCoeff_D**' METHODS HERE
 
-      // ?still needs fixed?
+      // ?still needs fixed? I think it's good
       // derivative matrix: 2nd-order of 1st coordinate (i.e. x)
-      //   For out problem, we've chosen the x-direction to be L/R;
-      //   so the x-derivatives will only include BC's involving the
-      //   left and the right.
       SparseMatrix<Scalar_type> Du2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDu2_BD()" << endl;
-         // cout << "\t\t\tBC:\n" << BC << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
-         for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the left and right boundary points of the mesh
+         for (int n_v = 0; n_v < cond.SIZEv; n_v++) // loop through just the top and bottom boundary points of the mesh
          {
-            // indexes for the points on the left side
-            int id0 =         ID(mSize, 0, cond.SIZEu, n_v, 0), // here, we treat the OP element index as 0 because each
-                id0_connect = ID(mSize, 1, cond.SIZEu, n_v, 0); //   D matrix is only large enough for one component,
-                                                                //   and will be put into the correct size when constructing
-                                                                //   the big solver matrix.
+            // indexes for the points on the bottom side
+            int id0 =         ID(mSize, 0, cond.SIZEu, n_v, 0),
+                id0_connect = ID(mSize, 1, cond.SIZEu, n_v, 0);
             
-            // indexes for the points on the right side
+            // indexes for the points on the top side
             int idN =         ID(mSize, cond.SIZEu-1, cond.SIZEu, n_v, 0),
-                idN_connect = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v, 0);
+                idN_connect = ID(mSize, cond.SIZEv-2, cond.SIZEu, n_v, 0);
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
-            if (BC.typeL == string("N")) // Neumann
+            if (BC.typeB == string("Neumann"))
             {
                Du2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Du2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeL == string("D"))  // D -> Dirichlet
+            else if (BC.typeB == string("Dirichlet"))
             {
                Du2_copy.coeffRef(id0,id0) = 1.;
-               if (!this->update) {
-                  no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
-                  // cout << "Adding to the no_update vector..." << endl;
-               }
+               if (!update) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
                Du2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            if (BC.typeR == string("N")) // Neumann
+            if (BC.typeT == string("Neumann"))
             {
                Du2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valT;
                Du2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeR == string("D"))  // D -> Dirichlet
+            else if (BC.typeT == string("Dirichlet"))
             {
                Du2_copy.coeffRef(idN,idN) = 1.;
-               if (!this->update) {
-                  no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
-                  // cout << "Adding to the no_update vector..." << endl;
-               }
+               if (!update) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
                Du2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -658,12 +650,8 @@ vector<double> Betas(double P, double T) {
       }
 
       // derivative matrix: 2nd-order of 3rd coordinate (i.e. z)
-      //   For out problem, we've chosen the z-direction to be up/down;
-      //   so the z-derivatives will only include BC's involving the
-      //   top and the bottom.
       SparseMatrix<Scalar_type> Dw2_BD(Bound_Cond BC, int op_elem_num) {
          // cout << "\t\t\tDw2_BD" << endl;
-         // cout << "\t\t\tBC:\n" << BC << endl;
          // vector<int> indexes_to_visit; // vector for debugging
          SparseMatrix<Scalar_type> Dw2_copy = Dw2;// the matrix that we will edit and return to not modify the original
 
@@ -679,33 +667,27 @@ vector<double> Betas(double P, double T) {
 
             // set the values at these indexes using the ghost points,
             //   and depending on what kind of BC we have there
-            if (BC.typeB == string("N")) // Neumann
+            if (BC.typeB == string("Neumann"))
             {
                Dw2_copy.coeffRef(id0,id0) = -2. -2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(id0,id0_connect) = 2.;
             }
-            else if (BC.typeB == string("D")) // D  // D -> Dirichlet
+            else if (BC.typeB == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(id0,id0) = 1.;
-               if (!this->update) {
-                  no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
-                  // cout << "Adding to the no_update vector..." << endl;
-               }
+               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
                Dw2_copy.coeffRef(id0,id0_connect) = 0.; // make sure to disconnect from the other connection
             }
 
-            if (BC.typeT == string("N")) // Neumann
+            if (BC.typeT == string("Neumann"))
             {
                Dw2_copy.coeffRef(idN,idN) = -2. +2.*cond.STEP/BC.valB;
                Dw2_copy.coeffRef(idN,idN_connect) = 2.;
             }
-            else if (BC.typeT == string("D")) // D  // D -> Dirichlet
+            else if (BC.typeT == string("Dirichlet"))
             {
                Dw2_copy.coeffRef(idN,idN) = 1.;
-               if (!this->update) {
-                  no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-                  // cout << "Adding to the no_update vector..." << endl;
-               }
+               if (!update) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
                Dw2_copy.coeffRef(idN,idN_connect) = 0.; // make sure to disconnect from the other connection
             }
 
@@ -720,7 +702,8 @@ vector<double> Betas(double P, double T) {
          //    cout << endl << "mini view:" << endl;
          //    Matrix_SubView(Dw2_copy,*it-2,*it-2,7,7);
          // }
-         
+
+         // cout << "\t\t\tDw2_BD: success" << endl;
          return Dw2_copy;
       }
 
@@ -751,21 +734,21 @@ vector<double> Betas(double P, double T) {
                 idN_disconnectT = ID(mSize, cond.SIZEu-2, cond.SIZEu, n_v+1, 0); // index of the top point to disconnect from
             
             // set the values at these indexes using the ghost points
-            if (BC.typeL == string("N")) // Neumann
+            if (BC.typeL == string("Neumann"))
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL);
                // Duw_copy.coeffRef(id0,id0_connectT) = cond.STEP/(2.*BC.valL) (BC.valL >= pow(10,-7) ? cond.STEP/(2.*BC.valL) : 0);
                Duw_copy.coeffRef(id0,id0_connectB) = -cond.STEP/(2.*BC.valL);
             }
-            else if (BC.typeL == string("D")) Duw_copy.coeffRef(id0,id0) = 1.;  // D -> Dirichlet
-            if (BC.typeR == string("N")) // Neumann
+            else if (BC.typeL == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
+            if (BC.typeR == string("Neumann"))
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(idN,idN_connectT) = cond.STEP/(2.*BC.valR);
                Duw_copy.coeffRef(idN,idN_connectB) = -cond.STEP/(2.*BC.valR);
             }
-            else if (BC.typeR == string("D")) Duw_copy.coeffRef(idN,idN) = 1.;  // D -> Dirichlet
+            else if (BC.typeR == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
 
             // disconnect from default connections
             Duw_copy.coeffRef(id0,id0_disconnectB) = 0.;
@@ -774,15 +757,9 @@ vector<double> Betas(double P, double T) {
             Duw_copy.coeffRef(idN,idN_disconnectT) = 0.;
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
-            //   vector that we already know, i.e. we don't need to this->update them
-            if (!this->update && BC.typeL == string("D")) {  // D -> Dirichlet
-               no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
-               // cout << "Adding to the no_update vector..." << endl;
-            }
-            if (!this->update && BC.typeR == string("D")) {  // D -> Dirichlet
-               no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
-               // cout << "Adding to the no_update vector..." << endl;
-            }
+            //   vector that we already know, i.e. we don't need to update them
+            if (!update && BC.typeL == string("Dirichlet")) no_update.push_back(ID(mSize,0,cond.SIZEu,n_v,op_elem_num));
+            if (!update && BC.typeR == string("Dirichlet")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,n_v,op_elem_num));
          }
 
          for (int n_u = 1; n_u < cond.SIZEu-1; n_u++) // loop through the top and bottom boundary points of the mesh
@@ -804,20 +781,20 @@ vector<double> Betas(double P, double T) {
                 idN_disconnectR = ID(mSize, n_u+1, cond.SIZEu, cond.SIZEv-2, 0); // index of the right point to disconnect from
 
             // set the values at these indexes using the ghost points
-            if (BC.typeB == string("N")) // Neumann
+            if (BC.typeB == string("Neumann"))
             {
                Duw_copy.coeffRef(id0,id0) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(id0,id0_connectR) = cond.STEP/(2.*BC.valB);
                Duw_copy.coeffRef(id0,id0_connectL) = -cond.STEP/(2.*BC.valB);
             }
-            else if (BC.typeB == string("D")) Duw_copy.coeffRef(id0,id0) = 1.;  // D -> Dirichlet
-            if (BC.typeT == string("N")) // Neumann
+            else if (BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id0,id0) = 1.;
+            if (BC.typeT == string("Neumann"))
             {
                Duw_copy.coeffRef(idN,idN) = 0.; // disconnect from the point itself
                Duw_copy.coeffRef(idN,idN_connectR) = cond.STEP/(2.*BC.valB);
                Duw_copy.coeffRef(idN,idN_connectL) = -cond.STEP/(2.*BC.valB);
             }
-            else if (BC.typeT == string("D")) Duw_copy.coeffRef(idN,idN) = 1.;  // D -> Dirichlet
+            else if (BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(idN,idN) = 1.;
 
             // disconnect from default connections
             Duw_copy.coeffRef(id0,id0_disconnectL) = 0.;
@@ -827,14 +804,8 @@ vector<double> Betas(double P, double T) {
 
             // If we know the VALUE at the point, add the index of it of the guess/solution
             //   vector that we already know, i.e. we don't need to update them
-            if (!this->update && BC.typeB == string("D")) {  // D -> Dirichlet
-               no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
-               // cout << "Adding to the no_update vector..." << endl;
-            }
-            if (!this->update && BC.typeT == string("D")) {  // D -> Dirichlet
-               no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
-               // cout << "Adding to the no_update vector..." << endl;
-            }
+            if (!update && BC.typeB == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,0,op_elem_num));
+            if (!update && BC.typeT == string("Dirichlet")) no_update.push_back(ID(mSize,n_u,cond.SIZEu,cond.SIZEv-1,op_elem_num));
          }
 
          // special case for the corners
@@ -844,8 +815,8 @@ vector<double> Betas(double P, double T) {
          id = ID(mSize,0,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(mSize,1,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("N") && BC.typeT == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB); // Neumann
-         else if (BC.typeL == string("D") || BC.typeT == string("D")) Duw_copy.coeffRef(id,id) = 1.;  // D -> Dirichlet
+              if (BC.typeL == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
+         else if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.;
                // TODO: determine if this assumption is correct, that
                //    if the function value is given for one side, we
                //    don't have to worry about the derivative condition.
@@ -855,32 +826,29 @@ vector<double> Betas(double P, double T) {
          id = ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,0);
          id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,cond.SIZEv-2,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("N") && BC.typeT == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB); // Neumann
-         else if (BC.typeR == string("D") || BC.typeT == string("D")) Duw_copy.coeffRef(id,id) = 1.; // here...  // D -> Dirichlet
+              if (BC.typeR == string("Neumann") && BC.typeT == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
+         else if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; // here...
 
          // Bottom left
          id = ID(mSize,0,cond.SIZEu,0,0);
          id_disconnect = ID(mSize,1,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeL == string("N") && BC.typeB == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB); // Neumann
-         else if (BC.typeL == string("D") || BC.typeB == string("D")) Duw_copy.coeffRef(id,id) = 1.; //...here...  // D -> Dirichlet
+              if (BC.typeL == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valL*BC.valB);
+         else if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...here...
 
          // Bottom right
          id = ID(mSize,cond.SIZEu-1,cond.SIZEu,0,0);
          id_disconnect = ID(mSize,cond.SIZEu-2,cond.SIZEu,1,0);
          Duw_copy.coeffRef(id,id_disconnect) = 0.;
-              if (BC.typeR == string("N") && BC.typeB == string("N"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB); // Neumann
-         else if (BC.typeR == string("D") || BC.typeB == string("D")) Duw_copy.coeffRef(id,id) = 1.; //...and here  // D -> Dirichlet
+              if (BC.typeR == string("Neumann") && BC.typeB == string("Neumann"))     Duw_copy.coeffRef(id,id) = cond.STEP*cond.STEP/(BC.valR*BC.valB);
+         else if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) Duw_copy.coeffRef(id,id) = 1.; //...and here
       
-         // If we know the VALUE at the point, add the index of it of the guess/solution
-         //   vector that we already know, i.e. we don't need to update them
-         if (!this->update) {
-            // cout << "Adding to the no_update vector..." << endl;
-            if (BC.typeL == string("D") || BC.typeT == string("D")) no_update.push_back(ID(mSize,0,           cond.SIZEu,cond.SIZEv-1,op_elem_num));  // D -> Dirichlet
-            if (BC.typeR == string("D") || BC.typeT == string("D")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));  // D -> Dirichlet
-            if (BC.typeL == string("D") || BC.typeB == string("D")) no_update.push_back(ID(mSize,0,           cond.SIZEu,0,           op_elem_num));  // D -> Dirichlet
-            if (BC.typeR == string("D") || BC.typeB == string("D")) no_update.push_back(ID(mSize,cond.SIZEu-1,cond.SIZEu,0,           op_elem_num));  // D -> Dirichlet
-         }
+         // // If we know the VALUE at the point, add the index of it of the guess/solution
+         // //   vector that we already know, i.e. we don't need to update them
+         // if (BC.typeL == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeT == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,cond.SIZEv-1,op_elem_num));
+         // if (BC.typeL == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,0,        cond.SIZEu,0,        op_elem_num));
+         // if (BC.typeR == string("Dirichlet") || BC.typeB == string("Dirichlet")) no_update.push_back(ID(sz,mSize[0]-1,cond.SIZEu,0,        op_elem_num));
 
          // cout << "\t\t\tDuw_BD: success" << endl;
          return Duw_copy;
@@ -889,7 +857,7 @@ vector<double> Betas(double P, double T) {
       // WRITE ADDITIONAL 'D**_BD' METHODS HERE
 
       SpMat_cd BuildSolverMatrix_Test() {
-         // cout << "In test build solver matrix" << endl;
+         cout << "In test build solver matrix" << endl;
 
          // define the solver matrix to be built
          SpMat_cd solver_mat(mSize*OP_size,mSize*OP_size);
@@ -897,20 +865,12 @@ vector<double> Betas(double P, double T) {
 
          // loop through the size of the OP, i.e. the size of the K matrix
          for (int m = 0; m < OP_size; m++) {
-            // use the equation (15) in the new LaTeX:
+            // use the equation:
             //  [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
             for (int n = 0; n < OP_size; n++) {
-               // cout << "K(" << m << "," << n << ") =\n" << K(m,n) << endl;
+               cout << "K(m,n) =\n" << K(m,n) << endl;
 
-               SpMat_cd toInsert(mSize,mSize); // sparse zero matrix
-               // add the matrices w/ BC's if their coefficients are not zero
-               if (K(m,n)(x,x) != 0) toInsert += K(m,n)(x,x) * Du2_BD(this->etaBC[n],m);
-               if (K(m,n)(z,z) != 0) toInsert += K(m,n)(z,z) * Dw2_BD(this->etaBC[n],m);
-               if (K(m,n)(x,z) + K(m,n)(z,x) != 0) toInsert += (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(this->etaBC[n],m);
-
-               // cout << "toInsert =   " << K(m,n)(x,x) << " * Du2_BD(etaBC[" << n << "], " << m << " ) + " << K(m,n)(z,z) << " * Dw2_BD(etaBC[" << n << "], " << m << " ) + (" << K(m,n)(x,z) << " + " << K(m,n)(z,x) << ")" << " * Duw_BD(etaBC[" << n << "], " << m << " )" << endl;
-               
-               // put the matrix at the correct place, corresponding to the OP component that it acts on
+               SpMat_cd toInsert = K(m,n)(x,x) * Du2_BD(Eta_uu_BC,m) + K(m,n)(z,z) * Dw2_BD(Eta_uu_BC,m) + (K(m,n)(x,z) + K(m,n)(z,x)) * Duw_BD(Eta_uu_BC,m);
                solver_mat += Place_subMatrix(m, n, OP_size, toInsert);
             }
          }
@@ -924,6 +884,7 @@ vector<double> Betas(double P, double T) {
          op_vector.resize(mSize*OP_size); // initialize OP vetor
          // cout << "op_vector resize: done" << endl;
          SolverMatrix = BuildSolverMatrix_Test();
+         // SolverMatrix = BuildSolverMatrix();
          // cout << "solver matrix: done" << endl;
       }
 
@@ -932,8 +893,6 @@ vector<double> Betas(double P, double T) {
          cout << "solving..." << endl;
          auto start = std::chrono::system_clock::now();
          Matrix<Scalar_type,-1,1> f = makeGuess(guess), df(guess.size()); // initialize vectors
-
-         // cout << "Guess:\n" << f << endl;
 
          if (no_update.size()) cout << "using no_update" << endl;
 
@@ -961,11 +920,8 @@ vector<double> Betas(double P, double T) {
          double err;  // to store current error
          Matrix<Scalar_type,-1,1> rhs = RHS(); // the right hand side
 
-         printf("this->cond.maxStore: %d\n", this->cond.maxStore);
-         printf("this->cond.wait: %d\n", this->cond.wait);
-         printf("this->cond.rel_p: %f\n", this->cond.rel_p);
          // the acceleration object
-         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(this->cond.maxStore,this->cond.wait,this->cond.rel_p,no_update); //Con_Acc(no_update)
+         converg_acceler<Matrix<Scalar_type,-1,1>> Con_Acc(no_update); // Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update)
          
          // loop until f converges or until it's gone too long
          do { // use relaxation
@@ -975,7 +931,7 @@ vector<double> Betas(double P, double T) {
             if (method == string("acceleration")) Con_Acc.template next_vector<Matrix<Scalar_type,-1,-1>>(f,df,err); // use Anderson Acceleration to converge faster
             else if (method == string("relaxation")) // use normal relaxation
             {
-               f += 0.05*df;
+               f += cond.rel_p*df;
                err = df.norm()/f.norm();
             }
             else { cout << "ERROR: Unknown method type given." << endl; return; }
@@ -988,14 +944,14 @@ vector<double> Betas(double P, double T) {
             // for (int i = 0; i < f.size(); i++) if ((i+1)%cond.SIZEu==0) cout << "\tf(" << i << ") = " << f(i) << endl;
 
             // output approx. percent completed
-            cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
+            cout << "\033[A\33[2K\r" << "estimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
 
          } while(err > cond.ACCUR && cts < cond.N_loop);
 
-         if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
-         else cout << "\tResult did not converge satifactorily:" << endl;
-         cout << "\t\titerations = " << cts << endl;
-         cout << "\t\trelative error = " << err << endl;
+         if (err < cond.ACCUR) cout << "Found solution:" << endl;
+         else cout << "Result did not converge satifactorily:" << endl;
+         cout << "\titerations = " << cts << endl;
+         cout << "\trelative error = " << err << endl;
 
          solution = f;
       }
@@ -1060,7 +1016,7 @@ vector<double> Betas(double P, double T) {
    class Five_Component_GL_Solver : public GL_Solver<Scalar_type> {};
 // ==================================================================
 
-// Now include the real and complex class header files,
+// Now include the real and comples class header files,
 //   since the parent class are defined
 // #include "real_classes.hpp"
 #include "complex_classes.hpp"

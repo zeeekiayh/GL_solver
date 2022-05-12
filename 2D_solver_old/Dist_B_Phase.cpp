@@ -2,11 +2,9 @@
 
 int main()
 {
-    //*/ Complex-valued, 3-component GL solver
+    /*/ Complex-valued, 3-component GL solver
     VectorXcd guess_cplx;
-    cout << "here1" << endl;
     Three_Component_GL_Solver<dcomplex> gls_cplx("conditions3.txt");
-    cout << "here2" << endl;
     // cout << "Initialized complex GL Solver" << endl;
 
     // start timing
@@ -42,7 +40,7 @@ int main()
     // calculate the free energy...need to change this
     //    to do it as a FE density over the mesh
     // cout << "Free energy: " << gls_cplx.free_energy() << endl;
-    /*/
+    //*/
 
     // Complex-valued, 5-component GL solver
     VectorXcd guess_cplx5;

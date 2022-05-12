@@ -1,25 +1,31 @@
-#!/usr/bin/python3
 # import math as m
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-# from numpy.lib.function_base import copy
 fig = plt.figure(figsize=(30,20))
 gs = gridspec.GridSpec(22,30)
 
 # read in the conditions from the file
 conditions = []
-for line in open('conditions.txt'):
-   if not line.startswith('#'): # lines starting with '#' are just titles
-      try:
-         num = list(map(float, line.split()))  # put all the values into a list
-         if len(num)>0: conditions.append(num) # only add if the list is not empty
-      except ValueError: continue # not a number, so disregard
+line_count = 0
+for line in open('conditions3.txt'):
+   num = list(map(str, line.split()))  # put all the values into a list
+   if len(num) > 0 and line_count < 3:
+      if line_count == 0:
+         conditions.append(float(num[0]))
+         conditions.append(float(num[1]))
+      else:
+         conditions.append(float(num[0]))
+      line_count+=1
 
 # define variables from the conditions list
-size_x = conditions[0][0]
-size_y = conditions[0][1]
-step   = conditions[2][0]
+size_x = conditions[0]
+size_y = conditions[1]
+step   = conditions[2]
+opSize = conditions[3]
+if not opSize == 3: print(f"WARNING: this python3 code has not been written to handle {opSize} components.")
+
+# print(f'{conditions = }')
 
 # a function to convert a 1D array to a 2D
 def unFlatten(arr):
@@ -43,6 +49,11 @@ data = np.loadtxt('cplx_data.txt')
 ext = [min(data[:,0]),max(data[:,0]),max(data[:,1]),min(data[:,1])]
 x_range = np.linspace(0,size_y*step,int(size_y))
 
+# labels
+xlabel = r'$x/\xi_{||}$ (top)'
+ylabel = r'$z/\xi_\perp$ (right)'
+# OP_comp_labels = ['Axx', 'Ayy', 'Azz', 'Axz', 'Azx']
+
 # convert all the OP components to 2D arrays
 # and plot them in a grid of plots
 
@@ -50,8 +61,8 @@ x_range = np.linspace(0,size_y*step,int(size_y))
 ax1 = fig.add_subplot(gs[:6,13:20])
 Axx_real = unFlatten(data[:,2])
 im1=plt.imshow(Axx_real,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax1.set_title("Axx real")
 cbar_ax = fig.add_axes([0.63,0.67,0.02,0.22])
 fig.colorbar(im1,cax=cbar_ax)
@@ -60,8 +71,8 @@ fig.colorbar(im1,cax=cbar_ax)
 ax1c = fig.add_subplot(gs[:6,21:])
 Axx_cplx = unFlatten(data[:,3])
 im1c=plt.imshow(Axx_cplx,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax1c.set_title("Axx complex")
 cbar_ax = fig.add_axes([0.86,0.67,0.02,0.22])
 fig.colorbar(im1c,cax=cbar_ax)
@@ -72,8 +83,8 @@ fig.colorbar(im1c,cax=cbar_ax)
 ax2 = fig.add_subplot(gs[8:14,13:20])
 Ayy_real = unFlatten(data[:,4])
 im2=plt.imshow(Ayy_real,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax2.set_title("Ayy (Axx) real")
 cbar_ax = fig.add_axes([0.63,0.38,0.02,0.22])
 fig.colorbar(im2,cax=cbar_ax)
@@ -82,8 +93,8 @@ fig.colorbar(im2,cax=cbar_ax)
 ax2c = fig.add_subplot(gs[8:14,21:])
 Ayy_cplx = unFlatten(data[:,5])
 im2c=plt.imshow(Ayy_cplx,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax2c.set_title("Ayy (Axx) complex")
 cbar_ax = fig.add_axes([0.86,0.38,0.02,0.22])
 fig.colorbar(im2c,cax=cbar_ax)
@@ -94,8 +105,8 @@ fig.colorbar(im2c,cax=cbar_ax)
 ax3 = fig.add_subplot(gs[16:,13:20])
 Azz_real = unFlatten(data[:,6])
 im3=plt.imshow(Azz_real,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax3.set_title("Azz real")
 cbar_ax = fig.add_axes([0.63,0.1,0.02,0.22])
 fig.colorbar(im3,cax=cbar_ax)
@@ -104,10 +115,9 @@ fig.colorbar(im3,cax=cbar_ax)
 ax3c = fig.add_subplot(gs[16:,21:])
 Azz_cplx = unFlatten(data[:,7])
 im3c=plt.imshow(Azz_cplx,vmin=0,extent=ext)
-plt.xlabel(r'$x/\xi_{||}$ (top)')
-plt.ylabel(r'$z/\xi_\perp$ (right)')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
 ax3c.set_title("Azz complex")
-
 # colorbar placement and size:
 #                       x_pos, y_pos, width, height
 cbar_ax = fig.add_axes([0.86,  0.1,   0.02,  0.22])
@@ -123,5 +133,5 @@ plt.ylabel(r'$\Delta/\Delta_0$')
 plt.title('Center slice of meshes')
 plt.legend()
 
-plt.savefig('cplx_He3Defect.png')
+plt.savefig(f'cplx_He3Defect_{size_x}_{size_y}_{step}_{opSize}.png')
 plt.show()
