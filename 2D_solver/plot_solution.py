@@ -62,13 +62,13 @@ for i in range(Nop):
 #############################
 # Plot the grad free energy # CONTINUE HERE!
 #############################
-FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
-# print(f'{FE_grad = }')
-for i in range(Nop):
-    plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-    im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_x,size_z)))
-    plt.colorbar(im)
-    plt.show()
+# FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
+# # print(f'{FE_grad = }')
+# for i in range(Nop):
+#     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
+#     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_x,size_z)))
+#     plt.colorbar(im)
+#     plt.show()
 
 
 ################################
