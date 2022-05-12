@@ -66,18 +66,15 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve(rhs+rhsBC) - f; // find the change in OP
 
-		// if (method == string("acceleration")) 
+		// if (method == string("acceleration"))
 		Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
-
-		// else if (method == string("relaxation")) // use normal relaxation
+		// else if (method == string("relaxation"))
 		// f += 0.05*df;
 		// err = df.norm()/f.norm();
-
-
 		cts++;         // increment counter
 
 		// output approx. percent completed
-		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done" << endl;
+		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 	} while(err > cond.ACCUR && cts < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
