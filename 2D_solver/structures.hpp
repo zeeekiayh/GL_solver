@@ -17,8 +17,9 @@ typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
 // Boundary condition structure for a single OP
    struct Bound_Cond {
       std::string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
-      double slipB, slipT, slipL, slipR;     // for Neumann BC  ...  the slip length
-      double valueB, valueT, valueL, valueR; // for Dirichlet BC ... the function value
+      double slipB, slipT, slipL, slipR;      // for Neumann BC  ...  the slip length
+      double valueB, valueT, valueL, valueR;  // for Dirichlet BC ... the function value
+
       Bound_Cond& operator= (Bound_Cond& rhs) {
          typeB = rhs.typeB;
          typeT = rhs.typeT;
@@ -39,8 +40,8 @@ typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
    };
 
    inline std::ifstream& operator>> (std::ifstream& stream, Bound_Cond& BC) {
-      stream >> BC.typeT; // read type
-      stream >> BC.slipT; // then read both slip length
+      stream >> BC.typeT;  // read type
+      stream >> BC.slipT;  // then read both slip length
       stream >> BC.valueT; // and the value
 
       stream >> BC.typeB;
@@ -98,8 +99,7 @@ typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
       double ACCUR; // the minimum desired accuracy
       double rel_p; // relaxation param
 
-      in_conditions & operator= (in_conditions & rhs)
-      {
+      in_conditions & operator= (in_conditions & rhs) {
          Nop = rhs.Nop;
          SIZEu = rhs.SIZEu;
          SIZEv = rhs.SIZEv;
