@@ -42,12 +42,11 @@ class SC_class{
 		// -- will be called from derived class functions 
 		SpMat_cd Du2_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 		SpMat_cd Dv2_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
-		SpMat_cd Dv2_BD_Og(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 		SpMat_cd Duv_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 		SpMat_cd  Du_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 		SpMat_cd  Dv_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 
-		// ...
+		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(Bound_Cond eta_BC[], Eigen::VectorXcd & OPvector, std::vector<int> & no_update);
 
 		// the general method of building the solver matrix

@@ -97,7 +97,6 @@ void SC_class :: Build_D_Matrices() {
 // -------------------------------------------------------------------------------
 SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
 {
-   // cout << "\t\t\tDu2_BD()" << endl;
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
    for (int v = 0; v < Nv; v++) // go over the left and right boundaries from bottom to top 
@@ -129,55 +128,32 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 			initOPvector(id) = 0.;
          rhsBC(id) = BC.valueR;
       }
-
-      // // debugging (for a large matrix):
-      // if (!(v%21-2)) indexes_to_visit.push_back(id0);
    }
-
-   // // debugging (for a large matrix):
-   // cout << endl << "ouside loop:";
-   // for (auto it = indexes_to_visit.begin(); it != indexes_to_visit.end(); it++)
-   // {
-   //    cout << endl << "mini view:" << endl;
-   //    Matrix_SubView(Du2_copy,*it-2,*it-2,7,7);
-   // }
-
-   // cout << "\t\t\tDu2_BD(): success" << endl;
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC) {
-   // cout << "\t\t\tDv2_BD()" << endl;
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
+{
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
-   // cout << "made copy" << endl;
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
       // indexes for the points on the bottom side
       int id0 =         ID(u, 0, 0),
           id0_connect = ID(u, 1, 0);
-      // cout << "here 1" << endl;
 
       // indexes for the points on the top side
       int idN =         ID(u,Nv-1, 0),
           idN_connect = ID(u,Nv-2, 0);
-         // cout << "here 2" << endl;
-         // cout << "id0 = " << id0 << endl;
-         // cout << "id0_connect = " << id0_connect << endl;
-         // cout << "grid_size = " << grid_size << endl;
-         // cout << "Dv2_copy.rows() = " << Dv2_copy.rows() << endl;
-         // cout << "Dv2_copy.cols() = " << Dv2_copy.cols() << endl;
 
       // set the values at these indexes using the ghost points,
       //   and adjust the RHS vector depending on what kind of BC we have there
 
       Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.valueB;
       // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
-      // cout << "here 3" << endl;
 
       Dv2_copy.coeffRef(id0,id0_connect) = 2.;
       // Dv2_copy.coeffRef(id0,id0_connect) = (BC.typeB == std::string("N")) ? 2. : 0.;
-      // cout << "here 4" << endl;
 
       if (BC.typeB == std::string("D")) // Dirichlet
       {
@@ -189,11 +165,9 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.valueT;
       // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
-      // cout << "here 7" << endl;
 
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
       // Dv2_copy.coeffRef(idN,idN_connect)= (BC.typeT == std::string("N")) ? 2. : 0;
-      // cout << "here 8" << endl;
 
       if (BC.typeT == std::string("D")) // Dirichlet
       {
@@ -208,7 +182,6 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 
 SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
 {
-   // cout << "\t\t\tDuv_BD" << endl;
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
 
@@ -351,7 +324,6 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
       Duv_copy.coeffRef(id,id_disconnectC) = 0.0;
    }
 
-   // cout << "\t\t\tDuv_BD: success" << endl;
    return Duv_copy;
 }
 
