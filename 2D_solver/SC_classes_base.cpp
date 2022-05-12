@@ -149,7 +149,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
       // set the values at these indexes using the ghost points,
       //   and adjust the RHS vector depending on what kind of BC we have there
 
-      Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.valueB;
+      Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipB;
       // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
 
       Dv2_copy.coeffRef(id0,id0_connect) = 2.;
@@ -163,7 +163,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id);
       }
 
-      Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.valueT;
+      Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
       // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
 
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
