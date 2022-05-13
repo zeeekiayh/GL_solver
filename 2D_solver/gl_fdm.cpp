@@ -26,9 +26,9 @@ int main()
 	// confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
-	cond.maxStore = 10; // 4
-	cond.rel_p = 0.1;   // 0.1
-	cond.wait = 1;      // 2
+	cond.maxStore = 10; // 4,    10
+	cond.rel_p = 0.01;  // 0.1,  0.1
+	cond.wait = 1;      // 2,    1
 
 	// if you want to change the values ... should we put these back into the conditions file?
 	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
