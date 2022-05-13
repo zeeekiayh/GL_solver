@@ -41,38 +41,31 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 	if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
 	else if (solver.info() == Eigen::NumericalIssue) { // for debugging non-invertable matrices
 		cout << "Solver: numerical issues" << endl;
-		// for (int k=0; k < SolverMatrix.outerSize(); ++k) for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
+		// for (int k=0; k < SolverMatrix.outerSize(); ++k)
+		// 	for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it)
+		// 		cout << "(" << it.row() << "," << it.col() << ")\t";
 		return;
 	}
 
 	int cts = 0; // count loops
-	// cout << "here ... 1" << endl;
 	double err;  // to store current error
-	// cout << "here ... 2" << endl;
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
-	// cout << "here ... 3" << endl;
-	VectorXcd df(vect_size), rhs(vect_size); 
-	// cout << "here ... 4" << endl;
-
-	// the acceleration object
-	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
-	// cout << "here ... 5" << endl;
-	// cout << "cond.maxStore = " << cond.maxStore << "; cond.wait = " << cond.wait << "; cond.rel_p = " << cond.rel_p << endl;
-	// cout << "rhsBC =\n" << rhsBC << endl;
+	VectorXcd df(vect_size), rhs(vect_size); // 
+	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
 		   
  	// loop until f converges or until it's gone too long
 	do { 
-		// cout << "do: " << cts << endl;
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve(rhs+rhsBC) - f; // find the change in OP
 
-		// if (method == string("acceleration"))
-		Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
-		// else if (method == string("relaxation"))
-		// f += cond.rel_p*df;
-		// err = df.norm()/f.norm();
-		cts++;         // increment counter
+		// acceleration method
+			Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
 
+		// normal relaxation method
+			// f += cond.rel_p*df;
+			// err = df.norm()/f.norm();
+
+		cts++;         // increment counter
 		// output approx. percent completed
 		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 	} while(err > cond.ACCUR && cts < cond.N_loop);
