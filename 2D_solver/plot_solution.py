@@ -33,12 +33,12 @@ import matplotlib.gridspec as gridspec
 # plt.legend()
 # plt.show()
 
-def readConditions(file_name):
-    # get parameters from f'conditions{Nop}.txt'
-    # read in the conditions from the file
+# get parameters from f'conditions{Nop}.txt'
+# read in the conditions from the file
+def readConditions(Nop):
     conditions = []
     line_count = 0
-    for line in open(file_name):
+    for line in open(f'conditions{Nop}.txt'):
         num = list(map(str, line.split()))  # put all the values into a list
         if line_count == 0:
             conditions.append(float(num[0]))
@@ -72,21 +72,26 @@ def main(argv):
     Nop = int(argv[0])
 
     # read values from conditions file
-    opSize, size_x, size_z, step = readConditions(f'conditions{Nop}.txt')
+    opSize, size_x, size_z, step = readConditions(Nop)
 
     # load the OP values from the solution file
     OP_array = np.loadtxt(f'solution{Nop}.txt')
 
+    # sort the OP_array for ease of plotting
     A = np.array([ np.reshape(OP_array[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
-    # print(f'{A = }')
+
+    # the domain extents for the imshow calls
+    ext = [min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
+
     if size_x > 1:
+        # plot the 2D solution
         for i in range(Nop):
             plt.title(f'OP component #{i}')
-            im = plt.imshow(A[i], extent=[min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])])
+            im = plt.imshow(A[i], extent=ext)
             plt.colorbar(im)
             plt.show()
 
-        # plot slices
+        # plot slices for 1D view
         plt.clf()
         plt.title("Slices top to bottom")
         for i in range(Nop):
@@ -94,35 +99,31 @@ def main(argv):
             plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
         plt.legend()
         plt.show()
+
+        # Plot the bulk free energy
+        FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
+        for i in range(Nop):
+            plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
+            im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_x,size_z)), extent=ext)
+            plt.colorbar(im)
+            plt.show()
+        
+        # Plot the grad free energy # CONTINUE HERE!
+        # FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
+        # # print(f'{FE_grad = }')
+        # for i in range(Nop):
+        #     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
+        #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_x,size_z)))
+        #     plt.colorbar(im)
+        #     plt.show()
     elif size_x == 1: # basically for the 1D case
+        # plot only the slices, since the 2D view is not useful here
         plt.title("Slices top to bottom")
         for i in range(Nop):
             slc = A[i][0]
             plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
         plt.legend()
         plt.show()
-
-    #############################
-    # Plot the bulk free energy #
-    #############################
-    FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
-    # print(f'{FE_bulk = }')
-    for i in range(Nop):
-        plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-        im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_x,size_z)), extent=[min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])])
-        plt.colorbar(im)
-        plt.show()
-
-    #############################
-    # Plot the grad free energy # CONTINUE HERE!
-    #############################
-    # FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
-    # # print(f'{FE_grad = }')
-    # for i in range(Nop):
-    #     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-    #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_x,size_z)))
-    #     plt.colorbar(im)
-    #     plt.show()
 
 if __name__ == "__main__":
     # call the main function with the arguments given in the terminal call
