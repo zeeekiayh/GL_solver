@@ -40,7 +40,7 @@ class SC_class{
 
 		// functions that build derivative matrices that incorporate boundary conditions 
 		// -- will be called from derived class functions 
-		SpMat_cd Du2_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
+		SpMat_cd Du2_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC, double K_tilde);
 		SpMat_cd Dv2_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC, double K_tilde);
 		SpMat_cd Duv_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);
 		SpMat_cd  Du_BD(Bound_Cond BC, int op_component, const Eigen::VectorXcd initOPvector, Eigen::VectorXcd & rhsBC);

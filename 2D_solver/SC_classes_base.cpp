@@ -95,7 +95,7 @@ void SC_class :: Build_D_Matrices() {
 // add boundary conditions to the derivative matrices, by changing some of the 
 // matrix elements that were pre-reserved in Build_D_Matrices() above
 // -------------------------------------------------------------------------------
-SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC, double K_tilde)
 {
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
@@ -111,22 +111,22 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 
       // set the values at these indexes using the ghost points,
       //   and adjust the RHS vector depending on what kind of BC we have there
-      Du2_copy.coeffRef(id0,id0) = (BC.typeL == std::string("N")) ? -2. -2.*h/BC.slipL : 1.;
-      Du2_copy.coeffRef(id0,id0_connect) = (BC.typeL == std::string("N")) ? 2. : 0.;
+      Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipL;
+      Du2_copy.coeffRef(id0,id0_connect) = 2.;
       if (BC.typeL == std::string("D"))
       {
          int id=ID(0,v,op_component);
-			initOPvector(id) = 0.;
-         rhsBC(id) = BC.valueL;
+			// initOPvector(id) = 0.;
+         rhsBC(id) = -2.*h/BC.valueL*initOPvector(id) * K_tilde;
       }
 
-      Du2_copy.coeffRef(idN,idN) = (BC.typeR == std::string("N")) ? -2. -2.*h/BC.slipR : 1.;
-      Du2_copy.coeffRef(idN,idN_connect) = (BC.typeR == std::string("N")) ? 2. : 0.;
+      Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
+      Du2_copy.coeffRef(idN,idN_connect) = 2.;
       if (BC.typeR == std::string("D"))
       {
          int id=ID(Nu-1,v,op_component);
-			initOPvector(id) = 0.;
-         rhsBC(id) = BC.valueR;
+			// initOPvector(id) = 0.;
+         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id) * K_tilde; // K_tilde from equation 27
       }
    }
    return Du2_copy;
@@ -160,7 +160,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
          int id=ID(u,0,op_component);
 			// initOPvector(id) = 0.;
          // rhsBC(id) = BC.valueB;
-			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id) * K_tilde;
+			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id) * K_tilde; // K_tilde from equation 27
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
