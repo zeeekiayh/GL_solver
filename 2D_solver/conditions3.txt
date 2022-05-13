@@ -11,9 +11,9 @@ K MATRIX
 ()        (0,0,0,1) ()
 ()        ()        (0,0,0,3)
 
-100 100 # mesh size
-.15    # h (step size)
+50 50 # mesh size
+.35    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
 1e-6    # accuracy
-300     # number loops
+700     # number loops
