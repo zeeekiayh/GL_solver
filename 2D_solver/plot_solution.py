@@ -1,4 +1,4 @@
-import sys
+import sys # for arguments in terminal call
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -47,6 +47,7 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
     plt.legend()
     plt.show()
 
+# the main code to run
 def main(argv):
     # argv should be like:
     #   [ Nop, [debug=false] ]
@@ -121,6 +122,8 @@ def main(argv):
         plt.legend()
         plt.show()
 
+# how the python interpreter will know
+#   to run our function called 'main()'
 if __name__ == "__main__":
     # call the main function with the arguments given in the terminal call
     main(sys.argv[1:])
