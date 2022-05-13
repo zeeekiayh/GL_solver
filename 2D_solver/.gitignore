@@ -7,6 +7,7 @@ initGuess5.txt
 solution3.txt
 solution5.txt
 bulkRHS_FE3.txt
+bulkRHS_FE5.txt
 
 # ignore gl_fdm changes
 gl_fdm
