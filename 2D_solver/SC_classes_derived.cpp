@@ -60,7 +60,7 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 		// cout << "here 9" << endl;
 
 		// and put them into the big vector in the same order as OP components
-		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
+		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i] * pow(parameters.STEP,2);
 		// cout << "here 10" << endl;
 
 		// cout << "FEbulk = " << FEbulk << endl;
