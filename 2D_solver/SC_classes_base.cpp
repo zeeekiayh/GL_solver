@@ -434,7 +434,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 		// cout << "\tn = " << n << endl;
 		
 		complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-		complex<double> deltaX = eta_BC[n].valueR - eta_BC[n].valueL;
+		complex<double> deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
 		complex<double> middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
 
 		// going through the entire grid
