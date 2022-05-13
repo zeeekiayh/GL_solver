@@ -22,7 +22,7 @@ for line in open(f'conditions{Nop}.txt'):
         conditions.append(float(num[0]))
     line_count+=1
 
-print(f'{conditions = }')
+# print(f'{conditions = }')
 # define variables from the conditions list
 opSize = round(conditions[0])
 size_x = round(conditions[1])
@@ -35,20 +35,28 @@ op = np.loadtxt(f'solution{Nop}.txt')
 
 A = np.array([ np.reshape(op[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
 # print(f'{A = }')
-for i in range(Nop):
-    plt.title(f'OP component #{i}')
-    im = plt.imshow(A[i], extent=[min(op[:,0]),max(op[:,0]), min(op[:,1]), max(op[:,1])])
-    plt.colorbar(im)
-    plt.show()
+if size_x > 1:
+    for i in range(Nop):
+        plt.title(f'OP component #{i}')
+        im = plt.imshow(A[i], extent=[min(op[:,0]),max(op[:,0]), min(op[:,1]), max(op[:,1])])
+        plt.colorbar(im)
+        plt.show()
 
-# plot slices
-plt.clf()
-plt.title("Slices top to bottom")
-for i in range(Nop):
-    slc = A[i][:,len(A[i])//2]
-    plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
-plt.legend()
-plt.show()
+    # plot slices
+    plt.clf()
+    plt.title("Slices top to bottom")
+    for i in range(Nop):
+        slc = A[i][:,len(A[i])//2]
+        plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
+    plt.legend()
+    plt.show()
+elif size_x == 1: # basically for the 1D case
+    plt.title("Slices top to bottom")
+    for i in range(Nop):
+        slc = A[i][0]
+        plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
+    plt.legend()
+    plt.show()
 
 #############################
 # Plot the bulk free energy #
