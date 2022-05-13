@@ -11,9 +11,10 @@
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
+
 #include "ConvergenceAccelerator.hpp"
 #include "structures.hpp"
-
+#include "readwrite.hpp"
 #include "SC_classes.hpp"
 
 using namespace Eigen;
@@ -25,7 +26,7 @@ using namespace std;
 // on input f is initial guess, 
 // on output it is the required solution 
 //---------------------------------------------------------------------------------
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
+void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method)
 {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
@@ -59,11 +60,16 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 		df = solver.solve(rhs+rhsBC) - f; // find the change in OP
 
 		// acceleration method
-			Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
+		if (method == "acceleration") Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
+		else { // normal relaxation method
+			f += cond.rel_p*df;
+			err = df.norm()/f.norm();
+		}
 
-		// normal relaxation method
-			// f += cond.rel_p*df;
-			// err = df.norm()/f.norm();
+		// save output of each guess for debugging
+		if (debug) {
+			// ...
+		}
 
 		cts++;         // increment counter
 		// output approx. percent completed

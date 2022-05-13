@@ -1,4 +1,3 @@
-//#include "includes.hpp"
 #include "readwrite.hpp"
 
 // most of the typedefs and custom structures are in this file:
@@ -9,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method = "acceleration");
 
 int main(int argc, char** argv)
 {
@@ -22,7 +21,7 @@ int main(int argc, char** argv)
 		if (ans=="y"||ans=="Y") debug = true;
 		else cout << endl << "NOT USING DEBUGGING ANYMORE." << endl;
 	}
-	else if (argc != 2) {cout << "ERROR: need an argument for'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
+	else if (argc != 2) {cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
 	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
 	// get all the information from the "conditions.txt"
@@ -92,7 +91,7 @@ int main(int argc, char** argv)
 	}
 
 	cout << "solving system...";
-	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
+	Solver(OPvector, M, rhsBC, cond, no_update, pSC, debug);
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";
