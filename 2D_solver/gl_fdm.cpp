@@ -11,9 +11,10 @@ using namespace Eigen;
 // prototype for function defined in linear_eq_solver.cpp
 void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 
-int main()
+int main(int argc, char** argv)
 {
-	const int Nop=3; // number of the order parameter components
+	if (argc != 2) {cout << "ERROR: need an argument for'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
+	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
