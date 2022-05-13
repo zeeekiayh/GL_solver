@@ -181,7 +181,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd
    return Dv2_copy;
 }
 
-SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
