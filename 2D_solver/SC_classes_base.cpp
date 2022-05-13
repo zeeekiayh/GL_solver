@@ -407,13 +407,13 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
          SpMat_cd toInsert(grid_size,grid_size);
 
          if (gradK[m][n](x,x) != 0 && Nu > 1)
-            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC);
+            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC, gradK[m][n](x,x));
 
          if (gradK[m][n](z,z) != 0 && Nv > 1)
             toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], m, initOPvector, rhsBC, gradK[m][n](z,z));
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1)
-            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC);
+            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], m, initOPvector, rhsBC);
 
          M += Place_subMatrix( m, n, Nop, toInsert );
       }
