@@ -3,36 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-################################
-# Initial guess -- for debugging
-# plt.title("initial guess")
-
-# op = np.loadtxt(f'initGuess{Nop}.txt')
-
-# Axx = np.reshape(op[:,2], (size_x,size_z))
-# im = plt.imshow(Axx)
-# plt.colorbar(im)
-# plt.show()
-
-# Ayy = np.reshape(op[:,4], (size_x,size_z))
-# im = plt.imshow(Ayy)
-# plt.colorbar(im)
-# plt.show()
-
-# Azz = np.reshape(op[:,6], (size_x,size_z))
-# im = plt.imshow(Azz)
-# plt.colorbar(im)
-# plt.show()
-
-# plt.clf()
-
-# plt.title("Guess: slices top to bottom")
-# plt.plot(Axx[:,len(Axx)//2],label="Axx")
-# plt.plot(Ayy[:,len(Ayy)//2],label="Ayy")
-# plt.plot(Azz[:,len(Azz)//2],label="Azz")
-# plt.legend()
-# plt.show()
-
 # get parameters from f'conditions{Nop}.txt'
 # read in the conditions from the file
 def readConditions(Nop):
@@ -59,11 +29,33 @@ def readConditions(Nop):
 
     return opSize, size_x, size_z, step
 
+# plot all the OP components in 2D and slices
+def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
+    # plot the 2D solution
+    for i in range(Nop):
+        plt.title(f'OP component #{i}')
+        im = plt.imshow(organized_array[i], extent=ext)
+        plt.colorbar(im)
+        plt.show()
+
+    # plot slices for 1D view
+    plt.clf()
+    plt.title("Slices top to bottom")
+    for i in range(Nop):
+        slc = organized_array[i][:,len(organized_array[i])//2]
+        plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
+    plt.legend()
+    plt.show()
+
 def main(argv):
     # argv should be like:
     #   [ Nop, [debug=false] ]
-    if (len(argv)==2): print("Using debugging in python code...")
-    elif (len(argv)!=1): print("Incorrect number of arguments in python call!")
+    debug=False
+    if (len(argv)==2):
+        print("Using debugging in python code...")
+        debug=True
+    elif (len(argv)!=1):
+        print("Incorrect number of arguments in python call!")
 
     fig = plt.figure(figsize=(20,20))
     # gs = gridspec.GridSpec()
@@ -83,22 +75,26 @@ def main(argv):
     # the domain extents for the imshow calls
     ext = [min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
 
-    if size_x > 1:
-        # plot the 2D solution
-        for i in range(Nop):
-            plt.title(f'OP component #{i}')
-            im = plt.imshow(A[i], extent=ext)
-            plt.colorbar(im)
+    # debugging: visualize the initial guess
+    if debug:
+        # Initial guess -- for debugging
+        plt.title("initial guess")
+        op = np.loadtxt(f'initGuess{Nop}.txt') # get the guess from the saved file from the C++ code in gl_fdm.cpp
+        initOP = np.array([ np.reshape(op[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
+
+        if size_x > 1:
+            plot_OP_comps_and_slices(Nop, initOP, ext, step, size_z)
+        elif size_x == 1: # basically for the 1D case
+            # plot only the slices, since the 2D view is not useful here
+            plt.title("Slices top to bottom")
+            for i in range(Nop):
+                slc = initOP[i][0]
+                plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"initOP[{i}]" )
+            plt.legend()
             plt.show()
 
-        # plot slices for 1D view
-        plt.clf()
-        plt.title("Slices top to bottom")
-        for i in range(Nop):
-            slc = A[i][:,len(A[i])//2]
-            plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
-        plt.legend()
-        plt.show()
+    if size_x > 1:
+        plot_OP_comps_and_slices(Nop, A, ext, step, size_z)
 
         # Plot the bulk free energy
         FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
