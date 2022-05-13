@@ -19,16 +19,16 @@ int main()
 	in_conditions cond;
 	Bound_Cond eta_BC[Nop]; // boundary conditions for OP components
 	Matrix2d **gradK;       // gradient coefficients in GL functional
-	gradK = new Matrix2d *[Nop]; 
+	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
 	read_input_data(Nop, cond, eta_BC, gradK, "conditions"+to_string(Nop)+".txt");
 	// confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
-	cond.maxStore = 7; // 4
-	cond.rel_p = 0.05; // 0.1
-	cond.wait = 1;     // 2
+	cond.maxStore = 10; // 4
+	cond.rel_p = 0.1;   // 0.1
+	cond.wait = 1;      // 2
 
 	// if you want to change the values ... should we put these back into the conditions file?
 	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
@@ -57,8 +57,8 @@ int main()
 	// add other observables here as desired...
 
 	cout << "initializing object...";
-	SC_class *pSC;
-	// the SC object depending on given OP size
+	SC_class *pSC; // the SC object...
+	// ... depending on given OP size
 		 if (Nop == 3) pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	else if (Nop == 5) pSC = new FiveCompHe3 ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
@@ -69,13 +69,14 @@ int main()
 	pSC->initialOPguess(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
 
-	// write the initial guess to file for debugging
+	// write the initial guess to file, for debugging
 	// WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
 
 	cout << "building solver matrix...";
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
+	// For debugging only...shouldn't print if gsize > ~10^2
 	// cout << endl << "M =\n" << M << endl;
 
 	cout << "solving system...";

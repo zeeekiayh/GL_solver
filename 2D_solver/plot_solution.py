@@ -44,7 +44,9 @@ for i in range(Nop):
 # plot slices
 plt.clf()
 plt.title("Slices top to bottom")
-for i in range(Nop): plt.plot(A[i][:,len(A[i])//2], label=f"A[{i}]")
+for i in range(Nop):
+    slc = A[i][:,len(A[i])//2]
+    plt.plot( np.linspace(0,step*size_z,len(slc)), slc, label=f"A[{i}]" )
 plt.legend()
 plt.show()
 
