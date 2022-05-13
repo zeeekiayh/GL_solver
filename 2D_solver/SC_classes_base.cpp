@@ -135,6 +135,7 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
 SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
+   rhsBC = VectorXcd::Zero(vect_size); 
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
@@ -409,12 +410,12 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
 
          if (gradK[m][n](x,x) != 0 && Nu > 1){
             toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==0) rhsBC += gradK[m][n](x,x) * rhsBClocal;
+            if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
 	   }
 
          if (gradK[m][n](z,z) != 0 && Nv > 1){
             toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==0) rhsBC += gradK[m][n](z,z) * rhsBClocal;
+            if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
 	   }
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1)
@@ -434,7 +435,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 		
 		complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
 		complex<double> deltaX = eta_BC[n].valueR - eta_BC[n].valueL;
-		complex<double> avX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+		complex<double> middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
@@ -443,7 +444,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 				double z = h*v;
 				int id = ID(u,v,n);
 
-				OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( avX + deltaX * tanh(x/2));
+				OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
 
 			}
 		}
