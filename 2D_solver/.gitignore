@@ -11,3 +11,4 @@ gl_fdm
 
 # ignore any temporary debugging codes
 debugging.py
+debugging_files/
