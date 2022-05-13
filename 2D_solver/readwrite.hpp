@@ -114,11 +114,11 @@ inline void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
 
 // Write out the solution to a file (this is written for a 2D system)
 // We can write out a single vector (like for the Free Energy) with Nop=1
-inline void WriteToFile(const Eigen::VectorXcd& solution_vector, std::string file_name, int Nop, const in_conditions cond) {
+inline void WriteToFile(const Eigen::VectorXcd& solution_vector, std::string file_name, const in_conditions cond) {
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
 
-		int gsize = solution_vector.size()/Nop;
+		int gsize = solution_vector.size()/cond.Nop;
 
 		for (int i = 0; i < gsize; i++) { // loop through each grid point
 			
@@ -129,7 +129,7 @@ inline void WriteToFile(const Eigen::VectorXcd& solution_vector, std::string fil
 			std::string line = std::__cxx11::to_string(cond.STEP*Nx) + std::string("\t")
 							 + std::__cxx11::to_string(cond.STEP*Nz);
 
-			for (int n = 0; n < Nop; n++) { // put the element of each OP component on the same line
+			for (int n = 0; n < cond.Nop; n++) { // put the element of each OP component on the same line
 				line += std::string("\t") + std::__cxx11::to_string(solution_vector(i + n*gsize).real())
 				      + std::string("\t") + std::__cxx11::to_string(solution_vector(i + n*gsize).imag());
 			}

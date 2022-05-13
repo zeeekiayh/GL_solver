@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
-		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
+		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", cond);
 	}
 
 	cout << "building solver matrix...";
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";
-	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", Nop, cond);
+	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", cond);
 	cout << "done!" << endl;
 
 	// ---- updated May 12, 2020 ----- 
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
 	// get the bulk contribution to free energy 
-	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", Nop, cond);
+	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", cond);
 
 	/* CONTINUE HERE!
 	pSC->gradFE(freeEg, cond, OPvector, eta_BC, gradK);
