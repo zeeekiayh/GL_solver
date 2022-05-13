@@ -6,7 +6,7 @@
 #include <sstream>
 
 // read in the conditions from the file
-void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK, std::string conditions_file) {
+inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK, std::string conditions_file) {
    std::string line;
    int OP_size;
    std::ifstream conditions(conditions_file);
@@ -81,7 +81,7 @@ void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_BC[], E
 }
 
 // output the things read in so we can visually confirm the input from the conditions*.txt
-void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
+inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
 {
 
 	for(int i=0; i<Nop; i++){
@@ -103,7 +103,7 @@ void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], 
 
 // a simple function to map a vector's ID to it's mesh grid coordinates
 // i.e., undoes: int ID(int n_u, int n_v, int n) { return n_u + Nu*n_v + grid_size*n; }
-void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
+inline void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
 	// id == (n_u + Nu*n_v + grid_size*n)
 	// id % grid_size = n_u + Nu*n_v
 	// (id % grid_size) % Nu = n_u
@@ -114,7 +114,7 @@ void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
 
 // Write out the solution to a file (this is written for a 2D system)
 // We can write out a single vector (like for the Free Energy) with Nop=1
-void WriteToFile(const Eigen::VectorXcd& solution_vector, std::string file_name, int Nop, const in_conditions cond) {
+inline void WriteToFile(const Eigen::VectorXcd& solution_vector, std::string file_name, int Nop, const in_conditions cond) {
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
 
