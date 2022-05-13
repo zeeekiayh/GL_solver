@@ -95,7 +95,7 @@ void SC_class :: Build_D_Matrices() {
 // add boundary conditions to the derivative matrices, by changing some of the 
 // matrix elements that were pre-reserved in Build_D_Matrices() above
 // -------------------------------------------------------------------------------
-SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC, double K_tilde)
+SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
 {
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
 
@@ -117,7 +117,7 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
       {
          int id=ID(0,v,op_component);
 			// initOPvector(id) = 0.;
-         rhsBC(id) = -2.*h/BC.valueL*initOPvector(id) * K_tilde;
+         rhsBC(id) = -2.*h/BC.valueL*initOPvector(id);
       }
 
       Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
@@ -126,15 +126,16 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
       {
          int id=ID(Nu-1,v,op_component);
 			// initOPvector(id) = 0.;
-         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id) * K_tilde; // K_tilde from equation 27
+         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
       }
    }
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC, double K_tilde)
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
+   rhsBC = VectorXcd::Zero(vect_size); 
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
@@ -160,7 +161,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
          int id=ID(u,0,op_component);
 			// initOPvector(id) = 0.;
          // rhsBC(id) = BC.valueB;
-			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id) * K_tilde; // K_tilde from equation 27
+			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
@@ -174,13 +175,13 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
          int id=ID(u,Nv-1,op_component);
 			// initOPvector(id) = 0.;
          // rhsBC(id) = BC.valueT;
-			rhsBC(id) = -2.*h/BC.slipT*initOPvector(id) * K_tilde;
+			rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
       }
    }
    return Dv2_copy;
 }
 
-SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
@@ -342,7 +343,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
    for (int v = 0; v < Nv; v++) 
    {
       id =             ID(Nu-1, v, 0); 
-      Du_copy.coeffRef(id,id) = -1.0/(2.*BC.valueR);
+      Du_copy.coeffRef(id,id) = -1.0/(2.*BC.slipR);
 
       id_disconnect = ID(Nu-2, v, 0); 
       Du_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -353,7 +354,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
    for (int v = 0; v < Nv; v++) 
    {
       id =             ID(0, v, 0); 
-      Du_copy.coeffRef(id,id) = 1./(2.*BC.valueL);
+      Du_copy.coeffRef(id,id) = 1./(2.*BC.slipL);
 
       id_disconnect = ID(1, v, 0); 
       Du_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -377,7 +378,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
    for (int u = 0; u < Nu; u++) 
    {
       id =             ID(u, Nv-1, 0); 
-      Dv_copy.coeffRef(id,id) = -1.0/(2.*BC.valueT);
+      Dv_copy.coeffRef(id,id) = -1.0/(2.*BC.slipT);
 
       id_disconnect = ID(u,Nv-2, 0); 
       Dv_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -388,7 +389,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
    for (int u = 0; u < Nu; u++) 
    {
       id =             ID(u, 0, 0); 
-      Dv_copy.coeffRef(id,id) = 1./(2.*BC.valueB);
+      Dv_copy.coeffRef(id,id) = 1./(2.*BC.slipB);
 
       id_disconnect = ID(u, 1, 0); 
       Dv_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -399,6 +400,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
 
 // The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
 void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const VectorXcd initOPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+   auto rhsBClocal=rhsBC;
    int x = 0, z = 1; // indexes for the K-matrix
    // Use equ. (15) in the Latex file:
    //    [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
@@ -406,14 +408,18 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
       for (int n = 0; n < Nop; n++) {
          SpMat_cd toInsert(grid_size,grid_size);
 
-         if (gradK[m][n](x,x) != 0 && Nu > 1)
-            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC, gradK[m][n](x,x));
+         if (gradK[m][n](x,x) != 0 && Nu > 1){
+            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
+	   }
 
-         if (gradK[m][n](z,z) != 0 && Nv > 1)
-            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], m, initOPvector, rhsBC, gradK[m][n](z,z));
+         if (gradK[m][n](z,z) != 0 && Nv > 1){
+            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
+	   }
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1)
-            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], m, initOPvector, rhsBC);
+            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
 
          M += Place_subMatrix( m, n, Nop, toInsert );
       }
@@ -429,6 +435,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 		
 		complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
 		complex<double> deltaX = eta_BC[n].valueR - eta_BC[n].valueL;
+		complex<double> middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
@@ -437,9 +444,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 				double z = h*v;
 				int id = ID(u,v,n);
 
-				OPvector( id ) = ( eta_BC[n].valueB + deltaZ * tanh(z/2.0) )
-									 * ( eta_BC[n].valueL + deltaX * tanh(x/2.0) );
-                            // = 1.;
+				OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
 
 			}
 		}
