@@ -65,7 +65,7 @@ FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
 # print(f'{FE_bulk = }')
 for i in range(Nop):
     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-    im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_x,size_z)))
+    im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_x,size_z)), extent=[min(op[:,0]),max(op[:,0]), min(op[:,1]), max(op[:,1])])
     plt.colorbar(im)
     plt.show()
 
