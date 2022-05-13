@@ -71,6 +71,18 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 
 	return;
 }
+void ThreeCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+	// we will modify the freeEg vector
+	freeEg *= 0.; // make sure it's all 0
+
+	for (int n = 0; n < Nop; n++) {
+		for (int m = 0; m < Nop; m++) {
+			Vector<VectorXcd> lhs = 
+			freeEg += stuff;
+		}
+	}
+}
+
 
 void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, VectorXcd & newRHSvector, VectorXd & FEb) {
 	int grid_point; 
@@ -104,6 +116,10 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vec
 
 	return;
 }
+void FiveCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+	//
+}
+
 
 void OneCompSC::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, VectorXcd & newRHSvector, VectorXd & FEb) {
 	for (int grid_point = 0; grid_point < grid_size; grid_point++){ 
@@ -121,5 +137,8 @@ void OneCompSC::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vecto
 	}
 
 	return;
+}
+void OneCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+	//
 }
 
