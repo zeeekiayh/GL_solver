@@ -78,6 +78,7 @@ int main()
 
 	// For debugging only...shouldn't print if gsize > ~10^2
 	// cout << endl << "M =\n" << M << endl;
+	// cout << "rhsBC = " << rhsBC << endl;
 
 	cout << "solving system...";
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
