@@ -13,7 +13,16 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 
 int main(int argc, char** argv)
 {
-	if (argc != 2) {cout << "ERROR: need an argument for'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
+	bool debug = false;
+	if (argc == 3) {
+		// using debugging!
+		cout << "NOTICE: using debugging methods...\nDo you want to proceed? (y/n) ";
+		string ans;
+		cin >> ans;
+		if (ans=="y"||ans=="Y") debug = true;
+		else cout << endl << "NOT USING DEBUGGING ANYMORE." << endl;
+	}
+	else if (argc != 2) {cout << "ERROR: need an argument for'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
 	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
 	// get all the information from the "conditions.txt"
@@ -67,19 +76,20 @@ int main(int argc, char** argv)
 
 	cout << "initializing guess...";
 	// initializeOPguess(cond, eta_BC, OPvector, GridSize, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initialOPguess(eta_BC, OPvector, no_update);
+	pSC->initialOPguess(eta_BC, OPvector, no_update, debug);
 	cout << "done" << endl;
 
-	// write the initial guess to file, for debugging
-	// WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
+	if (debug) { // write the initial guess to file, for debugging
+		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
+	}
 
 	cout << "building solver matrix...";
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
-	// For debugging only...shouldn't print if gsize > ~10^2
-	// cout << endl << "M =\n" << M << endl;
-	// cout << "rhsBC = " << rhsBC << endl;
+	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+		cout << endl << "M =\n" << M << endl;
+	}
 
 	cout << "solving system...";
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC);

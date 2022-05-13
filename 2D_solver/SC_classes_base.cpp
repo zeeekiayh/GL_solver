@@ -426,7 +426,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
    }
 }
 
-void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vector<int> & no_update) {
+void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vector<int> & no_update, bool debug) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 
 	// cout << "In 'initializeOPguess'" << endl;
@@ -450,7 +450,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 		}
 	}
 
-	// cout << "initial guess:\n" << OPvector << endl;
+   if (debug) cout << "initial guess:\n" << OPvector << endl;
 
 	return;
 }
