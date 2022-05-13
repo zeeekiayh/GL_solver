@@ -1,5 +1,5 @@
-200 200 # mesh size
-0.08    # h (step size)
+6 6 # mesh size
+2.    # h (step size)
 3       # OP size (make sure that this is consistant with the K matrix below)
 0.5e-4  # temperature
 1e5     # pressure
