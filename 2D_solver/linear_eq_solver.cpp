@@ -55,7 +55,13 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
 		   
  	// loop until f converges or until it's gone too long
-	do { 
+	do {
+		// save output of each guess for debugging
+		if (debug) {
+			// ...
+			WriteToFile(f, "debugging_files/solu_"+to_string(cond.Nop)+"iter_"+to_string(cts)+".txt", cond);
+		}
+
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve(rhs+rhsBC) - f; // find the change in OP
 
@@ -64,11 +70,6 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 		else { // normal relaxation method
 			f += cond.rel_p*df;
 			err = df.norm()/f.norm();
-		}
-
-		// save output of each guess for debugging
-		if (debug) {
-			// ...
 		}
 
 		cts++;         // increment counter

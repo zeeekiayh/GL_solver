@@ -99,13 +99,13 @@ int main(int argc, char** argv)
 	cout << "done!" << endl;
 
 	// ---- updated May 12, 2020 ----- 
-	//* PLAN for the rest of the code:
+	// PLAN for the rest of the code:
 
+	/* CONTINUE HERE!
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
 	// get the bulk contribution to free energy 
 	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", cond);
 
-	/* CONTINUE HERE!
 	pSC->gradFE(freeEg, cond, OPvector, eta_BC, gradK);
 	// get the gradient contribution to free energy 
 
