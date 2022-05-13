@@ -69,7 +69,7 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 		// if (method == string("acceleration"))
 		Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
 		// else if (method == string("relaxation"))
-		// f += 0.05*df;
+		// f += cond.rel_p*df;
 		// err = df.norm()/f.norm();
 		cts++;         // increment counter
 
