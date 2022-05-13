@@ -9,7 +9,7 @@ using namespace Eigen;
 
 // implement class specific
 // CONTINUE HERE: TODO: implement this!!
-void gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
+// void gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
 
 // function to get the RHS of GL differential equations, determined from the bulk functional; 
 // ------  coded in he3bulk.cpp ---------
@@ -71,14 +71,14 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 
 	return;
 }
-void ThreeCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	// we will modify the freeEg vector
 	freeEg *= 0.; // make sure it's all 0
 
 	for (int n = 0; n < Nop; n++) {
 		for (int m = 0; m < Nop; m++) {
-			Vector<VectorXcd> lhs = 
-			freeEg += stuff;
+			// Vector<VectorXcd> lhs = 
+			// freeEg += stuff;
 		}
 	}
 }
@@ -116,7 +116,7 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vec
 
 	return;
 }
-void FiveCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
 
@@ -138,7 +138,7 @@ void OneCompSC::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vecto
 
 	return;
 }
-void OneCompHe3::gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
 

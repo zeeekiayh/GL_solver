@@ -132,7 +132,7 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ VectorXcd initOPvector, VectorXcd & rhsBC, double K_tilde)
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
 
@@ -160,7 +160,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
          int id=ID(u,0,op_component);
 			// initOPvector(id) = 0.;
          // rhsBC(id) = BC.valueB;
-			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id);
+			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id) * K_tilde;
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
@@ -174,7 +174,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, /*const*/ Vecto
          int id=ID(u,Nv-1,op_component);
 			// initOPvector(id) = 0.;
          // rhsBC(id) = BC.valueT;
-			rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+			rhsBC(id) = -2.*h/BC.slipT*initOPvector(id) * K_tilde;
       }
    }
    return Dv2_copy;
@@ -410,7 +410,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
             toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC);
 
          if (gradK[m][n](z,z) != 0 && Nv > 1)
-            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], m, initOPvector, rhsBC);
+            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], m, initOPvector, rhsBC, gradK[m][n](z,z));
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1)
             toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Du2_BD(eta_BC[n], m, initOPvector, rhsBC);
@@ -427,19 +427,19 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 	for (int n = 0; n < Nop; n++) {
 		// cout << "\tn = " << n << endl;
 		
-		// complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-		// complex<double> deltaX = eta_BC[n].valueR - eta_BC[n].valueL;
+		complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
+		complex<double> deltaX = eta_BC[n].valueR - eta_BC[n].valueL;
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
-			// double x = h*(u - Nu/2);
+			double x = h*(u - Nu/2);
 			for (int v = 0; v < Nv; v++) {
-				// double z = h*v;
+				double z = h*v;
 				int id = ID(u,v,n);
 
-				OPvector( id ) = 1.;
-									// 	( (abs(eta_BC[n].valueB)<0.001 ? 0.1 : eta_BC[n].valueB) + deltaZ * tanh(z*7.0))
-									// * ( (abs(eta_BC[n].valueL)<0.001 ? 0.1 : eta_BC[n].valueL) + deltaX * tanh(x*7.0));
+				OPvector( id ) = ( eta_BC[n].valueB + deltaZ * tanh(z/2.0) )
+									 * ( eta_BC[n].valueL + deltaX * tanh(x/2.0) );
+                            // = 1.;
 
 			}
 		}
