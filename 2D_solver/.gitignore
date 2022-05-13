@@ -11,3 +11,6 @@ bulkRHS_FE5.txt
 
 # ignore gl_fdm changes
 gl_fdm
+
+# ignore any temporary debugging codes
+debugging.py
