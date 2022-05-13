@@ -1,2 +1,13 @@
 # ignore all output files
 *.o
+
+# ignore changes to txt output
+initGuess3.txt
+initGuess5.txt
+solution3.txt
+solution5.txt
+bulkRHS_FE3.txt
+
+# ignore gl_fdm changes
+gl_fdm
+
