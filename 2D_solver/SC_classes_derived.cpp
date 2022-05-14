@@ -9,17 +9,17 @@ using namespace Eigen;
 
 // implement class specific
 // CONTINUE HERE: TODO: implement this!!
-// void gradFE(VectorXd & freeEg, in_conditions parameters, const VectorXcd OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
+// void gradFE(VectorXd & freeEg, in_conditions parameters, const T_vector OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
 
 // function to get the RHS of GL differential equations, determined from the bulk functional; 
 // ------  coded in he3bulk.cpp ---------
 // input: temp t, pressure p, matrix A, 
 // output: betaB parameter that gives the bulk free energy of B-phase; derivative matrix dFdA, bulk free energy FE
-void he3bulk(double t, double p, double & betaB, Matrix3cd A, Matrix3cd & dFdA, double & FE); 
+void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, Eigen::Matrix<T_scalar,3,3> & dFdA, double & FE);
 
 // --- Nop, grid_size are variables stored in base class
 
-void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, VectorXcd & newRHSvector, VectorXd & FEb) {
+void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, VectorXd & FEb) {
 	// cout << "ThreeCompHe3::bulkRHS_FE" << endl;
 	int grid_point;
 
@@ -37,16 +37,17 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 		// cout << "here 1" << endl;
 
 		// create He3 OP matrix
-		Matrix3cd A; A << eta_bulk[0],     0,         0,
+		Matrix<T_scalar,3,3> A; 
+					   A << eta_bulk[0],     0,         0,
 						  0,          eta_bulk[1],    0, 
 						  0,               0,     eta_bulk[2];
 		// cout << "here 2" << endl;
 
-		Matrix3cd dFdA;
+		Matrix<T_scalar,3,3> dFdA;
 		// cout << "here 3" << endl;
 		double FEbulk, betaB;
 		// cout << "here 4" << endl;
-		complex<double> dFdeta[3];
+		T_scalar dFdeta[3];
 		// cout << "here 5" << endl;
 
 		// find the derivatives and bulk Free energy
@@ -71,20 +72,20 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 
 	return;
 }
-void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	// we will modify the freeEg vector
 	freeEg *= 0.; // make sure it's all 0
 
 	for (int n = 0; n < Nop; n++) {
 		for (int m = 0; m < Nop; m++) {
-			// Vector<VectorXcd> lhs = 
+			// Vector<T_vector> lhs = 
 			// freeEg += stuff;
 		}
 	}
 }
 
 
-void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, VectorXcd & newRHSvector, VectorXd & FEb) {
+void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, VectorXd & FEb) {
 	int grid_point; 
 
 	for (int v = 0; v < Nv; v++) 
@@ -95,13 +96,14 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vec
 		for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
 
 		// create He3 OP matrix
-		Matrix3cd A; A <<  eta_bulk[0],    0,      eta_bulk[3],
-					       0,          eta_bulk[1],    0,
+		Matrix<T_scalar,3,3> A; 
+					  A <<  eta_bulk[0],    0,      eta_bulk[3],
+					          0,          eta_bulk[1],    0,
 						   eta_bulk[4],    0,      eta_bulk[2];
 
-		Matrix3cd dFdA;
+		Matrix<T_scalar,3,3> dFdA;
 		double FEbulk, betaB;
-		complex<double> dFdeta[5];
+		T_scalar dFdeta[5];
 		// find the derivatives and bulk Free energy
 		he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk); 
 		dFdeta[0] = dFdA(0,0);
@@ -116,17 +118,17 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vec
 
 	return;
 }
-void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
 
 
-void OneCompSC::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, VectorXcd & newRHSvector, VectorXd & FEb) {
+void OneCompSC::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, VectorXd & FEb) {
 	for (int grid_point = 0; grid_point < grid_size; grid_point++){ 
 		eta_bulk[0] = OPvector( grid_point ); 
 
 		double FEbulk;
-		complex<double> dFdeta;
+		T_scalar dFdeta;
 
 		// FE_bulk = -alpha*eta^2 + beta eta^4
 		// find the derivatives and bulk Free energy
@@ -138,7 +140,7 @@ void OneCompSC::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Vecto
 
 	return;
 }
-void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
 

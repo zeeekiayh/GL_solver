@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 
 int main()
 {
@@ -26,7 +26,7 @@ int main()
 	// confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
-	cond.maxStore = 10; // 4
+	cond.maxStore = 5; // 4
 	cond.rel_p = 0.1;   // 0.1
 	cond.wait = 1;      // 2
 
@@ -49,9 +49,9 @@ int main()
 	int GridSize = cond.SIZEu * cond.SIZEv; // number of grid points 
 	int VectSize = cond.Nop * GridSize;     // number of elements in the overall OP vector 
 
-	VectorXcd OPvector(VectSize);                // the vector of all values of the OP on the mesh
-	VectorXcd rhsBC = VectorXcd::Zero(VectSize); // the addition to the rhs for D-type BC's
-	VectorXcd dummy(VectSize);                   // a dummy vector, ...for free energy?
+	T_vector OPvector(VectSize);                // the vector of all values of the OP on the mesh
+	T_vector rhsBC = T_vector::Zero(VectSize); // the addition to the rhs for D-type BC's
+	T_vector dummy(VectSize);                   // a dummy vector, ...for free energy?
 	SpMat_cd M(VectSize,VectSize);               // the matrix we will use to solve
 	VectorXd freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
 	// add other observables here as desired...
@@ -61,6 +61,7 @@ int main()
 	// ... depending on given OP size
 		 if (Nop == 3) pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	else if (Nop == 5) pSC = new FiveCompHe3 ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
+	else if (Nop == 1) pSC = new OneCompSC ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
 	cout << "done" << endl;
 
@@ -100,7 +101,7 @@ int main()
 
 	// then follows the print-out of the results into appropriate files
 	// ... save the FE things as well!
-	//*/
+	// */
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 

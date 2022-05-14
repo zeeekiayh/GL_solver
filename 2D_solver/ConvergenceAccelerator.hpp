@@ -44,7 +44,7 @@ In the source, declare the vectors and their sizes
 
 	} while( some condition on self-consistency convergence, e.g. err > 1e-3);
 
-For complex vectors replace VectorXd, MatrixXd -> VectorXcd,MatrixXcd
+For complex vectors replace VectorXd, MatrixXd -> T_vector,T_matrix
 =================================================================================================*/
 
 #ifndef ConvergenceAccelerator_hpp_
@@ -132,6 +132,10 @@ converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vect
 	waitXiter=wtX;
 	relax_param = rlxp;
 	no_update_points = no_update;
+	std::cout   << "Starting Converg.Acceler with MaxStored = " << MaxStored 
+			<< "\n\t\t initial relax attempts = " << waitXiter 
+			<< "\n\t\t relax.param = " << relax_param 
+			<< std::endl; 
 	// we also create a seed here for the rand() function
 	srand (time(NULL)); 
 	if(details) record=fopen("accelereator_errors_record.dat", "w");
@@ -182,7 +186,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 
 	vec_prev=v; // we'll remember the incoming vector to later find change error on this update 
 	double norm_new=dvz.norm();
-	if(details) printf("OP update: new vector with deviation =%.4f\n", norm_new);
+	if(details) printf("\nOP update: new vector with deviation =%.4f\n", norm_new);
 	waitcount++;
 
 	if(Nstored >= MaxStored) // we reached max storage capacity; and we need to get rid of something
@@ -209,6 +213,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 
 	// print out stored norms
 	if(details){ printf("norms(dv):\t"); for(i=0; i<Nstored; i++){ printf("(%.4f)  ", stored[i].norm );} printf("\n"); }
+	if(details){ printf("Nstored=%d (filled when %d)   waitcount=%d (waitXiter=%d) \n", Nstored, MaxStored, waitcount, waitXiter); } 
 
 	// Now we determine the mapping coefficients by minimizing the distance from dev=zero to the dev-hypersurface 
 	if( Nstored>1 &&  waitcount > waitXiter ){
@@ -278,8 +283,8 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 		// the v and dvz are the ones we got on input
 		coupl_param_prev= 0.0;
 		coupl_param = relax_param;
+		if(details) {printf("Relaxation =%.4f\n",coupl_param);}
 
-		if(details) printf("Relaxation =%.4f\n",coupl_param);
 		vec_min=v;
 		dev_min=dvz;
 	}

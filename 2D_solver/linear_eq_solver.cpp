@@ -25,10 +25,20 @@ using namespace std;
 // on input f is initial guess, 
 // on output it is the required solution 
 //---------------------------------------------------------------------------------
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
+
+T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
+	auto rhs_local=rhsBC;
+	// for(int i=0; i< rhs_local.size(); i++) if(abs(rhs_local[i])==0) rhs_local[i]=h2_times_rhs_bulk[i];
+	rhs_local = h2_times_rhs_bulk + rhsBC;
+	return rhs_local;
+}
+
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
 {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
+	double h2 = cond.STEP*cond.STEP;
+	// FILE *out; out=fopen("iterations.dat","w");
 
 	if (no_update.size()) cout << "using no_update" << endl;
 
@@ -51,30 +61,41 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 	// cout << "here ... 2" << endl;
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
 	// cout << "here ... 3" << endl;
-	VectorXcd df(vect_size), rhs(vect_size); 
+	T_vector df(vect_size), rhs(vect_size); 
 	// cout << "here ... 4" << endl;
+	//T_vector rhs_th(vect_size); 
 
 	// the acceleration object
-	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
+	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
 	// cout << "here ... 5" << endl;
 	// cout << "cond.maxStore = " << cond.maxStore << "; cond.wait = " << cond.wait << "; cond.rel_p = " << cond.rel_p << endl;
 	// cout << "rhsBC =\n" << rhsBC << endl;
 		   
+	//cout << "M = \n" << M << endl;
  	// loop until f converges or until it's gone too long
 	do { 
+		/*
+		for(int i=0; i<cond.SIZEv; i++) 
+			fprintf(out, "%f  %f  %f  %f\n", i*cond.STEP, real(f[i+cond.SIZEv*0]), real(f[i+cond.SIZEv*1]), real(f[i+cond.SIZEv*2]));
+		fprintf(out, "\n"); 
+		*/
+
+		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
 		// cout << "do: " << cts << endl;
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
-		df = solver.solve(rhs+rhsBC) - f; // find the change in OP
+		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
 
 		// if (method == string("acceleration"))
-		Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
+		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
+		//cout << "next guess for f = " << f.transpose() << endl; 
 		// else if (method == string("relaxation"))
 		// f += 0.05*df;
 		// err = df.norm()/f.norm();
 		cts++;         // increment counter
 
 		// output approx. percent completed
-		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
+		//cout << endl;
+		//cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 	} while(err > cond.ACCUR && cts < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
@@ -84,3 +105,28 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 
 	return;
 }
+
+/*
+  // --------------- some test functions ------------------------------------------
+void theoretical3comp_rhs(in_conditions cond, T_vector & OPvector, T_vector & RHSvector, Eigen::VectorXd & FEb);
+
+void theoretical3comp_rhs(in_conditions cond, T_vector & OPvector, T_vector & RHSvector, Eigen::VectorXd & FEb)
+{
+	complex<double> Axx, Ayy, Azz;
+	complex<double> Rxx, Ryy, Rzz;
+
+	for(int i=0; i<cond.SIZEv; i++){
+			Axx= OPvector[i+cond.SIZEv*0]; 
+			Ayy= OPvector[i+cond.SIZEv*1]; 
+			Azz= OPvector[i+cond.SIZEv*2]; 
+			Rxx= -Axx + pow(Axx,3) - 1.0/5.0 * (Axx*Axx - Azz*Azz)*Axx;
+			Ryy=Rxx;
+			Rzz= -Azz + pow(Azz,3) + 2.0/5.0 * (Axx*Axx - Azz*Azz)*Azz;
+			RHSvector[i+cond.SIZEv*0]=Rxx;
+			RHSvector[i+cond.SIZEv*1]=Ryy;
+			RHSvector[i+cond.SIZEv*2]=Rzz;
+	}
+
+	return;
+}
+*/
