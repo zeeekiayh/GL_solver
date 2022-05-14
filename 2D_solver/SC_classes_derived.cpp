@@ -72,13 +72,23 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, VectorXcd & OPvector, Ve
 	return;
 }
 void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	// Follow equation 10 in Latex doc
+
 	// we will modify the freeEg vector
 	freeEg *= 0.; // make sure it's all 0
+	VectorXcd temp;
 
 	for (int n = 0; n < Nop; n++) {
 		for (int m = 0; m < Nop; m++) {
-			// Vector<VectorXcd> lhs = 
-			// freeEg += stuff;
+			SpMat_cd lhs(grid_size,2);
+			lhs(0,0) = this->Du_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
+			lhs(0,1) = this->Dv_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
+
+			SpMat_cd rhs(2,grid_size);
+			rhs(0,0) = this->Du_BD(eta_BC[n],n,temp,temp) * OPvector( seq(n*grid_size,(n+1)*grid_size) );
+			rhs(1,0) = this->Du_BD(eta_BC[n],n,temp,temp) * OPvector( seq(n*grid_size,(n+1)*grid_size) );
+
+			freeEg += lhs * gradK[m][n] * rhs;
 		}
 	}
 }
