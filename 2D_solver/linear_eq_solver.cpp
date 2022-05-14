@@ -1,7 +1,3 @@
-// copied Solve() function from Izek's  includes.hpp
-// and deleted bunch of lines 
-// ------------ maybe not working anymore -----------------
-
 #include <iostream>
 #include <fstream> // for file in/out
 #include <string>
