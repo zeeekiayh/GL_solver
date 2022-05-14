@@ -2,7 +2,7 @@
 
 #include "structures.hpp"
 #include <vector>
-#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Place_subMatrix
 
 using namespace Eigen;
 using namespace std;
@@ -456,7 +456,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 		}
 	}
 
-	// cout << "initial guess:\n" << OPvector << endl;
+   // if (debug) cout << "initial guess:\n" << OPvector << endl;
 
 	return;
 }

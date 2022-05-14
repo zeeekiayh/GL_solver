@@ -1,7 +1,3 @@
-// copied Solve() function from Izek's  includes.hpp
-// and deleted bunch of lines 
-// ------------ maybe not working anymore -----------------
-
 #include <iostream>
 #include <fstream> // for file in/out
 #include <string>
@@ -11,9 +7,10 @@
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
+
 #include "ConvergenceAccelerator.hpp"
 #include "structures.hpp"
-
+#include "readwrite.hpp"
 #include "SC_classes.hpp"
 
 using namespace Eigen;
@@ -25,6 +22,7 @@ using namespace std;
 // on input f is initial guess, 
 // on output it is the required solution 
 //---------------------------------------------------------------------------------
+<<<<<<< HEAD
 
 T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	auto rhs_local=rhsBC;
@@ -34,6 +32,9 @@ T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 }
 
 void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
+=======
+void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method)
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
@@ -51,15 +52,16 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
 	else if (solver.info() == Eigen::NumericalIssue) { // for debugging non-invertable matrices
 		cout << "Solver: numerical issues" << endl;
-		// for (int k=0; k < SolverMatrix.outerSize(); ++k) for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it) cout << "(" << it.row() << "," << it.col() << ")\t";
+		// for (int k=0; k < SolverMatrix.outerSize(); ++k)
+		// 	for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it)
+		// 		cout << "(" << it.row() << "," << it.col() << ")\t";
 		return;
 	}
 
 	int cts = 0; // count loops
-	// cout << "here ... 1" << endl;
 	double err;  // to store current error
-	// cout << "here ... 2" << endl;
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
+<<<<<<< HEAD
 	// cout << "here ... 3" << endl;
 	T_vector df(vect_size), rhs(vect_size); 
 	// cout << "here ... 4" << endl;
@@ -70,9 +72,14 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	// cout << "here ... 5" << endl;
 	// cout << "cond.maxStore = " << cond.maxStore << "; cond.wait = " << cond.wait << "; cond.rel_p = " << cond.rel_p << endl;
 	// cout << "rhsBC =\n" << rhsBC << endl;
+=======
+	VectorXcd df(vect_size), rhs(vect_size); // 
+	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 		   
 	//cout << "M = \n" << M << endl;
  	// loop until f converges or until it's gone too long
+<<<<<<< HEAD
 	do { 
 		/*
 		for(int i=0; i<cond.SIZEv; i++) 
@@ -82,9 +89,19 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 
 		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
 		// cout << "do: " << cts << endl;
+=======
+	do {
+		// save output of each guess for debugging
+		if (debug) {
+			// ...
+			WriteToFile(f, "debugging_files/solu_"+to_string(cond.Nop)+"iter_"+to_string(cts)+".txt", cond);
+		}
+
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
 
+<<<<<<< HEAD
 		// if (method == string("acceleration"))
 		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
 		//cout << "next guess for f = " << f.transpose() << endl; 
@@ -92,7 +109,16 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		// f += 0.05*df;
 		// err = df.norm()/f.norm();
 		cts++;         // increment counter
+=======
+		// acceleration method
+		if (method == "acceleration") Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
+		else { // normal relaxation method
+			f += cond.rel_p*df;
+			err = df.norm()/f.norm();
+		}
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 
+		cts++;         // increment counter
 		// output approx. percent completed
 		//cout << endl;
 		//cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;

@@ -11,9 +11,18 @@ K MATRIX
 ()        (1,0,0,1) ()
 ()        ()        (1,0,0,3)
 
+<<<<<<< HEAD
 30 16 # mesh size
 1.0    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
 1e-6    # accuracy
 70     # number loops
+=======
+1 20 # mesh size
+1.    # h (step size)
+0.5e-4  # temperature
+1e5     # pressure
+1e-6    # accuracy
+700     # number loops
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e

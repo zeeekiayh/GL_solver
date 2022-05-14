@@ -1,4 +1,3 @@
-//#include "includes.hpp"
 #include "readwrite.hpp"
 
 // most of the typedefs and custom structures are in this file:
@@ -9,11 +8,25 @@ using namespace std;
 using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
+<<<<<<< HEAD
 void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+=======
+void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method = "acceleration");
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 
-int main()
+int main(int argc, char** argv)
 {
-	const int Nop=3; // number of the order parameter components
+	bool debug = false;
+	if (argc == 3) {
+		// using debugging!
+		cout << "NOTICE: using debugging methods...\nDo you want to proceed? (y/n) ";
+		string ans;
+		cin >> ans;
+		if (ans=="y"||ans=="Y") debug = true;
+		else cout << endl << "NOT USING DEBUGGING ANYMORE." << endl;
+	}
+	else if (argc != 2) {cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
+	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
@@ -26,9 +39,15 @@ int main()
 	// confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
+<<<<<<< HEAD
 	cond.maxStore = 5; // 4
 	cond.rel_p = 0.1;   // 0.1
 	cond.wait = 1;      // 2
+=======
+	cond.maxStore = 10; // 4,    10
+	cond.rel_p = 0.01;  // 0.1,  0.1
+	cond.wait = 1;      // 2,    1
+>>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 
 	// if you want to change the values ... should we put these back into the conditions file?
 	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
@@ -67,35 +86,37 @@ int main()
 
 	cout << "initializing guess...";
 	// initializeOPguess(cond, eta_BC, OPvector, GridSize, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initialOPguess(eta_BC, OPvector, no_update);
+	pSC->initialOPguess(eta_BC, OPvector, no_update, debug);
 	cout << "done" << endl;
 
-	// write the initial guess to file, for debugging
-	// WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
+	if (debug) { // write the initial guess to file, for debugging
+		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", cond);
+	}
 
 	cout << "building solver matrix...";
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
-	// For debugging only...shouldn't print if gsize > ~10^2
-	// cout << endl << "M =\n" << M << endl;
+	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+		cout << endl << "M =\n" << M << endl;
+	}
 
 	cout << "solving system...";
-	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
+	Solver(OPvector, M, rhsBC, cond, no_update, pSC, debug);
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";
-	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", Nop, cond);
+	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", cond);
 	cout << "done!" << endl;
 
 	// ---- updated May 12, 2020 ----- 
-	//* PLAN for the rest of the code:
-
-	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
-	// get the bulk contribution to free energy 
-	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", Nop, cond);
+	// PLAN for the rest of the code:
 
 	/* CONTINUE HERE!
+	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
+	// get the bulk contribution to free energy 
+	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", cond);
+
 	pSC->gradFE(freeEg, cond, OPvector, eta_BC, gradK);
 	// get the gradient contribution to free energy 
 

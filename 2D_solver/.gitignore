@@ -2,12 +2,13 @@
 *.o
 
 # ignore changes to txt output
-initGuess3.txt
-initGuess5.txt
-solution3.txt
-solution5.txt
-bulkRHS_FE3.txt
-bulkRHS_FE5.txt
+initGuess?.txt
+solution?.txt
+bulkRHS_FE?.txt
 
 # ignore gl_fdm changes
 gl_fdm
+
+# ignore any temporary debugging codes
+debugging.py
+debugging_files/
