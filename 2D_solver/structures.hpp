@@ -4,14 +4,28 @@
 #include <iostream>
 #include <fstream> // for file in/out
 #include <complex> 
+#include <typeinfo>
 
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
 
 // ===========================================
-// type definitions 
+// type definitions for complex OP
 
+typedef std::complex<double> T_scalar;
+typedef Eigen::VectorXcd  T_vector;
+typedef Eigen::MatrixXcd  T_matrix;
 typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
+
+// ===========================================
+// type definitions for real OP
+
+/*
+typedef double T_scalar;
+typedef Eigen::VectorXd  T_vector;
+typedef Eigen::MatrixXd  T_matrix;
+typedef Eigen::SparseMatrix<double> SpMat_cd;
+*/
 
 // ===========================================
 // Boundary condition structure for a single OP

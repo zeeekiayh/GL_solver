@@ -89,15 +89,19 @@ void SC_class :: Build_D_Matrices() {
    Dv.setFromTriplets(coeffs_v.begin(), coeffs_v.end());
 
    // cout << "build matrices: done" << endl;
+   //cout << "Du2= \n " << Du2 << endl;
+   //cout << "Dv2= \n " << Dv2 << endl;
+   //cout << "Duv= \n " << Duv << endl;
 }
 
 // -------------------------------------------------------------------------------
 // add boundary conditions to the derivative matrices, by changing some of the 
 // matrix elements that were pre-reserved in Build_D_Matrices() above
 // -------------------------------------------------------------------------------
-SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
 {
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
+   rhsBC = T_vector::Zero(vect_size); 
 
    for (int v = 0; v < Nv; v++) // go over the left and right boundaries from bottom to top 
    {
@@ -116,8 +120,7 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd
       if (BC.typeL == std::string("D"))
       {
          int id=ID(0,v,op_component);
-			// initOPvector(id) = 0.;
-         rhsBC(id) = -2.*h/BC.valueL*initOPvector(id);
+         rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
       }
 
       Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
@@ -125,17 +128,18 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd
       if (BC.typeR == std::string("D"))
       {
          int id=ID(Nu-1,v,op_component);
-			// initOPvector(id) = 0.;
          rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
       }
    }
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
-   rhsBC = VectorXcd::Zero(vect_size); 
+   rhsBC = T_vector::Zero(vect_size); 
+   //cout << "\n\nbuilding Dv2 for component " << op_component << endl;
+   //cout << "rhsBC on input is = " << rhsBC.transpose() << endl;
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
@@ -151,40 +155,38 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const VectorXcd
       //   and adjust the RHS vector depending on what kind of BC we have there
 
       Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipB;
-      // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
-
       Dv2_copy.coeffRef(id0,id0_connect) = 2.;
+      // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
       // Dv2_copy.coeffRef(id0,id0_connect) = (BC.typeB == std::string("N")) ? 2. : 0.;
 
       if (BC.typeB == std::string("D")) // Dirichlet
       {
          int id=ID(u,0,op_component);
-			// initOPvector(id) = 0.;
-         // rhsBC(id) = BC.valueB;
-			rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+		rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+         	//rhsBC(id) = initOPvector(id);
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
-      // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
-
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
+      // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
       // Dv2_copy.coeffRef(idN,idN_connect)= (BC.typeT == std::string("N")) ? 2. : 0;
 
       if (BC.typeT == std::string("D")) // Dirichlet
       {
          int id=ID(u,Nv-1,op_component);
-			// initOPvector(id) = 0.;
-         // rhsBC(id) = BC.valueT;
-			rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+		rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+         //	rhsBC(id) = initOPvector(id);
       }
    }
+   //cout << "Dv2["<<op_component<<"]= \n" << Dv2_copy << endl;
    return Dv2_copy;
 }
 
-SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
+   rhsBC = T_vector::Zero(vect_size); 
 
    // the default general formula for the mixed derivative matrix is in the Build_D_Matrices() function
    // here we only make it more accurate if we have Neumann boundary conditions 
@@ -328,7 +330,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd
    return Duv_copy;
 }
 
-SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Du_copy = Du;
@@ -363,7 +365,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
    return Du_copy;
 }
 
-SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd initOPvector, VectorXcd & rhsBC)
+SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Dv_copy = Dv;
@@ -399,7 +401,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const VectorXcd 
 }
 
 // The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
-void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const VectorXcd initOPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
    auto rhsBClocal=rhsBC;
    int x = 0, z = 1; // indexes for the K-matrix
    // Use equ. (15) in the Latex file:
@@ -422,20 +424,24 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, VectorXcd & rhsBC, const Vecto
             toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
 
          M += Place_subMatrix( m, n, Nop, toInsert );
+	   //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsert;
       }
    }
+
+   //cout << "M=\n" << M << endl;
+   //cout << "rhsBC=\n" << rhsBC << endl;
 }
 
-void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vector<int> & no_update, bool debug) {
+void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update, bool debug) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 
 	// cout << "In 'initializeOPguess'" << endl;
 	for (int n = 0; n < Nop; n++) {
 		// cout << "\tn = " << n << endl;
 		
-		complex<double> deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-		complex<double> deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
-		complex<double> middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
+		auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
+		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
@@ -450,7 +456,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], VectorXcd & OPvector, vecto
 		}
 	}
 
-   if (debug) cout << "initial guess:\n" << OPvector << endl;
+   // if (debug) cout << "initial guess:\n" << OPvector << endl;
 
 	return;
 }

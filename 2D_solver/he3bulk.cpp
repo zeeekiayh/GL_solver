@@ -1,6 +1,8 @@
 #include <cmath>
 #include <eigen/Eigen/Dense>
 
+#include "structures.hpp" 
+
 using namespace Eigen;
 
 void betas(double t, double p, double *beta);
@@ -8,7 +10,7 @@ void betas(double t, double p, double *beta);
 // bulk values of He3 free energy and of dFdA 3x3 matrix 
 // normalized by the bulk values of the He3-B gap and the free energy 
 // at temperature t and pressure p
-void he3bulk(double t, double p, double & betaB, Matrix3cd A, Matrix3cd & dFdA, double & FE)
+void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, Eigen::Matrix<T_scalar,3,3> & dFdA, double & FE)
 {
 	double beta[6];
 	auto Adag = A.adjoint(); // Hermitian conjugate
@@ -28,12 +30,14 @@ void he3bulk(double t, double p, double & betaB, Matrix3cd A, Matrix3cd & dFdA, 
 	dFdA 	+= 1.0/3.0*beta[5] * (Ac * At * A);
 
 	// bulk free energy, normalized by B-phase value
-	FE = 2.0/3.0 * beta[0] * real( (A * Adag).trace() );
-	FE 	+= 1.0/9.0 * beta[1] * norm(  (A*At).trace()  );
-	FE 	+= 1.0/9.0 * beta[2] * norm( (A*Adag).trace() );
-	FE 	+= 1.0/9.0 * beta[3] * real( (A * At * Ac * Adag ).trace()  );
-	FE 	+= 1.0/9.0 * beta[4] * real( (A * Adag * A * Adag).trace() );
-	FE 	+= 1.0/9.0 * beta[5] * real( (A * Adag * Ac * At ).trace()  );
+	T_scalar FElocal 
+			 = 2.0/3.0 * beta[0] * (A * Adag).trace();
+	FElocal 	+= 1.0/9.0 * beta[1] * (A*At).trace() * (Ac*Adag).trace();
+	FElocal 	+= 1.0/9.0 * beta[2] * (A*Adag).trace() * (Ac*At).trace();
+	FElocal 	+= 1.0/9.0 * beta[3] * (A * At * Ac * Adag ).trace();
+	FElocal 	+= 1.0/9.0 * beta[4] * (A * Adag * A * Adag).trace();
+	FElocal 	+= 1.0/9.0 * beta[5] * (A * Adag * Ac * At ).trace();
+	FE = real( FElocal );
 
 	return;
 }
