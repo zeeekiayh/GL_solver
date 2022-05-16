@@ -37,12 +37,23 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
         im = plt.imshow(organized_array[i], extent=ext)
         plt.colorbar(im)
         plt.show()
+        plt.clf()
+        
+        plt.title(f'OP component #{i}')
+        ax2 = plt.subplot(111, projection='3d')
+        X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[i][0])),
+                            np.linspace(ext[2],ext[3],len(organized_array[i])) )
+        surf = ax2.plot_surface(X,Y,organized_array[i])
+        plt.colorbar(surf)
+        plt.show()
+        plt.clf()
 
     # plot slices for 1D view
     plt.clf()
     plt.title("Slices top to bottom")
     for i in range(Nop):
-        slc = organized_array[i][:,len(organized_array[i])//2]
+        print(f'{np.shape(organized_array) = }')
+        slc = organized_array[i][:,len(organized_array[i][0])//2]
         plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
     plt.legend()
     plt.show()
@@ -74,7 +85,7 @@ def main(argv):
     A = np.array([ np.reshape(OP_array[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
 
     # the domain extents for the imshow calls
-    ext = [min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
+    ext = [min(OP_array[:,0]), max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
 
     # debugging: visualize the initial guess
     if debug:
