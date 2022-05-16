@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method = "acceleration");
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, string method = "acceleration");
 
 int main(int argc, char** argv)
 {
@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 	// confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
-	cond.maxStore = 10; // 4,    10
-	cond.rel_p = 0.01;  // 0.1,  0.1
+	cond.maxStore = 5;  // 4,    10
+	cond.rel_p = 0.1;   // 0.1,  0.1
 	cond.wait = 1;      // 2,    1
 
 	// if you want to change the values ... should we put these back into the conditions file?
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 
 	cout << "initializing guess...";
 	// initializeOPguess(cond, eta_BC, OPvector, GridSize, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initialOPguess(eta_BC, OPvector, no_update, debug);
+	pSC->initialOPguess(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
@@ -87,12 +87,12 @@ int main(int argc, char** argv)
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
-	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-		cout << endl << "M =\n" << M << endl;
-	}
+	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+	// 	cout << endl << "M =\n" << M << endl;
+	// }
 
 	cout << "solving system...";
-	Solver(OPvector, M, rhsBC, cond, no_update, pSC, debug);
+	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";

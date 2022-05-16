@@ -432,7 +432,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    //cout << "rhsBC=\n" << rhsBC << endl;
 }
 
-void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update, bool debug) {
+void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 
 	// cout << "In 'initializeOPguess'" << endl;
@@ -443,6 +443,10 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 		auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
 		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
 
+      // if (debug) cout << "middleX = " << middleX << endl;
+      // if (debug) cout << "deltaX  = " << deltaX << endl;
+      // if (debug) cout << "deltaZ  = " << deltaZ << endl;
+
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
 			double x = h*(u - Nu/2);
@@ -450,6 +454,11 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 				double z = h*v;
 				int id = ID(u,v,n);
 
+            // if (debug) {
+            //    cout << "eta_BC[n].valueB     = " << eta_BC[n].valueB << endl;
+            //    cout << "tanh(z/2)            = " << tanh(z/2) << endl;
+            //    cout << "setting OPvector(" << id << ") = " << (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2)) << endl;
+            // }
 				OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
 
 			}

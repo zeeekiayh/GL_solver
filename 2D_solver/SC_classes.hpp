@@ -47,7 +47,7 @@ class SC_class{
 		SpMat_cd  Dv_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
 
 		// the general method of making the initial guess based on the given BC's
-		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update, bool debug=false);
+		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );

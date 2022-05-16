@@ -30,7 +30,7 @@ T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	return rhs_local;
 }
 
-void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, bool debug, string method)
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, string method)
 {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
@@ -57,10 +57,9 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 	int cts = 0; // count loops
 	double err;  // to store current error
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
-	VectorXcd df(vect_size), rhs(vect_size); // 
-	converg_acceler<VectorXcd> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
+	T_vector df(vect_size), rhs(vect_size); // 
+	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
 		   
-	//cout << "M = \n" << M << endl;
  	// loop until f converges or until it's gone too long
 	do { 
 		/*
@@ -74,16 +73,16 @@ void Solver(VectorXcd & f, SpMat_cd M, VectorXcd rhsBC, in_conditions cond, vect
 
 
 		// save output of each guess for debugging
-		if (debug) {
-			// ...
-			WriteToFile(f, "debugging_files/solu_"+to_string(cond.Nop)+"iter_"+to_string(cts)+".txt", cond);
-		}
+		// if (debug) {
+		// 	// ...
+		// 	WriteToFile(f, "debugging_files/solu_"+to_string(cond.Nop)+"iter_"+to_string(cts)+".txt", cond);
+		// }
 
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
 
 		// acceleration method
-		if (method == "acceleration") Con_Acc.next_vector<MatrixXcd>( f, df, err ); // smart guess
+		if (method == "acceleration") Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
 		else { // normal relaxation method
 			f += cond.rel_p*df;
 			err = df.norm()/f.norm();
