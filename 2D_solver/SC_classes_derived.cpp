@@ -61,7 +61,7 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 		// cout << "here 9" << endl;
 
 		// and put them into the big vector in the same order as OP components
-		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i] * pow(parameters.STEP,2);
+		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i]; 
 		// cout << "here 10" << endl;
 
 		// cout << "FEbulk = " << FEbulk << endl;
@@ -72,23 +72,16 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 
 	return;
 }
-<<<<<<< HEAD
-void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-=======
-void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	// Follow equation 10 in Latex doc
 
->>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
+void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	//// Follow equation 10 in Latex doc
 	// we will modify the freeEg vector
 	freeEg *= 0.; // make sure it's all 0
 	VectorXcd temp;
 
+	/*
 	for (int n = 0; n < Nop; n++) {
 		for (int m = 0; m < Nop; m++) {
-<<<<<<< HEAD
-			// Vector<T_vector> lhs = 
-			// freeEg += stuff;
-=======
 			SpMat_cd lhs(grid_size,2);
 			lhs(0,0) = this->Du_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
 			lhs(0,1) = this->Dv_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
@@ -98,9 +91,9 @@ void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const Eigen::VectorXcd OPvec
 			rhs(1,0) = this->Du_BD(eta_BC[n],n,temp,temp) * OPvector( seq(n*grid_size,(n+1)*grid_size) );
 
 			freeEg += lhs * gradK[m][n] * rhs;
->>>>>>> 1986196d6efda54061fc77d5386e239aa89ea11e
 		}
 	}
+	*/
 }
 
 
