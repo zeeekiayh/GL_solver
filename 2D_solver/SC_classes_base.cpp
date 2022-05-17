@@ -22,7 +22,6 @@ SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm) {
 // matrices for "free" space, without boundary conditions 
 // -------------------------------------------------------------------------------
 void SC_class :: Build_D_Matrices() {
-   // cout << "build matrices..." << endl;
    // make vectors to hold the triplets of coefficients
    vector<Trpl> coeffs_u2, coeffs_v2, coeffs_uv, coeffs_u, coeffs_v; // coeffs_v2, coeffs_uv, coeffs_vw
    double Wu, Wv, W; // weight for derivative coefficients 
@@ -72,7 +71,6 @@ void SC_class :: Build_D_Matrices() {
       }
    }
 
-   // cout << "looped successfully" << endl;
 
    // initialize the D's by grid_size
    Du2.resize( grid_size , grid_size );
@@ -87,11 +85,6 @@ void SC_class :: Build_D_Matrices() {
    Duv.setFromTriplets(coeffs_uv.begin(), coeffs_uv.end());
    Du.setFromTriplets(coeffs_u.begin(), coeffs_u.end());
    Dv.setFromTriplets(coeffs_v.begin(), coeffs_v.end());
-
-   // cout << "build matrices: done" << endl;
-   //cout << "Du2= \n " << Du2 << endl;
-   //cout << "Dv2= \n " << Dv2 << endl;
-   //cout << "Duv= \n " << Duv << endl;
 }
 
 // -------------------------------------------------------------------------------
@@ -138,8 +131,6 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
    rhsBC = T_vector::Zero(vect_size); 
-   //cout << "\n\nbuilding Dv2 for component " << op_component << endl;
-   //cout << "rhsBC on input is = " << rhsBC.transpose() << endl;
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
@@ -178,7 +169,6 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
          //	rhsBC(id) = initOPvector(id);
       }
    }
-   //cout << "Dv2["<<op_component<<"]= \n" << Dv2_copy << endl;
    return Dv2_copy;
 }
 
@@ -451,10 +441,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 
-	// cout << "In 'initializeOPguess'" << endl;
 	for (int n = 0; n < Nop; n++) {
-		// cout << "\tn = " << n << endl;
-		
 		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
 		auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
 		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);

@@ -99,10 +99,3 @@ class FiveCompHe3 : public SC_class {
 };
 
 #endif
-
-
-
-
-
-
-

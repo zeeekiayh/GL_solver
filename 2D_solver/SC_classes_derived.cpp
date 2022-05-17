@@ -20,54 +20,36 @@ void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, 
 // --- Nop, grid_size are variables stored in base class
 
 void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, VectorXd & FEb) {
-	// cout << "ThreeCompHe3::bulkRHS_FE" << endl;
 	int grid_point;
 
 	for (int v = 0; v < Nv; v++) 
 	for (int u = 0; u < Nu; u++) {
-		// cout << "v = " << v << endl;
-		// cout << "u = " << u << endl;
-		
 		// we go over all grid points, 
 		grid_point = ID(u,v,0);
-		// cout << "grid_point = " << grid_point << endl;
 		
 		// and for all grid points collect all OP components into one eta_bulk[] array
 		for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) );
-		// cout << "here 1" << endl;
 
 		// create He3 OP matrix
 		Matrix<T_scalar,3,3> A; 
 					   A << eta_bulk[0],     0,         0,
 						  0,          eta_bulk[1],    0, 
 						  0,               0,     eta_bulk[2];
-		// cout << "here 2" << endl;
 
 		Matrix<T_scalar,3,3> dFdA;
-		// cout << "here 3" << endl;
 		double FEbulk, betaB;
-		// cout << "here 4" << endl;
 		T_scalar dFdeta[3];
-		// cout << "here 5" << endl;
 
 		// find the derivatives and bulk Free energy
 		he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk);
-		// cout << "here 6" << endl;
 		dFdeta[0] = dFdA(0,0);
-		// cout << "here 7" << endl;
 		dFdeta[1] = dFdA(1,1);
-		// cout << "here 8" << endl;
 		dFdeta[2] = dFdA(2,2);
-		// cout << "here 9" << endl;
 
 		// and put them into the big vector in the same order as OP components
 		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i]; 
-		// cout << "here 10" << endl;
-
-		// cout << "FEbulk = " << FEbulk << endl;
 
 		FEb(grid_point) = FEbulk;
-		// cout << "here 11" << endl;
 	}
 
 	return;
