@@ -98,7 +98,7 @@ void SC_class :: Build_D_Matrices() {
 // add boundary conditions to the derivative matrices, by changing some of the 
 // matrix elements that were pre-reserved in Build_D_Matrices() above
 // -------------------------------------------------------------------------------
-SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
+SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC)
 {
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
    rhsBC = T_vector::Zero(vect_size); 
@@ -134,7 +134,7 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC)
 {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
    rhsBC = T_vector::Zero(vect_size); 
@@ -182,7 +182,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
    return Dv2_copy;
 }
 
-SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
+SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
@@ -330,7 +330,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
    return Duv_copy;
 }
 
-SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
+SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Du_copy = Du;
@@ -365,7 +365,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector i
    return Du_copy;
 }
 
-SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
+SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC)
 {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Dv_copy = Dv;

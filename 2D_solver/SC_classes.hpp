@@ -41,11 +41,11 @@ class SC_class{
 
 		// functions that build derivative matrices that incorporate boundary conditions 
 		// -- will be called from derived class functions 
-		SpMat_cd Du2_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
-		SpMat_cd Dv2_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
-		SpMat_cd Duv_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
-		SpMat_cd  Du_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
-		SpMat_cd  Dv_BD(Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC);
+		SpMat_cd Du2_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
+		SpMat_cd Dv2_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
+		SpMat_cd Duv_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
+		SpMat_cd  Du_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
+		SpMat_cd  Dv_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
 
 		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
@@ -69,7 +69,7 @@ class OneCompSC : public SC_class {
 		//destructor : automatically calls virtual ~SC_class()
 		~OneCompSC () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
@@ -81,7 +81,7 @@ class ThreeCompHe3 : public SC_class {
 		ThreeCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
 		~ThreeCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
@@ -93,7 +93,7 @@ class FiveCompHe3 : public SC_class {
 		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
 		~FiveCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
