@@ -83,6 +83,8 @@ inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_
 // output the things read in so we can visually confirm the input from the conditions*.txt
 inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
 {
+	std::cout << "Grid is " << cond.SIZEu << " x " << cond.SIZEv << std::endl;
+	std::cout << "with step size h = " << cond.STEP << std::endl << std::endl;
 
 	for(int i=0; i<Nop; i++){
 		std::cout << "bound condition OP component "<< i << " is \n" << eta_BC[i] << std::endl;
@@ -114,7 +116,7 @@ inline void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
 
 // Write out the solution to a file (this is written for a 2D system)
 // We can write out a single vector (like for the Free Energy) with Nop=1
-inline void WriteToFile(const T_vector& solution_vector, std::string file_name, const in_conditions cond) {
+inline void WriteToFile(const T_vector& solution_vector, std::string file_name, int Nop, const in_conditions cond) {
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
 

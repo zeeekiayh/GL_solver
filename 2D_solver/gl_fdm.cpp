@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, string method = "acceleration");
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 
 int main(int argc, char** argv)
 {
@@ -32,12 +32,12 @@ int main(int argc, char** argv)
 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
 	read_input_data(Nop, cond, eta_BC, gradK, "conditions"+to_string(Nop)+".txt");
-	// confirm_input_data(Nop, cond, eta_BC, gradK);
+	//confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
-	cond.maxStore = 5;  // 4,    10
-	cond.rel_p = 0.1;   // 0.1,  0.1
-	cond.wait = 1;      // 2,    1
+	cond.maxStore = 5; // 4
+	cond.rel_p = 0.1;   // 0.1
+	cond.wait = 1;      // 2
 
 	// if you want to change the values ... should we put these back into the conditions file?
 	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
@@ -80,23 +80,24 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
-		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", cond);
+		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", Nop, cond);
 	}
 
 	cout << "building solver matrix...";
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
-	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-	// 	cout << endl << "M =\n" << M << endl;
-	// }
+	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+		cout << endl << "M =\n" << M << endl;
+	}
 
 	cout << "solving system...";
+	//Solver(OPvector, M, rhsBC, cond, no_update, pSC, debug);
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";
-	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", cond);
+	WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", Nop, cond);
 	cout << "done!" << endl;
 
 	// ---- updated May 12, 2020 ----- 

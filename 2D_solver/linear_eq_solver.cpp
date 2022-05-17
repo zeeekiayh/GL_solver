@@ -30,7 +30,7 @@ T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	return rhs_local;
 }
 
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC, string method)
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
 {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
@@ -57,9 +57,18 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	int cts = 0; // count loops
 	double err;  // to store current error
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
-	T_vector df(vect_size), rhs(vect_size); // 
-	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); // the acceleration object
+	// cout << "here ... 3" << endl;
+	T_vector df(vect_size), rhs(vect_size); 
+	// cout << "here ... 4" << endl;
+	//T_vector rhs_th(vect_size); 
+
+	// the acceleration object
+	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
+	// cout << "here ... 5" << endl;
+	// cout << "cond.maxStore = " << cond.maxStore << "; cond.wait = " << cond.wait << "; cond.rel_p = " << cond.rel_p << endl;
+	// cout << "rhsBC =\n" << rhsBC << endl;
 		   
+	//cout << "M = \n" << M << endl;
  	// loop until f converges or until it's gone too long
 	do { 
 		/*
@@ -70,23 +79,15 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 
 		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
 		// cout << "do: " << cts << endl;
-
-
-		// save output of each guess for debugging
-		// if (debug) {
-		// 	// ...
-		// 	WriteToFile(f, "debugging_files/solu_"+to_string(cond.Nop)+"iter_"+to_string(cts)+".txt", cond);
-		// }
-
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
 
-		// acceleration method
-		if (method == "acceleration") Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
-		else { // normal relaxation method
-			f += cond.rel_p*df;
-			err = df.norm()/f.norm();
-		}
+		// if (method == string("acceleration"))
+		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
+		//cout << "next guess for f = " << f.transpose() << endl; 
+		// else if (method == string("relaxation"))
+		// f += 0.05*df;
+		// err = df.norm()/f.norm();
 
 		cts++;         // increment counter
 		// output approx. percent completed
