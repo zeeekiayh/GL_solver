@@ -37,15 +37,29 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
         im = plt.imshow(organized_array[i], extent=ext)
         plt.colorbar(im)
         plt.show()
-
-    # plot slices for 1D view
-    plt.clf()
-    plt.title("Slices top to bottom")
+        plt.clf()
+        
+    # plot 3D, all components
+    plt.title(f'OP component #{i}')
+    ax2 = plt.subplot(111, projection='3d')
+    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[i][0])),
+                        np.linspace(ext[2],ext[3],len(organized_array[i])) )
+    surf = None
     for i in range(Nop):
-        slc = organized_array[i][:,len(organized_array[i])//2]
-        plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
-    plt.legend()
+        surf = ax2.plot_surface(X,Y,organized_array[i])
+    plt.colorbar(surf)
     plt.show()
+    plt.clf()
+
+    # # plot slices for 1D view
+    # plt.clf()
+    # plt.title("Slices top to bottom")
+    # for i in range(Nop):
+    #     print(f'{np.shape(organized_array) = }')
+    #     slc = organized_array[i][:,len(organized_array[i][0])//2]
+    #     plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
+    # plt.legend()
+    # plt.show()
 
 # the main code to run
 def main(argv):
@@ -71,17 +85,17 @@ def main(argv):
     OP_array = np.loadtxt(f'solution{Nop}.txt')
 
     # sort the OP_array for ease of plotting
-    A = np.array([ np.reshape(OP_array[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
+    A = np.array([ np.reshape(OP_array[:,2*i+2], (size_z,size_x)) for i in range(Nop) ])
 
     # the domain extents for the imshow calls
-    ext = [min(OP_array[:,0]),max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
+    ext = [min(OP_array[:,0]), max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
 
     # debugging: visualize the initial guess
     if debug:
         # Initial guess -- for debugging
         plt.title("initial guess")
         op = np.loadtxt(f'initGuess{Nop}.txt') # get the guess from the saved file from the C++ code in gl_fdm.cpp
-        initOP = np.array([ np.reshape(op[:,2*i+2], (size_x,size_z)) for i in range(Nop) ])
+        initOP = np.array([ np.reshape(op[:,2*i+2], (size_z,size_x)) for i in range(Nop) ])
 
         if size_x > 1:
             plot_OP_comps_and_slices(Nop, initOP, ext, step, size_z)
@@ -101,7 +115,7 @@ def main(argv):
         FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
         for i in range(Nop):
             plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-            im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_x,size_z)), extent=ext)
+            im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_z,size_x)), extent=ext)
             plt.colorbar(im)
             plt.show()
         
@@ -110,7 +124,7 @@ def main(argv):
         # # print(f'{FE_grad = }')
         # for i in range(Nop):
         #     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-        #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_x,size_z)))
+        #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_z,size_x)))
         #     plt.colorbar(im)
         #     plt.show()
     elif size_x == 1: # basically for the 1D case

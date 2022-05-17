@@ -94,6 +94,26 @@ void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bou
 		}
 	}
 	*/
+	// TODO: CONTINUE HERE:
+	// // How can we put this all into a matrix?
+	// for (int n = 0; n < Nop; n++) {
+	// 	for (int m = 0; m < Nop; m++) {
+			
+	// 		auto opV_slice = OPvector( seq(m*grid_size, (m+1)*grid_size) );
+
+	// 		Eigen::Matrix<T_scalar,-1,-1> lhs(grid_size,2);
+	// 		lhs << Du_BD(eta_BC[m], m, temp, temp) * opV_slice,
+	// 				Dv_BD(eta_BC[m], m, temp, temp) * opV_slice;
+
+	// 		opV_slice = OPvector( seq(n*grid_size, (n+1)*grid_size) );
+
+	// 		Eigen::Matrix<T_scalar,-1,-1> rhs(2,grid_size);
+	// 		rhs << Du_BD(eta_BC[n], n, temp, temp) * opV_slice,
+	// 				Dv_BD(eta_BC[n], n, temp, temp) * opV_slice;
+
+	// 		freeEg += lhs.conjugate() * gradK[m][n] * rhs;
+	// 	}
+	// }
 }
 
 
