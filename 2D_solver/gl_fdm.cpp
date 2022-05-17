@@ -103,12 +103,12 @@ int main(int argc, char** argv)
 	// ---- updated May 12, 2020 ----- 
 	// PLAN for the rest of the code:
 
-	/* CONTINUE HERE!
+	//* CONTINUE HERE!
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
 	// get the bulk contribution to free energy 
-	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", cond);
+	// WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", 1, cond);
 
-	pSC->gradFE(freeEg, cond, OPvector, eta_BC, gradK);
+	pSC->gradFE(freeEg, OPvector, eta_BC, gradK);
 	// get the gradient contribution to free energy 
 
 	// then follows the print-out of the results into appropriate files

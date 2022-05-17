@@ -55,6 +55,7 @@ class SC_class{
 		
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
+		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
 };
 
 
@@ -70,7 +71,7 @@ class OneCompSC : public SC_class {
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
 
 class ThreeCompHe3 : public SC_class {
@@ -82,7 +83,7 @@ class ThreeCompHe3 : public SC_class {
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
 
 class FiveCompHe3 : public SC_class {
@@ -94,7 +95,7 @@ class FiveCompHe3 : public SC_class {
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 };
 
 #endif

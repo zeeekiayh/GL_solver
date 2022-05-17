@@ -9,7 +9,7 @@ using namespace Eigen;
 
 // implement class specific
 // CONTINUE HERE: TODO: implement this!!
-// void gradFE(VectorXd & freeEg, in_conditions parameters, const T_vector OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
+// void gradFE(VectorXd & freeEg, in_conditions parameters, const T_vector & OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
 
 // function to get the RHS of GL differential equations, determined from the bulk functional; 
 // ------  coded in he3bulk.cpp ---------
@@ -73,47 +73,11 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 	return;
 }
 
-void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	//// Follow equation 10 in Latex doc
-	// we will modify the freeEg vector
-	freeEg *= 0.; // make sure it's all 0
-	VectorXcd temp;
-
-	/*
-	for (int n = 0; n < Nop; n++) {
-		for (int m = 0; m < Nop; m++) {
-			SpMat_cd lhs(grid_size,2);
-			lhs(0,0) = this->Du_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
-			lhs(0,1) = this->Dv_BD(eta_BC[m],m,temp,temp) * OPvector( seq(m*grid_size,(m+1)*grid_size) );
-
-			SpMat_cd rhs(2,grid_size);
-			rhs(0,0) = this->Du_BD(eta_BC[n],n,temp,temp) * OPvector( seq(n*grid_size,(n+1)*grid_size) );
-			rhs(1,0) = this->Du_BD(eta_BC[n],n,temp,temp) * OPvector( seq(n*grid_size,(n+1)*grid_size) );
-
-			freeEg += lhs * gradK[m][n] * rhs;
-		}
-	}
-	*/
-	// TODO: CONTINUE HERE:
-	// // How can we put this all into a matrix?
-	// for (int n = 0; n < Nop; n++) {
-	// 	for (int m = 0; m < Nop; m++) {
-			
-	// 		auto opV_slice = OPvector( seq(m*grid_size, (m+1)*grid_size) );
-
-	// 		Eigen::Matrix<T_scalar,-1,-1> lhs(grid_size,2);
-	// 		lhs << Du_BD(eta_BC[m], m, temp, temp) * opV_slice,
-	// 				Dv_BD(eta_BC[m], m, temp, temp) * opV_slice;
-
-	// 		opV_slice = OPvector( seq(n*grid_size, (n+1)*grid_size) );
-
-	// 		Eigen::Matrix<T_scalar,-1,-1> rhs(2,grid_size);
-	// 		rhs << Du_BD(eta_BC[n], n, temp, temp) * opV_slice,
-	// 				Dv_BD(eta_BC[n], n, temp, temp) * opV_slice;
-
-	// 		freeEg += lhs.conjugate() * gradK[m][n] * rhs;
-	// 	}
-	// }
+void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	// Follow equation 10 and 36 in Latex doc
+	cout << "In 'ThreeCompHe3::gradFE'" << endl;
+	auto FE = OPvector.adjoint() * FEgrad * OPvector;
+	cout << "FE = " << FE << endl;
 }
 
 
@@ -150,8 +114,11 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 
 	return;
 }
-void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
+	cout << "In 'FiveCompHe3::gradFE'" << endl;
+	auto FE = OPvector.adjoint() * FEgrad * OPvector;
+	cout << "FE = " << FE << endl;
 }
 
 
@@ -172,7 +139,7 @@ void OneCompSC::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vect
 
 	return;
 }
-void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
 
