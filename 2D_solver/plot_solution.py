@@ -39,24 +39,27 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
         plt.show()
         plt.clf()
         
-        plt.title(f'OP component #{i}')
-        ax2 = plt.subplot(111, projection='3d')
-        X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[i][0])),
-                            np.linspace(ext[2],ext[3],len(organized_array[i])) )
-        surf = ax2.plot_surface(X,Y,organized_array[i])
-        plt.colorbar(surf)
-        plt.show()
-        plt.clf()
-
-    # plot slices for 1D view
-    plt.clf()
-    plt.title("Slices top to bottom")
+    # plot 3D, all components
+    plt.title(f'OP component #{i}')
+    ax2 = plt.subplot(111, projection='3d')
+    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[i][0])),
+                        np.linspace(ext[2],ext[3],len(organized_array[i])) )
+    surf = None
     for i in range(Nop):
-        print(f'{np.shape(organized_array) = }')
-        slc = organized_array[i][:,len(organized_array[i][0])//2]
-        plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
-    plt.legend()
+        surf = ax2.plot_surface(X,Y,organized_array[i])
+    plt.colorbar(surf)
     plt.show()
+    plt.clf()
+
+    # # plot slices for 1D view
+    # plt.clf()
+    # plt.title("Slices top to bottom")
+    # for i in range(Nop):
+    #     print(f'{np.shape(organized_array) = }')
+    #     slc = organized_array[i][:,len(organized_array[i][0])//2]
+    #     plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
+    # plt.legend()
+    # plt.show()
 
 # the main code to run
 def main(argv):
