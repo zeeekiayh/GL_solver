@@ -15,6 +15,7 @@ class SC_class{
       	SpMat_cd Du2, Dv2, Duv, Du, Dv; // base derivative matrices, without boundary conditions
       	// bool use_no_update = 0; // says whether or not to use the no_update vector
       	// vector<int> no_update; // stores all the indices that will not be modified in the RHS
+		SpMat_cd FEgrad; // the F_hat_grad matrix in equation 36 in Latex file
 	public:
 		//constructor 
 		// SC_op () {Nop=1; *eta_bulk = 1;}; // default constructor for single-component OP 

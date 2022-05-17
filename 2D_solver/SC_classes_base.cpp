@@ -407,34 +407,40 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    // Use equ. (15) in the Latex file:
    //    [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
    // For free energy matrix we use the equation (10) and (36) in the latex file
-   // 	SpMat_cd FEgrad; 
+   
+   // initialize the FEgrad matrix
+   FEgrad.resize(Nop*grid_size,Nop*grid_size);
+
    for (int m = 0; m < Nop; m++) {
       for (int n = 0; n < Nop; n++) {
-         SpMat_cd toInsert(grid_size,grid_size);
-         //SpMat_cd toInsertFE(grid_size,grid_size);
+         SpMat_cd toInsertM(grid_size,grid_size);
+         SpMat_cd toInsertFE(grid_size,grid_size);
 
          if (gradK[m][n](x,x) != 0 && Nu > 1){
-            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            toInsertM += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
-            //toInsertFE += gradK[m][n](x,x) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+
+            toInsertFE += gradK[m][n](x,x) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
          if (gradK[m][n](z,z) != 0 && Nv > 1){
-            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            toInsertM += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
-            //toInsertFE += gradK[m][n](x,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+            
+            toInsertFE += gradK[m][n](x,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
-            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            //toInsertFE += gradK[m][n](z,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal)
-            //		  + gradK[m][n](x,z) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+            toInsertM += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            
+            toInsertFE += gradK[m][n](z,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal)
+            		      + gradK[m][n](x,z) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
-         M += Place_subMatrix( m, n, Nop, toInsert );
-         //FEgrid += Place_subMatrix( m, n, Nop, toInsertFE );
+         M += Place_subMatrix( m, n, Nop, toInsertM );
+         FEgrad += Place_subMatrix( m, n, Nop, toInsertFE );
 
-	   //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsert;
+	      //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
    }
 
