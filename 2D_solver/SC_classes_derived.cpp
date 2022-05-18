@@ -54,12 +54,28 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 
 	return;
 }
-
 void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	// Follow equation 10 and 36 in Latex doc
-	cout << "In 'ThreeCompHe3::gradFE'" << endl;
-	auto FE = OPvector.adjoint() * FEgrad * OPvector;
-	cout << "FE = " << FE << endl;
+	// cout << "In 'ThreeCompHe3::gradFE'" << endl;
+	freeEg = Eigen::VectorXd(grid_size*grid_size); // resize the free energy grad vector
+	T_vector eta_dag = OPvector.adjoint();         // eta daggar; for more readable calculations
+	T_vector F_times_eta = FEgrad * OPvector;      // the rhs vector in equation 36
+
+	// loop over all points on the grid
+	for (int u = 0; u < Nu; u++) {
+		for (int v = 0; v < Nv; v++) {
+
+			int FE_id = ID(u,v,0); // calculate the ID of the point
+			freeEg( FE_id ) = 0;   // make sure the element starts at 0
+
+			// loop over all OP comonents...get all contributions to the FE at this point
+			for (int n = 0; n < OPvector.size(); n++) {
+				int id = ID(u,v,n);
+				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
+			}
+		}
+	}
+	// cout << "freeEg = " << freeEg << endl;
 }
 
 
@@ -97,10 +113,19 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 	return;
 }
 void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	//
-	cout << "In 'FiveCompHe3::gradFE'" << endl;
-	auto FE = OPvector.adjoint() * FEgrad * OPvector;
-	cout << "FE = " << FE << endl;
+	freeEg = Eigen::VectorXd(grid_size*grid_size);
+	T_vector eta_dag = OPvector.adjoint();
+	T_vector F_times_eta = FEgrad * OPvector;
+	for (int u = 0; u < Nu; u++) {
+		for (int v = 0; v < Nv; v++) {
+			int FE_id = ID(u,v,0);
+			freeEg( FE_id ) = 0;
+			for (int n = 0; n < OPvector.size(); n++) {
+				int id = ID(u,v,n);
+				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
+			}
+		}
+	}
 }
 
 
