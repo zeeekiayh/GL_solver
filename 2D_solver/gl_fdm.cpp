@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 		cout << endl << "M =\n" << M << endl;
 	}
 
-	cout << "solving system...";
+	cout << "solving system..." << endl;
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
 	cout << "solved!" << endl;
 
