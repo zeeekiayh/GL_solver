@@ -464,8 +464,11 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 	return;
 }
 
-// Write out the solution to a file (this is written for a 2D system)
-// We can write out a single vector (like for the Free Energy) with Nop=1
+// Write out the vector to a file (this is written for a 2D system,
+//    but can write 1D vectors just fine if Nv or Nu = 1).
+// We can write out different kinds of vectors:
+//    OPvector solution:   flag = 1; we'll use Nop from the class
+//    FEvector:            flag = 0;
 void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int flag) {
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
@@ -482,7 +485,7 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
                }
                data << std::endl; // end the line
             } else if (flag == 0) { // FE vector
-               data << "\t" << vector(id); // because it is already pure real!
+               data << "\t" << vector(id); // because it should already pure real!
             }
          }
       }
