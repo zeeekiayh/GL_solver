@@ -8,7 +8,10 @@ import matplotlib.gridspec as gridspec
 def readConditions(Nop):
     conditions = []
     line_count = 0
-    for line in open(f'conditions{Nop}.txt','r'):
+    for line in open(f'conditions{Nop}.txt','r'): # if you get a syntax error here,
+                                                  #   try restarting your computer...
+                                                  #   python probably didn't get to
+                                                  #   close the file before finishing.
         num = list(map(str, line.split()))  # put all the values into a list
         if line_count == 0:
             conditions.append(float(num[0]))
