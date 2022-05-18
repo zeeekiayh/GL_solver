@@ -103,18 +103,26 @@ int main(int argc, char** argv)
 	cout << "calculating bulkRHS_FE...";
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
 	cout << "done" << endl;
-	
-	cout << "writing bulkRHS_FE vector to file...";
-	pSC->WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
-	cout << "done" << endl;
 
 	cout << "calculating gradFE...";
 	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
 	cout << "done" << endl;
 	
-	cout << "writing FEgrad vector to file...";
-	pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
+	// save the FE data
+	cout << "writing totalFE vector to file...";
+	T_vector totalFE = freeEb+freeEg;
+	pSC->WriteToFile(totalFE, "totalFE"+to_string(Nop)+".txt", 0);
 	cout << "done" << endl;
+
+	if (debug) {
+		cout << "writing bulkRHS_FE vector to file...";
+		pSC->WriteToFile(freeEb, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
+		cout << "done" << endl;
+
+		cout << "writing FEgrad vector to file...";
+		pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
+		cout << "done" << endl;
+	}
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
