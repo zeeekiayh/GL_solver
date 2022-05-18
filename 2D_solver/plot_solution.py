@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 def readConditions(Nop):
     conditions = []
     line_count = 0
-    for line in open(f'conditions{Nop}.txt'):
+    for line in open(f'conditions{Nop}.txt','r'):
         num = list(map(str, line.split()))  # put all the values into a list
         if line_count == 0:
             conditions.append(float(num[0]))
@@ -113,20 +113,19 @@ def main(argv):
 
         # Plot the bulk free energy
         FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
-        for i in range(Nop):
-            plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-            im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_z,size_x)), extent=ext)
-            plt.colorbar(im)
-            plt.show()
+
+        plt.title(f'Bulk Free Energy for OP-{Nop}')
+        im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
+        plt.colorbar(im)
+        plt.show()
         
         # Plot the grad free energy # CONTINUE HERE!
-        # FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
-        # # print(f'{FE_grad = }')
-        # for i in range(Nop):
-        #     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-        #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_z,size_x)))
-        #     plt.colorbar(im)
-        #     plt.show()
+        FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
+
+        plt.title(f'Grad Free Energy for OP-{Nop}')
+        im = plt.imshow(np.reshape(FE_grad[:,2], (size_z,size_x)))
+        plt.colorbar(im)
+        plt.show()
     elif size_x == 1: # basically for the 1D case
         # plot only the slices, since the 2D view is not useful here
         plt.title("Slices top to bottom")
