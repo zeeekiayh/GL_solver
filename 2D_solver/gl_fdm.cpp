@@ -40,17 +40,19 @@ int main(int argc, char** argv)
 	cond.wait = 1;     // 2
 
 	// if you want to change the values ... should we put these back into the conditions file?
-	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
-	cout << "Do you want to change these values? (y/n): ";
-	string res;
-	cin >> res;
-	if (res == "y" || res == "Y") {
-		cout << "maxStore: ";
-		cin >> cond.maxStore;
-		cout << "rel_p: ";
-		cin >> cond.rel_p;
-		cout << "wait: ";
-		cin >> cond.wait;
+	if (debug) {
+		cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
+		cout << "Do you want to change these values? (y/n): ";
+		string res;
+		cin >> res;
+		if (res == "y" || res == "Y") {
+			cout << "maxStore: ";
+			cin >> cond.maxStore;
+			cout << "rel_p: ";
+			cin >> cond.rel_p;
+			cout << "wait: ";
+			cin >> cond.wait;
+		}
 	}
 
 	vector<int> no_update; // the vector of all the indeces of the OPvector that we don't want to change
@@ -92,17 +94,27 @@ int main(int argc, char** argv)
 
 	cout << "solving system...";
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
-	cout << "done" << endl;
+	cout << "solved!" << endl;
 
 	cout << "writing solution to file...";
 	pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1); // save the solution for plotting
-	cout << "done!" << endl;
+	cout << "done" << endl;
 
+	cout << "calculating bulkRHS_FE...";
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
+	cout << "done" << endl;
+	
+	cout << "writing bulkRHS_FE vector to file...";
 	pSC->WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
+	cout << "done" << endl;
 
+	cout << "calculating gradFE...";
 	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
+	cout << "done" << endl;
+	
+	cout << "writing FEgrad vector to file...";
 	pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
+	cout << "done" << endl;
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
