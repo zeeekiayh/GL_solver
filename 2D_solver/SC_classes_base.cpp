@@ -480,8 +480,8 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
                }
                data << std::endl; // end the line
             } else if (flag == 0) { // FE vector
-                  int id = ID(u, v, 0); // get the id
-               data << "\t" << vector(id); // because it should already pure real!
+               int id = ID(u, v, 0); // get the id
+               data << "\t" << vector(id).real() << endl; // because it should already pure real!
             }
          }
       }
