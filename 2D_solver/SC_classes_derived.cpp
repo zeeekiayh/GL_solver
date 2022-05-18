@@ -7,10 +7,6 @@
 using namespace std;
 using namespace Eigen;
 
-// implement class specific
-// CONTINUE HERE: TODO: implement this!!
-// void gradFE(VectorXd & freeEg, in_conditions parameters, const T_vector & OPvector,     Bound_Cond eta_BC[], Matrix2d **gradK);
-
 // function to get the RHS of GL differential equations, determined from the bulk functional; 
 // ------  coded in he3bulk.cpp ---------
 // input: temp t, pressure p, matrix A, 
@@ -57,7 +53,7 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	// Follow equation 10 and 36 in Latex doc
 	// cout << "In 'ThreeCompHe3::gradFE'" << endl;
-	freeEg = Eigen::VectorXd(grid_size*grid_size); // resize the free energy grad vector
+	// freeEg = Eigen::VectorXd(grid_size*grid_size); // resize the free energy grad vector
 	T_vector eta_dag = OPvector.adjoint();         // eta daggar; for more readable calculations
 	T_vector F_times_eta = FEgrad * OPvector;      // the rhs vector in equation 36
 
@@ -69,7 +65,7 @@ void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, B
 			freeEg( FE_id ) = 0;   // make sure the element starts at 0
 
 			// loop over all OP comonents...get all contributions to the FE at this point
-			for (int n = 0; n < OPvector.size(); n++) {
+			for (int n = 0; n < Nop; n++) {
 				int id = ID(u,v,n);
 				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
 			}
@@ -120,7 +116,7 @@ void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bo
 		for (int v = 0; v < Nv; v++) {
 			int FE_id = ID(u,v,0);
 			freeEg( FE_id ) = 0;
-			for (int n = 0; n < OPvector.size(); n++) {
+			for (int n = 0; n < Nop; n++) {
 				int id = ID(u,v,n);
 				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
 			}
