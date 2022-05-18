@@ -26,8 +26,8 @@ int main(int argc, char** argv)
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
-	Bound_Cond eta_BC[Nop]; // boundary conditions for OP components
-	Matrix2d **gradK;       // gradient coefficients in GL functional
+	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
+	Matrix2d **gradK;            // gradient coefficients in GL functional
 	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
-	cond.rel_p = 0.1;   // 0.1
-	cond.wait = 1;      // 2
+	cond.rel_p = 0.1;  // 0.1
+	cond.wait = 1;     // 2
 
 	// if you want to change the values ... should we put these back into the conditions file?
 	cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
@@ -58,9 +58,9 @@ int main(int argc, char** argv)
 	int GridSize = cond.SIZEu * cond.SIZEv; // number of grid points 
 	int VectSize = cond.Nop * GridSize;     // number of elements in the overall OP vector 
 
-	T_vector OPvector(VectSize);                // the vector of all values of the OP on the mesh
-	T_vector rhsBC = T_vector::Zero(VectSize); // the addition to the rhs for D-type BC's
-	T_vector dummy(VectSize);                   // a dummy vector, ...for free energy?
+	T_vector OPvector(VectSize);                 // the vector of all values of the OP on the mesh
+	T_vector rhsBC = T_vector::Zero(VectSize);   // the addition to the rhs for D-type BC's
+	T_vector dummy(VectSize);                    // a dummy vector, ...for free energy?
 	SpMat_cd M(VectSize,VectSize);               // the matrix we will use to solve
 	VectorXd freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
 	// add other observables here as desired...
@@ -75,12 +75,11 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "initializing guess...";
-	// initializeOPguess(cond, eta_BC, OPvector, GridSize, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initialOPguess(eta_BC, OPvector, no_update);
+	pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
-		WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
+		pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
 	}
 
 	cout << "building solver matrix...";
@@ -92,28 +91,18 @@ int main(int argc, char** argv)
 	}
 
 	cout << "solving system...";
-	//Solver(OPvector, M, rhsBC, cond, no_update, pSC, debug);
-	Solver(OPvector, M, rhsBC, cond, no_update, pSC);
+	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
 	cout << "done" << endl;
 
 	cout << "writing solution to file...";
-	pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1);
+	pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1); // save the solution for plotting
 	cout << "done!" << endl;
 
-	// ---- updated May 12, 2020 ----- 
-	// PLAN for the rest of the code:
+	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
+	pSC->WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
 
-	//* CONTINUE HERE!
-	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb);
-	// get the bulk contribution to free energy 
-	WriteToFile(dummy, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
-
-	pSC->gradFE(freeEg, OPvector, eta_BC, gradK);
-	// get the gradient contribution to free energy 
-
-	// then follows the print-out of the results into appropriate files
-	// ... save the FE things as well!
-	// */
+	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
+	pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
