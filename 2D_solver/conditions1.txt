@@ -1,0 +1,15 @@
+1       # OP size (make sure that this is consistent with the K matrix below)
+
+BOUNDARY CONDITIONS
+top           bottom         left           right     ( D/N : slip : value )
+N  1e10  1    N  1e10  1    D  1e-10  1    D  1e-10  -1  # Azz
+
+K MATRIX
+(1,0,0,1)
+
+50 25 # mesh size (x, z)
+0.8    # h (step size)
+0.5e-4  # temperature
+1e5     # pressure
+1e-6    # accuracy
+100     # number loops
