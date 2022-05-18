@@ -6,6 +6,7 @@ initGuess?.txt
 solution?.txt
 bulkRHS_FE?.txt
 FEgrad?.txt
+totalFE?.txt
 
 # ignore gl_fdm changes
 gl_fdm
