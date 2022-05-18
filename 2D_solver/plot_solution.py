@@ -114,21 +114,31 @@ def main(argv):
     if size_x > 1:
         plot_OP_comps_and_slices(Nop, A, ext, step, size_z)
 
-        # Plot the bulk free energy
-        FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
+        if debug:
+            # Plot the bulk free energy
+            FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
 
-        plt.title(f'Bulk Free Energy for OP-{Nop}')
+            plt.title(f'Bulk Free Energy for OP-{Nop}')
+            im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
+            plt.colorbar(im)
+            plt.show()
+            
+            # Plot the grad free energy # CONTINUE HERE!
+            FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
+
+            plt.title(f'Grad Free Energy for OP-{Nop}')
+            im = plt.imshow(np.reshape(FE_grad[:,2], (size_z,size_x)))
+            plt.colorbar(im)
+            plt.show()
+        
+        # but we'll always plot the total
+        FE_bulk = np.loadtxt(f'totalFE{Nop}.txt')
+
+        plt.title(f'Total Free Energy for OP-{Nop}')
         im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
         plt.colorbar(im)
         plt.show()
-        
-        # Plot the grad free energy # CONTINUE HERE!
-        FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
 
-        plt.title(f'Grad Free Energy for OP-{Nop}')
-        im = plt.imshow(np.reshape(FE_grad[:,2], (size_z,size_x)))
-        plt.colorbar(im)
-        plt.show()
     elif size_x == 1: # basically for the 1D case
         # plot only the slices, since the 2D view is not useful here
         plt.title("Slices top to bottom")
