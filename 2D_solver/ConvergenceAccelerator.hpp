@@ -132,9 +132,9 @@ converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vect
 	waitXiter=wtX;
 	relax_param = rlxp;
 	no_update_points = no_update;
-	std::cout   << "Starting Converg.Acceler with MaxStored = " << MaxStored 
-			<< "\n\t\t initial relax attempts = " << waitXiter 
-			<< "\n\t\t relax.param = " << relax_param 
+	std::cout   << "\tStarting Converg.Acceler with MaxStored = " << MaxStored 
+			<< "\n\t\t\t initial relax attempts = " << waitXiter 
+			<< "\n\t\t\t relax.param = " << relax_param 
 			<< std::endl; 
 	// we also create a seed here for the rand() function
 	srand (time(NULL)); 
