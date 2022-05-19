@@ -109,7 +109,7 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 	return;
 }
 void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	freeEg = Eigen::VectorXd(grid_size*grid_size);
+	// freeEg = Eigen::VectorXd(grid_size*grid_size);
 	T_vector eta_dag = OPvector.adjoint();
 	T_vector F_times_eta = FEgrad * OPvector;
 	for (int u = 0; u < Nu; u++) {

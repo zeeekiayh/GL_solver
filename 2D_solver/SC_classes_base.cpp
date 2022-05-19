@@ -459,6 +459,44 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 	return;
 }
 
+// a method of initializing a guess based on a previous solution
+void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update) {
+   if (solution.size() > OPvector.size()) {
+      cout << "ERROR: can't initialize a guess with a previous solution larger than the current:\n\tsolution.size() = " << solution.size() << "; OPvector.size()" << OPvector.size() << endl;
+      return;
+   }
+   // should we fix the boundaries...? using no_update?
+   for (int i = 0; i < solution.size(); i++)
+      OPvector(i) = solution(i);
+   for (int i = solution.size(); i < OPvector.size(); i++)
+      OPvector(i) = 0.;
+   // And what will happen to the solution of the new one (i.e. what OPvector will become)
+   //    if the derivative matrices are different? Will it still converge?
+
+   // "take the initial guess as 3-component solution from left to right (Dirichlet on
+   //    left/right and top/bottom) - should converge within 1 iteration, since this is a solution"
+}
+
+
+// "and the interesting thing to check is take the initial guess of 3-compnent solution on the
+//    left side smoothly changing to 3-component solution with Azz flipped on the right side."
+
+
+// void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+//    // get all the information from the "conditions.txt"
+// 	in_conditions cond;
+// 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
+// 	Matrix2d **gradK;            // gradient coefficients in GL functional
+// 	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
+// 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
+
+// 	read_input_data(Nop, cond, eta_BC, gradK, conditions_file);
+// 	//confirm_input_data(Nop, cond, eta_BC, gradK);
+   
+//    SC.initialOPguess(eta_BC, OPvector, no_update);
+//    SC.BuildSolverMatrix()
+// }
+
 // Write out the vector to a file (this is written for a 2D system,
 //    but can write 1D vectors just fine if Nv or Nu = 1).
 // We can write out different kinds of vectors:
