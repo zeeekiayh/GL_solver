@@ -460,6 +460,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 }
 
 // a method of initializing a guess based on a previous solution
+// NOTE: this funciton will mess things up if grid_size for solution is different than the grid_size for OPvector
 void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update) {
    if (solution.size() > OPvector.size()) {
       cout << "ERROR: can't initialize a guess with a previous solution larger than the current:\n\tsolution.size() = " << solution.size() << "; OPvector.size()" << OPvector.size() << endl;
