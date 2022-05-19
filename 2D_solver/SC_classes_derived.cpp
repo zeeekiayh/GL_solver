@@ -87,9 +87,9 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 
 		// create He3 OP matrix
 		Matrix<T_scalar,3,3> A; 
-					  A <<  eta_bulk[0],    0,      eta_bulk[3],
+					  A <<  eta_bulk[0],    0,      eta_bulk[4],
 					          0,          eta_bulk[1],    0,
-						   eta_bulk[4],    0,      eta_bulk[2];
+						   eta_bulk[3],    0,      eta_bulk[2];
 
 		Matrix<T_scalar,3,3> dFdA;
 		double FEbulk, betaB;
