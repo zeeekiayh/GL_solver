@@ -55,7 +55,10 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
                         np.linspace(ext[2],ext[3],len(organized_array[0])) )
     surf = None
     for i in range(Nop):
-        surf = ax2.plot_surface(X,Y,organized_array[i])
+        surf = ax2.plot_surface(X,Y,organized_array[i],label=f'OP comp #{i+1}')
+        surf._facecolors2d = surf._facecolor3d # We need these because of a strange bug in matplotlib;
+        surf._edgecolors2d = surf._edgecolor3d # see https://stackoverflow.com/questions/55531760/is-there-a-way-to-label-multiple-3d-surfaces-in-matplotlib
+    plt.legend()
     plt.show()
     plt.clf()
 
