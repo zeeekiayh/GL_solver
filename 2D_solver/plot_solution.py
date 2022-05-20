@@ -83,7 +83,7 @@ def main(argv):
     elif (len(argv)!=1):
         print("Incorrect number of arguments in python call!")
 
-    fig = plt.figure(figsize=(20,20))
+    # fig = plt.figure(figsize=(20,20))
     # gs = gridspec.GridSpec()
 
     # read in Nop from arguments
@@ -99,7 +99,7 @@ def main(argv):
     A = np.array([ np.reshape(OP_array[:,2*i+2], (size_z,size_x)) for i in range(Nop) ])
 
     # the domain extents for the imshow calls
-    ext = [min(OP_array[:,0]), max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
+    ext = [min(OP_array[:,1]), max(OP_array[:,1]), min(OP_array[:,0]), max(OP_array[:,0])]
 
     # debugging: visualize the initial guess
     if debug:
@@ -141,12 +141,21 @@ def main(argv):
         
         # but we'll always plot the total
         FE_bulk = np.loadtxt(f'totalFE{Nop}.txt')
+        FE_on_grid = np.reshape(FE_bulk[:,2], (size_z,size_x))
 
-        plt.xlabel(r'$z/\xi$')
-        plt.ylabel(r'$x/\xi$')
-        plt.title(f'Total Free Energy for OP-{Nop}')
-        im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
-        plt.colorbar(im)
+        fig, (ax1,ax2) = plt.subplots(1,2)
+        fig.suptitle(f'Total Free Energy for OP-{Nop}')
+
+        ax1.set_ylabel(r'$z/\xi$')
+        ax1.set_xlabel(r'$x/\xi$')
+        ax1.set_title('Total FE profile')
+        ax1.plot(np.linspace(ext[0],ext[1],size_x), FE_on_grid[len(FE_on_grid)//2,:])
+
+        ax2.set_xlabel(r'$z/\xi$')
+        ax2.set_ylabel(r'$x/\xi$')
+        im = ax2.imshow(FE_on_grid, extent=ext)
+        ax2.set_aspect(size_z/size_x)
+        fig.colorbar(im,ax=ax2)
         plt.show()
 
     elif size_x == 1: # basically for the 1D case
