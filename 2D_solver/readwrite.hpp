@@ -103,44 +103,4 @@ inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta
 	return;
 }
 
-// a simple function to map a vector's ID to it's mesh grid coordinates
-// i.e., undoes: int ID(int n_u, int n_v, int n) { return n_u + Nu*n_v + grid_size*n; }
-inline void unMapID(int id, int Nu, int gsize, int& n_u, int& n_v) {
-	// id == (n_u + Nu*n_v + grid_size*n)
-	// id % grid_size = n_u + Nu*n_v
-	// (id % grid_size) % Nu = n_u
-	// [(id % grid_size) - n_u] / Nu = n_v
-	n_u = (id%gsize)%Nu;
-	n_v = ( (id%gsize)-n_u ) / Nu;
-}
-
-// Write out the solution to a file (this is written for a 2D system)
-// We can write out a single vector (like for the Free Energy) with Nop=1
-inline void WriteToFile(const T_vector& solution_vector, std::string file_name, int Nop, const in_conditions cond) {
-	std::ofstream data (file_name); // open the file for writing
-	if (data.is_open()) {           // if opening was successful...
-
-		int gsize = solution_vector.size()/cond.Nop;
-
-		for (int i = 0; i < gsize; i++) { // loop through each grid point
-			
-			int Nx,Nz; // get the grid position
-			unMapID(i, cond.SIZEu, gsize, Nx, Nz);
-
-			// put the grid position first
-			std::string line = std::__cxx11::to_string(cond.STEP*Nx) + std::string("\t")
-							 + std::__cxx11::to_string(cond.STEP*Nz);
-
-			for (int n = 0; n < cond.Nop; n++) { // put the element of each OP component on the same line
-				line += std::string("\t") + std::__cxx11::to_string(solution_vector(i + n*gsize).real())
-				      + std::string("\t") + std::__cxx11::to_string(solution_vector(i + n*gsize).imag());
-				// for T_scalar=double 
-				// line += std::string("\t") + std::__cxx11::to_string(solution_vector(i + n*gsize)); 
-			}
-			data << line << std::endl; // put the whole line in the file
-		}
-	}
-	else std::cout << "Unable to open '" << file_name << "' to write solution vector." << std::endl;
-}
-
 #endif

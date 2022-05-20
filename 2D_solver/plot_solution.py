@@ -8,7 +8,10 @@ import matplotlib.gridspec as gridspec
 def readConditions(Nop):
     conditions = []
     line_count = 0
-    for line in open(f'conditions{Nop}.txt'):
+    for line in open(f'conditions{Nop}.txt','r'): # if you get a syntax error here,
+                                                  #   try restarting your computer...
+                                                  #   python probably didn't get to
+                                                  #   close the file before finishing.
         num = list(map(str, line.split()))  # put all the values into a list
         if line_count == 0:
             conditions.append(float(num[0]))
@@ -31,23 +34,28 @@ def readConditions(Nop):
 
 # plot all the OP components in 2D and slices
 def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
+    plt.xlabel(r'$z/\xi$')
+    plt.ylabel(r'$x/\xi$')
+
     # plot the 2D solution
-    for i in range(Nop):
-        plt.title(f'OP component #{i}')
-        im = plt.imshow(organized_array[i], extent=ext)
-        plt.colorbar(im)
-        plt.show()
-        plt.clf()
+    # for i in range(Nop):
+    #     plt.title(f'OP component #{i}')
+    #     im = plt.imshow(organized_array[i], extent=ext)
+    #     plt.colorbar(im)
+    #     plt.show()
+    #     plt.clf()
         
     # plot 3D, all components
-    plt.title(f'OP component #{i}')
+    plt.title(f'OP-{Nop}')
     ax2 = plt.subplot(111, projection='3d')
-    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[i][0])),
-                        np.linspace(ext[2],ext[3],len(organized_array[i])) )
+    ax2.set_xlabel(r'$z/\xi$')
+    ax2.set_ylabel(r'$x/\xi$')
+    ax2.set_zlabel(r'$|A_{\alpha i}|$')
+    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[0][0])),
+                        np.linspace(ext[2],ext[3],len(organized_array[0])) )
     surf = None
     for i in range(Nop):
         surf = ax2.plot_surface(X,Y,organized_array[i])
-    plt.colorbar(surf)
     plt.show()
     plt.clf()
 
@@ -111,22 +119,33 @@ def main(argv):
     if size_x > 1:
         plot_OP_comps_and_slices(Nop, A, ext, step, size_z)
 
-        # Plot the bulk free energy
-        FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
-        for i in range(Nop):
-            plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-            im = plt.imshow(np.reshape(FE_bulk[:,2+2*i], (size_z,size_x)), extent=ext)
+        if debug:
+            # Plot the bulk free energy
+            FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
+
+            plt.title(f'Bulk Free Energy for OP-{Nop}')
+            im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
+            plt.colorbar(im)
+            plt.show()
+            
+            # Plot the grad free energy # CONTINUE HERE!
+            FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
+
+            plt.title(f'Grad Free Energy for OP-{Nop}')
+            im = plt.imshow(np.reshape(FE_grad[:,2], (size_z,size_x)))
             plt.colorbar(im)
             plt.show()
         
-        # Plot the grad free energy # CONTINUE HERE!
-        # FE_grad = np.loadtxt(f'gradFE{Nop}.txt')
-        # # print(f'{FE_grad = }')
-        # for i in range(Nop):
-        #     plt.title(f'Free Energy for OP-{Nop}; comp#{i}')
-        #     im = plt.imshow(np.reshape(FE_grad[:,2+2*i], (size_z,size_x)))
-        #     plt.colorbar(im)
-        #     plt.show()
+        # but we'll always plot the total
+        FE_bulk = np.loadtxt(f'totalFE{Nop}.txt')
+
+        plt.xlabel(r'$z/\xi$')
+        plt.ylabel(r'$x/\xi$')
+        plt.title(f'Total Free Energy for OP-{Nop}')
+        im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
+        plt.colorbar(im)
+        plt.show()
+
     elif size_x == 1: # basically for the 1D case
         # plot only the slices, since the 2D view is not useful here
         plt.title("Slices top to bottom")

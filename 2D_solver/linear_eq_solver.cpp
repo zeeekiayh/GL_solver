@@ -57,18 +57,12 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	int cts = 0; // count loops
 	double err;  // to store current error
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
-	// cout << "here ... 3" << endl;
 	T_vector df(vect_size), rhs(vect_size); 
-	// cout << "here ... 4" << endl;
 	//T_vector rhs_th(vect_size); 
 
 	// the acceleration object
 	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
-	// cout << "here ... 5" << endl;
-	// cout << "cond.maxStore = " << cond.maxStore << "; cond.wait = " << cond.wait << "; cond.rel_p = " << cond.rel_p << endl;
-	// cout << "rhsBC =\n" << rhsBC << endl;
 		   
-	//cout << "M = \n" << M << endl;
  	// loop until f converges or until it's gone too long
 	do { 
 		/*
@@ -78,7 +72,6 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		*/
 
 		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
-		// cout << "do: " << cts << endl;
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
 

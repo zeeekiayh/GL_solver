@@ -22,7 +22,6 @@ SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm) {
 // matrices for "free" space, without boundary conditions 
 // -------------------------------------------------------------------------------
 void SC_class :: Build_D_Matrices() {
-   // cout << "build matrices..." << endl;
    // make vectors to hold the triplets of coefficients
    vector<Trpl> coeffs_u2, coeffs_v2, coeffs_uv, coeffs_u, coeffs_v; // coeffs_v2, coeffs_uv, coeffs_vw
    double Wu, Wv, W; // weight for derivative coefficients 
@@ -72,7 +71,6 @@ void SC_class :: Build_D_Matrices() {
       }
    }
 
-   // cout << "looped successfully" << endl;
 
    // initialize the D's by grid_size
    Du2.resize( grid_size , grid_size );
@@ -87,19 +85,13 @@ void SC_class :: Build_D_Matrices() {
    Duv.setFromTriplets(coeffs_uv.begin(), coeffs_uv.end());
    Du.setFromTriplets(coeffs_u.begin(), coeffs_u.end());
    Dv.setFromTriplets(coeffs_v.begin(), coeffs_v.end());
-
-   // cout << "build matrices: done" << endl;
-   //cout << "Du2= \n " << Du2 << endl;
-   //cout << "Dv2= \n " << Dv2 << endl;
-   //cout << "Duv= \n " << Duv << endl;
 }
 
 // -------------------------------------------------------------------------------
 // add boundary conditions to the derivative matrices, by changing some of the 
 // matrix elements that were pre-reserved in Build_D_Matrices() above
 // -------------------------------------------------------------------------------
-SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
-{
+SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC) {
    SpMat_cd Du2_copy = Du2;// the matrix that we will edit and return to not modify the original
    rhsBC = T_vector::Zero(vect_size); 
 
@@ -134,12 +126,9 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
    return Du2_copy;
 }
 
-SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
-{
+SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC) {
    SpMat_cd Dv2_copy = Dv2;// the matrix that we will edit and return to not modify the original
    rhsBC = T_vector::Zero(vect_size); 
-   //cout << "\n\nbuilding Dv2 for component " << op_component << endl;
-   //cout << "rhsBC on input is = " << rhsBC.transpose() << endl;
 
    for (int u = 0; u < Nu; u++) // go over the top and bottom boundaries left to right 
    {
@@ -178,12 +167,10 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
          //	rhsBC(id) = initOPvector(id);
       }
    }
-   //cout << "Dv2["<<op_component<<"]= \n" << Dv2_copy << endl;
    return Dv2_copy;
 }
 
-SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
-{
+SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC) {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Duv_copy = Duv;
    rhsBC = T_vector::Zero(vect_size); 
@@ -330,8 +317,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
    return Duv_copy;
 }
 
-SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
-{
+SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC) {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Du_copy = Du;
 
@@ -365,8 +351,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector i
    return Du_copy;
 }
 
-SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector initOPvector, T_vector & rhsBC)
-{
+SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC) {
    // the matrix that we will edit and return to not modify the original
    SpMat_cd Dv_copy = Dv;
 
@@ -407,34 +392,40 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    // Use equ. (15) in the Latex file:
    //    [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
    // For free energy matrix we use the equation (10) and (36) in the latex file
-   // 	SpMat_cd FEgrad; 
+   
+   // initialize the FEgrad matrix
+   FEgrad.resize(Nop*grid_size,Nop*grid_size);
+
    for (int m = 0; m < Nop; m++) {
       for (int n = 0; n < Nop; n++) {
-         SpMat_cd toInsert(grid_size,grid_size);
-         //SpMat_cd toInsertFE(grid_size,grid_size);
+         SpMat_cd toInsertM(grid_size,grid_size);
+         SpMat_cd toInsertFE(grid_size,grid_size);
 
          if (gradK[m][n](x,x) != 0 && Nu > 1){
-            toInsert += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            toInsertM += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
-            //toInsertFE += gradK[m][n](x,x) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+
+            toInsertFE += gradK[m][n](x,x) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
          if (gradK[m][n](z,z) != 0 && Nv > 1){
-            toInsert += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            toInsertM += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
-            //toInsertFE += gradK[m][n](x,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+            
+            toInsertFE += gradK[m][n](x,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
-            toInsert += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            //toInsertFE += gradK[m][n](z,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal)
-            //		  + gradK[m][n](x,z) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-	   }
+            toInsertM += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            
+            toInsertFE += gradK[m][n](z,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal)
+            		      + gradK[m][n](x,z) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
 
-         M += Place_subMatrix( m, n, Nop, toInsert );
-         //FEgrid += Place_subMatrix( m, n, Nop, toInsertFE );
+         M += Place_subMatrix( m, n, Nop, toInsertM );
+         FEgrad += Place_subMatrix( m, n, Nop, toInsertFE );
 
-	   //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsert;
+	      //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
    }
 
@@ -445,10 +436,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 
-	// cout << "In 'initializeOPguess'" << endl;
 	for (int n = 0; n < Nop; n++) {
-		// cout << "\tn = " << n << endl;
-		
 		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
 		auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
 		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
@@ -469,4 +457,75 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
    // if (debug) cout << "initial guess:\n" << OPvector << endl;
 
 	return;
+}
+
+// a method of initializing a guess based on a previous solution
+// NOTE: this funciton will mess things up if grid_size for solution is different than the grid_size for OPvector
+void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update) {
+   if (solution.size() > OPvector.size()) {
+      cout << "ERROR: can't initialize a guess with a previous solution larger than the current:\n\tsolution.size() = " << solution.size() << "; OPvector.size()" << OPvector.size() << endl;
+      return;
+   }
+   // should we fix the boundaries...? using no_update?
+   for (int i = 0; i < solution.size(); i++)
+      OPvector(i) = solution(i);
+   for (int i = solution.size(); i < OPvector.size(); i++)
+      OPvector(i) = 0.;
+   // And what will happen to the solution of the new one (i.e. what OPvector will become)
+   //    if the derivative matrices are different? Will it still converge?
+
+   // "take the initial guess as 3-component solution from left to right (Dirichlet on
+   //    left/right and top/bottom) - should converge within 1 iteration, since this is a solution"
+}
+
+
+// "and the interesting thing to check is take the initial guess of 3-compnent solution on the
+//    left side smoothly changing to 3-component solution with Azz flipped on the right side."
+
+
+// void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+//    // get all the information from the "conditions.txt"
+// 	in_conditions cond;
+// 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
+// 	Matrix2d **gradK;            // gradient coefficients in GL functional
+// 	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
+// 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
+
+// 	read_input_data(Nop, cond, eta_BC, gradK, conditions_file);
+// 	//confirm_input_data(Nop, cond, eta_BC, gradK);
+   
+//    SC.initialOPguess(eta_BC, OPvector, no_update);
+//    SC.BuildSolverMatrix()
+// }
+
+// Write out the vector to a file (this is written for a 2D system,
+//    but can write 1D vectors just fine if Nv or Nu = 1).
+// We can write out different kinds of vectors:
+//    OPvector solution:   flag = 1; we'll use Nop from the class
+//    FEvector:            flag = 0;
+void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int flag) {
+	std::ofstream data (file_name); // open the file for writing
+	if (data.is_open()) {           // if opening was successful...
+      // set precision here
+      data << std::setprecision(8) << std::fixed;
+      // loop through the whole mesh...
+      for (int v = 0; v < Nv; v++) {
+         for (int u = 0; u < Nu; u++) {
+            data << h*u << "\t" << h*v; // write the position
+
+            if (flag == 1) { // OP vector
+               // loop through all OP components...
+               for (int n = 0; n < Nop; n++) {
+                  int id = ID(u, v, n); // get the id
+                  data << "\t" << vector(id).real() << "  " << vector(id).imag();
+               }
+               data << std::endl; // end the line
+            } else if (flag == 0) { // FE vector
+               int id = ID(u, v, 0); // get the id
+               data << "\t" << vector(id).real() << endl; // because it should already pure real!
+            }
+         }
+      }
+	}
+	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
 }

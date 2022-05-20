@@ -2,6 +2,7 @@
 #define structures_hpp_
 
 #include <iostream>
+#include <iomanip> // for std::setprecision
 #include <fstream> // for file in/out
 #include <complex> 
 #include <typeinfo>
@@ -30,7 +31,7 @@ typedef Eigen::SparseMatrix<double> SpMat_cd;
 // ===========================================
 // Boundary condition structure for a single OP
    struct Bound_Cond {
-      std::string typeB, typeT, typeL, typeR; // type of BC: Dirichlet (value) or Neumann (derivative)
+      std::string typeB, typeT, typeL, typeR; // type of BC: D (Dirichlet), N (Neumann), or S (from a 1D Solution)
       double slipB, slipT, slipL, slipR;      // for Neumann BC  ...  the slip length
       double valueB, valueT, valueL, valueR;  // for Dirichlet BC ... the function value
 
