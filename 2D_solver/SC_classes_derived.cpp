@@ -129,9 +129,9 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 
 		// create He3 OP matrix
 		Matrix<T_scalar,3,3> A; 
-					  A <<  eta_bulk[0],    0,      eta_bulk[3],
+					  A <<  eta_bulk[0],    0,      eta_bulk[4],
 					          0,          eta_bulk[1],    0,
-						   eta_bulk[4],    0,      eta_bulk[2];
+						   eta_bulk[3],    0,      eta_bulk[2];
 
 		Matrix<T_scalar,3,3> dFdA;
 		double FEbulk, betaB;
@@ -141,8 +141,8 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 		dFdeta[0] = dFdA(0,0);
 		dFdeta[1] = dFdA(1,1);
 		dFdeta[2] = dFdA(2,2);
-		dFdeta[3] = dFdA(0,2);
-		dFdeta[4] = dFdA(2,0);
+		dFdeta[3] = dFdA(2,0);
+		dFdeta[4] = dFdA(0,2);
 		// and put them into the big vector in the same order as OP components 
 		for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
 		FEb(grid_point) = FEbulk;
