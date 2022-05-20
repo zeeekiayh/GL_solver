@@ -506,6 +506,8 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
 void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int flag) {
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
+      // set precision here
+      data << std::setprecision(8) << std::fixed;
       // loop through the whole mesh...
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
@@ -515,7 +517,7 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
                // loop through all OP components...
                for (int n = 0; n < Nop; n++) {
                   int id = ID(u, v, n); // get the id
-                  data << "\t" << vector(id).real() << "\t" << vector(id).imag();
+                  data << "\t" << vector(id).real() << "  " << vector(id).imag();
                }
                data << std::endl; // end the line
             } else if (flag == 0) { // FE vector
