@@ -51,8 +51,8 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
     ax2.set_xlabel(r'$z/\xi$')
     ax2.set_ylabel(r'$x/\xi$')
     ax2.set_zlabel(r'$|A_{\alpha i}|$')
-    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[0][0])),
-                        np.linspace(ext[2],ext[3],len(organized_array[0])) )
+    X, Y = np.meshgrid( np.linspace(ext[2],ext[3],len(organized_array[0][0])),
+                        np.linspace(ext[0],ext[1],len(organized_array[0])) )
     surf = None
     for i in range(Nop):
         surf = ax2.plot_surface(X,Y,organized_array[i],label=f'OP comp #{i+1}')
