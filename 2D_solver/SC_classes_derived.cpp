@@ -71,6 +71,7 @@ void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, B
 			}
 		}
 	}
+	freeEg /= h*h;
 	// cout << "freeEg = " << freeEg << endl;
 }
 
@@ -122,6 +123,7 @@ void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bo
 			}
 		}
 	}
+	freeEg /= h*h;
 }
 
 
