@@ -52,6 +52,7 @@ class SC_class{
 		// a method of initializing a guess based on a previous solution
 		// void initialOPguessFromSolution(SC_class & SC, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update);
+		void initGuessWithCircularDomain(T_vector & OPvector, std::vector<int> & no_update);
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
@@ -62,6 +63,7 @@ class SC_class{
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
 		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
+		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
 };
 
 // derived_classes depends on the particular form of the bulk free energy, that gives the appropriate RHS vector
