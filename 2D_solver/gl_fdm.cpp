@@ -14,39 +14,39 @@ int main(int argc, char** argv)
 {
 	// To calculate a solution based on the initial guess of this here...
 	// -----------------------------------------------------------------------------
-	cout << "solving for initial guess..." << endl;
-		int Nop_init = 3;
-		in_conditions cond_init;
-		Bound_Cond eta_BC_init[Nop_init];
-		Matrix2d **gradK_init;
-		gradK_init = new Matrix2d *[Nop_init];
-		for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
+	// cout << "solving for initial guess..." << endl;
+		// int Nop_init = 3;
+		// in_conditions cond_init;
+		// Bound_Cond eta_BC_init[Nop_init];
+		// Matrix2d **gradK_init;
+		// gradK_init = new Matrix2d *[Nop_init];
+		// for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
 
-		read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions"+to_string(Nop_init)+".txt");
+		// read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions"+to_string(Nop_init)+".txt");
 
-		cond_init.maxStore = 5;
-		cond_init.rel_p = 0.1;
-		cond_init.wait = 1;
+		// cond_init.maxStore = 5;
+		// cond_init.rel_p = 0.1;
+		// cond_init.wait = 1;
 
-		vector<int> no_update_init;
+		// vector<int> no_update_init;
 
-		int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
-		int VectSize_init = cond_init.Nop * GridSize_init;
+		// int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
+		// int VectSize_init = cond_init.Nop * GridSize_init;
 
-		T_vector OPvector_init(VectSize_init);
-		T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-		SpMat_cd M_init(VectSize_init,VectSize_init);
+		// T_vector OPvector_init(VectSize_init);
+		// T_vector rhsBC_init = T_vector::Zero(VectSize_init);
+		// SpMat_cd M_init(VectSize_init,VectSize_init);
 
-		SC_class *pSC_init;
-			if (Nop_init == 3) pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		else if (Nop_init == 5) pSC_init = new FiveCompHe3 ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		else if (Nop_init == 1) pSC_init = new OneCompSC   ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
+		// SC_class *pSC_init;
+		// 	if (Nop_init == 3) pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+		// else if (Nop_init == 5) pSC_init = new FiveCompHe3 ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+		// else if (Nop_init == 1) pSC_init = new OneCompSC   ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+		// else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
 
-		pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-		pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
-		Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-	cout << "solved solution for initial guess." << endl;
+		// pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
+		// pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
+		// Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
+	// cout << "solved solution for initial guess." << endl;
 	// -----------------------------------------------------------------------------
 
 
@@ -116,8 +116,9 @@ int main(int argc, char** argv)
 
 	cout << "initializing guess...";
 	// - - - - switch these here to initialize with previous guess
-	pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
+	pSC->initGuessWithCircularDomain(OPvector, no_update);
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging

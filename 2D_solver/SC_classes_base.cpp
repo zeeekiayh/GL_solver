@@ -483,6 +483,38 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
 //    left side smoothly changing to 3-component solution with Azz flipped on the right side."
 
 
+void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & no_update) {
+   // all boundaries should be Dirichlet => 1
+   // we will create the circular domain in the middle of Ayy to be -1
+
+   // the radius of the domain...we're assuming that the domain itself is large enough
+   double r = 4;
+   if (Nu*h/2 <= r || Nv*h/2 <= r)
+      cout << "WARNING: the circular domain will be too large!" << endl;
+   
+   // location of the ceter of the grid
+   int u_center = round(Nu/2);
+   int v_center = round(Nv/2);
+
+   for (int n = 0; n < Nop; n++) {
+      // loop over the whole mesh
+      for (int u = 0; u < Nu; u++) {
+         for (int v = 0; v < Nv; v++) {
+            int id = ID(u,v,n);
+
+            // for only Ayy:
+            // if the grid point is close enough to the center
+            if (n == 1 && sqrt( pow( h*(u-u_center), 2 ) + pow( h*(v-v_center), 2 ) ) < r) {
+               OPvector(id) = -1.;
+            } else {
+               OPvector(id) = 1.;
+            }
+         }
+      }
+   }
+}
+
+
 // void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 //    // get all the information from the "conditions.txt"
 // 	in_conditions cond;
