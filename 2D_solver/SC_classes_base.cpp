@@ -443,7 +443,8 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) {
-			double x = h*(u - Nu/2);
+			// double x = h*u; // to put the domain wall at x=0
+			double x = h*(u - Nu/2); // to put the domain wall at the middle: x=h*Nu/2
 			for (int v = 0; v < Nv; v++) {
 				double z = h*v;
 				int id = ID(u,v,n);
@@ -482,6 +483,36 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
 // "and the interesting thing to check is take the initial guess of 3-compnent solution on the
 //    left side smoothly changing to 3-component solution with Azz flipped on the right side."
 
+void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // 
+   for (int n = 0; n < Nop; n++) {
+		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
+		auto deltaX = (eta_BC[n].valueR - eta_BC[n].valueL)/2.;
+		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+
+		// going through the entire grid
+		for (int u = 0; u < Nu; u++) {
+			double x = h*u;
+			for (int v = 0; v < Nv; v++) {
+				double z = h*v;
+				int id = ID(u,v,n);
+
+            if (n == 0 || n == 1)
+				   OPvector(id) = 1.;
+            else if (n == 2)
+               OPvector(id) = tanh(z/2) * tanh( (x - h*Nu/2)/2 );
+            else if (n == 3 || n == 4)
+               OPvector(id) = 0.;
+
+			}
+		}
+	}
+
+   // if (debug) cout << "initial guess:\n" << OPvector << endl;
+
+	return;
+}
+
 
 void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & no_update) {
    // all boundaries should be Dirichlet => 1
@@ -515,6 +546,7 @@ void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & 
 }
 
 
+// Some way to have this function solve for the solution to use as guess?
 // void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 //    // get all the information from the "conditions.txt"
 // 	in_conditions cond;
@@ -549,8 +581,8 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
             data << "\t#" << n << ".real     #" << n << ".imag   ";
       }
       else if (flag == 0) // FE vector
-         data << "\tFE";
-      data << std::endl; // end the line
+         data << "\tFE";  // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
+      data << std::endl;  // end the line
 
       // loop through the whole mesh...
       for (int v = 0; v < Nv; v++) {
@@ -564,8 +596,9 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
                   data << "\t" << vector(id).real() << "  " << vector(id).imag();
                }
                data << std::endl; // end the line
-            } else if (flag == 0) { // FE vector
+            } else if (flag == 0) {  // FE vector
                int id = ID(u, v, 0); // get the id
+               // TODO: add more here! more columns like said above
                data << "\t" << vector(id).real() << endl; // because it should already pure real!
             }
          }
