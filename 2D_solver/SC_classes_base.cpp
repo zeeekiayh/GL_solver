@@ -549,7 +549,7 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
             data << "\t#" << n << ".real     #" << n << ".imag   ";
       }
       else if (flag == 0) // FE vector
-         data << "\tFE" << endl;
+         data << "\tFE";
       data << std::endl; // end the line
 
       // loop through the whole mesh...
