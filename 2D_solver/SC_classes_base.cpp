@@ -540,6 +540,18 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
 	if (data.is_open()) {           // if opening was successful...
       // set precision here
       data << std::setprecision(8) << std::fixed;
+
+      // label the columns in the output file
+      data << "h*u     \th*v     ";
+      if (flag == 1) { // OP vector
+         // loop through all OP components...
+         for (int n = 0; n < Nop; n++)
+            data << "\t#" << n << ".real     #" << n << ".imag   ";
+      }
+      else if (flag == 0) // FE vector
+         data << "\tFE" << endl;
+      data << std::endl; // end the line
+
       // loop through the whole mesh...
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
