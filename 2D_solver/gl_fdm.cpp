@@ -115,10 +115,11 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "initializing guess...";
-	// - - - - switch these here to initialize with previous guess
+	// - - - - switch these here to initialize in other ways
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
-	pSC->initGuessWithCircularDomain(OPvector, no_update);
+	// pSC->initGuessWithCircularDomain(OPvector, no_update);
+	pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
