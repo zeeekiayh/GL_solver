@@ -82,7 +82,7 @@ def read_FE_File(file_name):
     return Ncols, Nu, Nv, h, FE_data_array, labels
 
 # plot all the OP components in 2D and slices
-def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
+def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext):
 
     # if it's going to be hard to see in the 3d plot...
     if Nop > 3:
@@ -98,14 +98,14 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
         
     # plot 3D, all components
     plt.title(f'OP-{Nop}')
-    ax2 = plt.subplot(111, projection='3d')
-    ax2.set_xlabel(r'$x/\xi$')
-    ax2.set_ylabel(r'$z/\xi$')
-    ax2.set_zlabel(r'$|A_{\alpha i}|$')
-    X, Y = np.meshgrid( np.linspace(ext[2],ext[3],len(organized_array[0][0])),
-                        np.linspace(ext[0],ext[1],len(organized_array[0])) )
+    ax = plt.subplot(111, projection='3d')
+    ax.set_xlabel(r'$x/\xi$')
+    ax.set_ylabel(r'$z/\xi$')
+    ax.set_zlabel(r'$|A_{\alpha i}|$')
     for i in range(Nop):
-        ax2.scatter(X,Y,organized_array[i],label=f'OP comp #{i+1}')
+        ax.scatter(X,Z,organized_array[i],label=f'OP comp #{i+1}')
+        # If the 3D plot is too crowded, use thinned out arrays!
+        # ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{i+1}')
     plt.legend()
     plt.show()
     plt.clf()
@@ -137,6 +137,7 @@ def main(argv):
 
     # sort the OP_array for ease of plotting
     A = np.array([ np.reshape(OP_array[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
+    X, Z = np.reshape(OP_array[:,0], (Nv,Nu)), np.reshape(OP_array[:,1], (Nv,Nu))
 
     # the domain extents for the imshow calls
     ext = [0*h, Nv*h, 0*h, Nu*h]
@@ -161,7 +162,7 @@ def main(argv):
             plt.show()
 
     if Nu > 1:
-        plot_OP_comps_and_slices(Nop, A, ext, h, Nv)
+        plot_OP_comps_and_slices(Nop, A, X, Z, ext)
 
         if debug: # TODO: make sure this is working!
             # Plot the bulk free energy
