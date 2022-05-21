@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip> // for std::setprecision
 #include <fstream> // for file in/out
+#include <math.h>
 #include <complex> 
 #include <typeinfo>
 
