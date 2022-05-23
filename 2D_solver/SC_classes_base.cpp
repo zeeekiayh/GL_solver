@@ -507,11 +507,30 @@ void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, v
 			}
 		}
 	}
-
-   // if (debug) cout << "initial guess:\n" << OPvector << endl;
-
 	return;
 }
+// void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // for (int n = 0; n < Nop; n++) {
+	// 	auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
+	// 	auto deltaX = (eta_BC[n].valueR - eta_BC[n].valueL)/2.;
+	// 	auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+	// 	// going through the entire grid
+	// 	for (int u = 0; u < Nu; u++) {
+	// 		double x = h*u;
+	// 		for (int v = 0; v < Nv; v++) {
+	// 			double z = h*v;
+	// 			int id = ID(u,v,n);
+   //          if (n == 0 || n == 1)
+	// 			   OPvector(id) = 1.;
+   //          else if (n == 2)
+   //             OPvector(id) = tanh(z/2) * tanh( (x - h*Nu/2)/2 );
+   //          else if (n == 3 || n == 4)
+   //             OPvector(id) = 0.;
+	// 		}
+	// 	}
+	// }
+	// return;
+// }
 
 
 void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & no_update) {
