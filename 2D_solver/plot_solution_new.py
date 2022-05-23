@@ -82,7 +82,7 @@ def read_FE_File(file_name):
     return Ncols, Nu, Nv, h, FE_data_array, labels
 
 # plot all the OP components in 2D and slices
-def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext):
+def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels):
 
     # if it's going to be hard to see in the 3d plot...
     if Nop > 3:
@@ -90,7 +90,7 @@ def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext):
         for i in range(Nop):
             plt.xlabel(r'$z/\xi$')
             plt.ylabel(r'$x/\xi$')
-            plt.title(f'OP component #{i}')
+            plt.title(f'OP component {labels[i]}')
             im = plt.imshow(organized_array[i], extent=ext)
             plt.colorbar(im)
             plt.show()
@@ -103,7 +103,7 @@ def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext):
     ax.set_ylabel(r'$z/\xi$')
     ax.set_zlabel(r'$|A_{\alpha i}|$')
     for i in range(Nop):
-        ax.scatter(X,Z,organized_array[i],label=f'OP comp #{i+1}')
+        ax.scatter(X,Z,organized_array[i],label=f'OP comp {labels[i]}')
         # If the 3D plot is too crowded, use thinned out arrays!
         # ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{i+1}')
     plt.legend()
@@ -162,7 +162,7 @@ def main(argv):
             plt.show()
 
     if Nu > 1:
-        plot_OP_comps_and_slices(Nop, A, X, Z, ext)
+        plot_OP_comps_and_slices(Nop, A, X, Z, ext, labels[2::2])
 
         if debug: # TODO: make sure this is working!
             # Plot the bulk free energy
