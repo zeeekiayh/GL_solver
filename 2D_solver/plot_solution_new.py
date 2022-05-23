@@ -85,16 +85,16 @@ def read_FE_File(file_name):
 def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels):
 
     # if it's going to be hard to see in the 3d plot...
-    if Nop > 3:
-        # plot the 2D solution
-        for i in range(Nop):
-            plt.xlabel(r'$z/\xi$')
-            plt.ylabel(r'$x/\xi$')
-            plt.title(f'OP component {labels[i]}')
-            im = plt.imshow(organized_array[i], extent=ext)
-            plt.colorbar(im)
-            plt.show()
-            plt.clf()
+    # if Nop > 3:
+    # plot the 2D solution
+    for i in range(Nop):
+        plt.xlabel(r'$z/\xi$')
+        plt.ylabel(r'$x/\xi$')
+        plt.title(f'OP component {labels[i]}')
+        im = plt.imshow(organized_array[i], extent=ext)
+        plt.colorbar(im)
+        plt.show()
+        plt.clf()
         
     # plot 3D, all components
     plt.title(f'OP-{Nop}')
@@ -136,11 +136,13 @@ def main(argv):
     Nop, Nu, Nv, h, OP_array, labels = readSolutionFile(argv[0])
 
     # sort the OP_array for ease of plotting
-    A = np.array([ np.reshape(OP_array[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
+    A = np.array([ np.reshape(OP_array[:,2*i+2], (Nv,Nu)).transpose() for i in range(Nop) ])
     X, Z = np.reshape(OP_array[:,0], (Nv,Nu)), np.reshape(OP_array[:,1], (Nv,Nu))
+    X = X.transpose() # make sure they are good for display!
+    Z = Z.transpose()
 
     # the domain extents for the imshow calls
-    ext = [0*h, Nv*h, 0*h, Nu*h]
+    ext = [0*h, Nu*h, 0*h, Nv*h]
 
     # debugging: visualize the initial guess
     if debug: # TODO: check if this is working!
@@ -151,7 +153,7 @@ def main(argv):
         initOP = np.array([ np.reshape(op[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
 
         if Nu > 1:
-            plot_OP_comps_and_slices(Nop, initOP, ext, h, Nv)
+            plot_OP_comps_and_slices(Nop, initOP, X, Z, ext, labels[2::2])
         elif Nu == 1: # basically for the 1D case
             # plot only the slices, since the 2D view is not useful here
             plt.title("Slices top to bottom")
