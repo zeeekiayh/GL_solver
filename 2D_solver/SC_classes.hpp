@@ -53,7 +53,8 @@ class SC_class{
 		// void initialOPguessFromSolution(SC_class & SC, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update);
 		void initGuessWithCircularDomain(T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, std::vector<int> & no_update);
+		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, std::vector<int> & no_update);
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );

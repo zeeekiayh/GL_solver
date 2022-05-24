@@ -1,11 +1,16 @@
 #include "SC_classes.hpp"
-
+#include "readwrite.hpp"
 #include "structures.hpp"
 #include <vector>
 #include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Place_subMatrix
 
 using namespace Eigen;
 using namespace std;
+
+
+// prototype for function defined in linear_eq_solver.cpp
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+
 
 typedef Triplet<double> Trpl;
 
@@ -480,30 +485,89 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
 }
 
 
+void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, vector<int> & no_update) {
+   cout << "initOPguess_NarrowChannel()" << endl;
+   // solve for the normal 3-component system
+   int Nop_init = 3;
+   in_conditions cond_init;
+   Bound_Cond eta_BC_init[Nop_init];
+   Matrix2d **gradK_init;
+   gradK_init = new Matrix2d *[Nop_init];
+   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
+   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_normal.txt");
+   cond_init.maxStore = 5;
+   cond_init.rel_p = 0.1;
+   cond_init.wait = 1;
+   vector<int> no_update_init;
+   // for us, we need this to be the z-length of our system
+   cond_init.SIZEv = cond.SIZEv;
+   cond_init.SIZEu = 1;
+   cond_init.STEP = cond.STEP;
+   int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
+   int VectSize_init = cond_init.Nop * GridSize_init;
+   T_vector OPvector_init(VectSize_init);
+   SpMat_cd M_init(VectSize_init,VectSize_init);
+   T_vector rhsBC_init = T_vector::Zero(VectSize_init);
+   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+   pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
+   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
+   Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
+
+   for (int n = 0; n < Nop; n++) {
+      for (int v = 0; v < Nv; v++) {
+         int id_forward = ID(0,v,n);
+         int id_backward = ID(0,Nv-1-v,n);
+         OPvector(id_forward) = OPvector_init(id_forward)*OPvector_init(id_backward);
+      }
+   }
+	return;
+}
+
 // "and the interesting thing to check is take the initial guess of 3-compnent solution on the
 //    left side smoothly changing to 3-component solution with Azz flipped on the right side."
 
-void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // 
-   for (int n = 0; n < Nop; n++) {
-		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-		auto deltaX = (eta_BC[n].valueR - eta_BC[n].valueL)/2.;
-		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, vector<int> & no_update) {
+   cout << "initOPguess_AzzFlip()" << endl;
+   // solve for the normal 3-component system
+   int Nop_init = 3;
+   in_conditions cond_init;
+   Bound_Cond eta_BC_init[Nop_init];
+   Matrix2d **gradK_init;
+   gradK_init = new Matrix2d *[Nop_init];
+   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
+   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_1DChannel.txt");
+   cond_init.maxStore = 5;
+   cond_init.rel_p = 0.1;
+   cond_init.wait = 1;
+   vector<int> no_update_init;
+   // for us, we need this to be the z-length of our system
+   cond_init.SIZEv = cond.SIZEv;
+   cond_init.SIZEu = 1;
+   cond_init.STEP = cond.STEP;
+   int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
+   int VectSize_init = cond_init.Nop * GridSize_init;
+   T_vector OPvector_init(VectSize_init);
+   SpMat_cd M_init(VectSize_init,VectSize_init);
+   T_vector rhsBC_init = T_vector::Zero(VectSize_init);
+   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+	pSC_init->initOPguess_1DNarrowChannel(eta_BC_init, OPvector_init, cond_init, no_update_init);
+   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
+   Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
 
-		// going through the entire grid
-		for (int u = 0; u < Nu; u++) {
-			double x = h*u;
-			for (int v = 0; v < Nv; v++) {
-				double z = h*v;
-				int id = ID(u,v,n);
+   // going through the entire grid
+   for (int u = 0; u < Nu; u++) {
+      for (int v = 0; v < Nv; v++) {
+         for (int n = 0; n < Nop; n++) {
+            double x = h*u;
+				int id      = ID(u,v,n);
+            int id_init = v + GridSize_init*n;
 
             if (n == 0 || n == 1)
-				   OPvector(id) = 1.;
+               OPvector(id) = OPvector_init( id_init );
             else if (n == 2)
-               OPvector(id) = tanh(z/2) * tanh( (x - h*Nu/2)/2 );
+               OPvector(id) = tanh((x-h*Nu/2)/2) * OPvector_init( id_init );
             else if (n == 3 || n == 4)
                OPvector(id) = 0.;
-
 			}
 		}
 	}
