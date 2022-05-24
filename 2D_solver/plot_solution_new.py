@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-
 def readSolutionFile(file_name):
     np_data_array = [] # to be converted to np.array() later
     labels = [] # to store the labels of all the columns
@@ -91,7 +90,7 @@ def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels):
         plt.xlabel(r'$z/\xi$')
         plt.ylabel(r'$x/\xi$')
         plt.title(f'OP component {labels[i]}')
-        im = plt.imshow(organized_array[i], extent=ext)
+        im = plt.imshow(organized_array[i], extent=ext, cmap='bwr')
         plt.colorbar(im)
         plt.show()
         plt.clf()
@@ -103,9 +102,9 @@ def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels):
     ax.set_ylabel(r'$z/\xi$')
     ax.set_zlabel(r'$|A_{\alpha i}|$')
     for i in range(Nop):
-        ax.scatter(X,Z,organized_array[i],label=f'OP comp {labels[i]}')
+        # ax.scatter(X,Z,organized_array[i],label=f'OP comp {labels[i]}')
         # If the 3D plot is too crowded, use thinned out arrays!
-        # ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{i+1}')
+        ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{i+1}')
     plt.legend()
     plt.show()
     plt.clf()
@@ -142,7 +141,7 @@ def main(argv):
     Z = Z.transpose()
 
     # the domain extents for the imshow calls
-    ext = [0*h, Nu*h, 0*h, Nv*h]
+    ext = [0*h, Nv*h, 0*h, Nu*h]
 
     # debugging: visualize the initial guess
     if debug: # TODO: check if this is working!
@@ -171,7 +170,7 @@ def main(argv):
             FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
 
             plt.title(f'Bulk Free Energy for OP-{Nop}')
-            im = plt.imshow( np.reshape(FE_bulk[:,2], (Nv,Nu)), extent=ext )
+            im = plt.imshow( np.reshape(FE_bulk[:,2], (Nv,Nu)), extent=ext, cmap='gist_heat' )
             plt.colorbar(im)
             plt.show()
             
@@ -179,26 +178,25 @@ def main(argv):
             FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
 
             plt.title(f'Grad Free Energy for OP-{Nop}')
-            im = plt.imshow( np.reshape(FE_grad[:,2], (Nv,Nu)) )
+            im = plt.imshow( np.reshape(FE_grad[:,2], (Nv,Nu)), cmap='gist_heat' )
             plt.colorbar(im)
             plt.show()
         
         # but we'll always plot the total
         Ncols, Nu, Nv, h, totalFE, labels = read_FE_File(f'totalFE{Nop}.txt')
-        # totalFE = np.loadtxt(f'totalFE{Nop}.txt')
         FE_on_grid = np.reshape(totalFE[:,2], (Nv,Nu))
 
-        fig, (ax1,ax2) = plt.subplots(1,2)
+        fig, (ax1,ax2) = plt.subplots(2,1)
         fig.suptitle(f'Total Free Energy for OP-{Nop}')
 
         ax1.set_xlabel(r'$z/\xi$')
         ax1.set_ylabel('FE')
         ax1.set_title('Total FE profile')
-        ax1.plot(np.linspace(ext[0],ext[1],Nu), FE_on_grid[len(FE_on_grid)//2,:])
+        ax1.plot(np.linspace(ext[2],ext[3],Nu), FE_on_grid[len(FE_on_grid)//2,:])
 
-        ax2.set_xlabel(r'$z/\xi$')
-        ax2.set_ylabel(r'$x/\xi$')
-        im = ax2.imshow(FE_on_grid, extent=ext)
+        ax2.set_xlabel(r'$x/\xi$')
+        ax2.set_ylabel(r'$z/\xi$')
+        im = ax2.imshow(FE_on_grid, extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
         # ax2.set_aspect(Nv/Nu)
         fig.colorbar(im,ax=ax2)
         plt.show()
@@ -217,4 +215,3 @@ def main(argv):
 if __name__ == "__main__":
     # call the main function with the arguments given in the terminal call
     main(sys.argv[1:])
-    # readSolutionFile('solution5.txt')
