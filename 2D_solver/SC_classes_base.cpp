@@ -485,8 +485,9 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
 }
 
 
-void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, vector<int> & no_update) {
-   cout << "initOPguess_NarrowChannel()" << endl;
+void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // use "conditions3_1DChannel.txt"
+   // cout << "initOPguess_NarrowChannel()" << endl;
    // solve for the normal 3-component system
    int Nop_init = 3;
    in_conditions cond_init;
@@ -500,9 +501,9 @@ void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPv
    cond_init.wait = 1;
    vector<int> no_update_init;
    // for us, we need this to be the z-length of our system
-   cond_init.SIZEv = cond.SIZEv;
+   cond_init.SIZEv = Nv;
    cond_init.SIZEu = 1;
-   cond_init.STEP = cond.STEP;
+   cond_init.STEP = h;
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
    T_vector OPvector_init(VectSize_init);
@@ -523,11 +524,10 @@ void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPv
 	return;
 }
 
-// "and the interesting thing to check is take the initial guess of 3-compnent solution on the
-//    left side smoothly changing to 3-component solution with Azz flipped on the right side."
 
-void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, in_conditions cond, vector<int> & no_update) {
-   cout << "initOPguess_AzzFlip()" << endl;
+void SC_class :: initOPguess_AzzFlip_WS2016(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // use "conditions5_W&S2016.txt"
+   // cout << "initOPguess_AzzFlip()" << endl;
    // solve for the normal 3-component system
    int Nop_init = 3;
    in_conditions cond_init;
@@ -541,16 +541,16 @@ void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, i
    cond_init.wait = 1;
    vector<int> no_update_init;
    // for us, we need this to be the z-length of our system
-   cond_init.SIZEv = cond.SIZEv;
+   cond_init.SIZEv = Nv;
    cond_init.SIZEu = 1;
-   cond_init.STEP = cond.STEP;
+   cond_init.STEP = h;
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
    T_vector OPvector_init(VectSize_init);
    SpMat_cd M_init(VectSize_init,VectSize_init);
    T_vector rhsBC_init = T_vector::Zero(VectSize_init);
    SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-	pSC_init->initOPguess_1DNarrowChannel(eta_BC_init, OPvector_init, cond_init, no_update_init);
+	pSC_init->initOPguess_1DNarrowChannel(eta_BC_init, OPvector_init, no_update_init);
    pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
 
@@ -573,36 +573,70 @@ void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, i
 	}
 	return;
 }
-// void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // for (int n = 0; n < Nop; n++) {
-	// 	auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-	// 	auto deltaX = (eta_BC[n].valueR - eta_BC[n].valueL)/2.;
-	// 	auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
-	// 	// going through the entire grid
-	// 	for (int u = 0; u < Nu; u++) {
-	// 		double x = h*u;
-	// 		for (int v = 0; v < Nv; v++) {
-	// 			double z = h*v;
-	// 			int id = ID(u,v,n);
-   //          if (n == 0 || n == 1)
-	// 			   OPvector(id) = 1.;
-   //          else if (n == 2)
-   //             OPvector(id) = tanh(z/2) * tanh( (x - h*Nu/2)/2 );
-   //          else if (n == 3 || n == 4)
-   //             OPvector(id) = 0.;
-	// 		}
-	// 	}
-	// }
-	// return;
-// }
 
 
-void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & no_update) {
+// "and the interesting thing to check is take the initial guess of 3-compnent solution on the
+//    left side smoothly changing to 3-component solution with Azz flipped on the right side."
+
+void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // use "conditions5_xDeform.txt"
+   // solve for the normal 3-component system for the initial guess
+   int Nop_init = 3;
+   in_conditions cond_init;
+   Bound_Cond eta_BC_init[Nop_init];
+   Matrix2d **gradK_init;
+   gradK_init = new Matrix2d *[Nop_init];
+   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
+   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_normal.txt");
+   cond_init.maxStore = 5;
+   cond_init.rel_p = 0.1;
+   cond_init.wait = 1;
+   vector<int> no_update_init;
+   // for us, we need this to be the z-length of our system
+   cond_init.SIZEv = Nv;
+   cond_init.SIZEu = 1;
+   cond_init.STEP = h;
+   int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
+   int VectSize_init = cond_init.Nop * GridSize_init;
+   T_vector OPvector_init(VectSize_init);
+   SpMat_cd M_init(VectSize_init,VectSize_init);
+   T_vector rhsBC_init = T_vector::Zero(VectSize_init);
+   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+   pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
+   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
+   Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
+
+   for (int n = 0; n < Nop; n++) {
+      for (int v = 0; v < Nv; v++) {
+         for (int u = 0; u < Nu; u++) {
+            double x = h*u;
+            int id = ID(u,v,n);
+            int id_init = v + GridSize_init*n;
+            if (n < 3)
+               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? tanh((x-h*Nu/2)/2) : 1. );
+            // else {
+            //    auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
+            //    auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
+            //    auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+            //    double z = h*v;
+            //    OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
+            // }
+            else OPvector(id) = 0.5;
+         }
+      }
+   }
+	return;
+}
+
+
+void SC_class :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+   // use "conditions5_AyyFlip.txt"
+
    // all boundaries should be Dirichlet => 1
    // we will create the circular domain in the middle of Ayy to be -1
 
    // the radius of the domain...we're assuming that the domain itself is large enough
-   double r = 4;
+   double r = 10;
    if (Nu*h/2 <= r || Nv*h/2 <= r)
       cout << "WARNING: the circular domain will be too large!" << endl;
    
@@ -616,12 +650,44 @@ void SC_class :: initGuessWithCircularDomain(T_vector & OPvector, vector<int> & 
          for (int v = 0; v < Nv; v++) {
             int id = ID(u,v,n);
 
-            // for only Ayy:
-            // if the grid point is close enough to the center
-            if (n == 1 && sqrt( pow( h*(u-u_center), 2 ) + pow( h*(v-v_center), 2 ) ) < r) {
-               OPvector(id) = -1.;
+            if (u == 0) {
+               OPvector(id) = eta_BC[n].valueL;
+            } else if (u == Nu-1) {
+               OPvector(id) = eta_BC[n].valueR;
+            } else if (v == 0) {
+               OPvector(id) = eta_BC[n].valueB;
+            } else if (v == Nv-1) {
+               OPvector(id) = eta_BC[n].valueT;
+            } else if (n == 1) { // for only Ayy:
+               OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
+            } else if (n == 3 || n == 4) {
+               OPvector(id) = 0.;
             } else {
                OPvector(id) = 1.;
+            }
+         }
+      }
+   }
+   // smooth off the initial guess a little
+   for (int i = 0; i < 30; i++) {
+      for (int n = 0; n < Nop; n++) {
+         for (int u = 0; u < Nu; u++) {
+            for (int v = 0; v < Nv; v++) {
+               if ( (u > 0) && (u < Nu-1) && (v > 0) && (v < Nv-1) && (n == 0) && (n == 2) ) {
+                  int id = ID(u,v,n);
+                     // cout << "id = " << id << endl;
+                  int idU = ID(u,v+1,n);
+                     // cout << "idU = " << idU << endl;
+                  int idL = ID(u-1,v,n);
+                     // cout << "idL = " << idL << endl;
+                  int idD = ID(u,v-1,n);
+                     // cout << "idD = " << idD << endl;
+                  int idR = ID(u+1,v,n);
+                     // cout << "idR = " << idR << endl;
+
+                  OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
+                  // cout << "OPvector(id) = " << (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4. << endl;
+               }
             }
          }
       }
