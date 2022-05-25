@@ -144,15 +144,15 @@ def main(argv):
     ext = [0*h, Nv*h, 0*h, Nu*h]
 
     # debugging: visualize the initial guess
-    if debug: # TODO: check if this is working!
+    if debug:
         # Initial guess -- for debugging
         plt.title("initial guess")
-        # op = np.loadtxt(f'initGuess{Nop}.txt') # get the guess from the saved file from the C++ code in gl_fdm.cpp
+        # get the guess from the saved file from the C++ code in gl_fdm.cpp
         Nop, Nu, Nv, h, op, labels = readSolutionFile(f'initGuess{Nop}.txt')
         initOP = np.array([ np.reshape(op[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
 
         if Nu > 1:
-            plot_OP_comps_and_slices(Nop, initOP, X, Z, ext, labels[2::2])
+            plot_OP_comps_and_slices( Nop, initOP, X, Z, ext, list(map(lambda l: l+"_guess", labels[2::2])) )
         elif Nu == 1: # basically for the 1D case
             # plot only the slices, since the 2D view is not useful here
             plt.title("Slices top to bottom")
@@ -165,9 +165,9 @@ def main(argv):
     if Nu > 1:
         plot_OP_comps_and_slices(Nop, A, X, Z, ext, labels[2::2])
 
-        if debug: # TODO: make sure this is working!
+        if debug:
             # Plot the bulk free energy
-            FE_bulk = np.loadtxt(f'bulkRHS_FE{Nop}.txt')
+            Ncols, Nu, Nv, h, FE_bulk, labels = read_FE_File(f'bulkRHS_FE{Nop}.txt')
 
             plt.title(f'Bulk Free Energy for OP-{Nop}')
             im = plt.imshow( np.reshape(FE_bulk[:,2], (Nv,Nu)), extent=ext, cmap='gist_heat' )
@@ -175,7 +175,7 @@ def main(argv):
             plt.show()
             
             # Plot the grad free energy
-            FE_grad = np.loadtxt(f'FEgrad{Nop}.txt')
+            Ncols, Nu, Nv, h, FE_grad, labels = read_FE_File(f'FEgrad{Nop}.txt')
 
             plt.title(f'Grad Free Energy for OP-{Nop}')
             im = plt.imshow( np.reshape(FE_grad[:,2], (Nv,Nu)), cmap='gist_heat' )
