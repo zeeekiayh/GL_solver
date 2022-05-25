@@ -118,9 +118,16 @@ int main(int argc, char** argv)
 	// - - - - switch these here to initialize in other ways
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
-	// pSC->initGuessWithCircularDomain(OPvector, no_update);
-	pSC->initOPguess_AzzFlip(eta_BC, OPvector, cond, no_update);
-	// pSC->initOPguess_1DNarrowChannel(eta_BC, OPvector, cond, no_update);
+
+	
+	pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
+	
+	
+	// pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
+
+
+	// pSC->initOPguess_AzzFlip_WS2016(eta_BC, OPvector, no_update);
+	// pSC->initOPguess_1DNarrowChannel(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
@@ -132,7 +139,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-		cout << endl << "M =\n" << M << endl;
+		// cout << endl << "M =\n" << M << endl;
 	}
 
 	cout << "solving system..." << endl;
