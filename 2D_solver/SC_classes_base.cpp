@@ -394,7 +394,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    // For free energy matrix we use the equation (10) and (36) in the latex file
    
    // initialize the FEgrad matrix
-   FEgrad.resize(Nop*grid_size,Nop*grid_size);
+   FEgrad.resize(vect_size,vect_size);
 
    for (int m = 0; m < Nop; m++) {
       for (int n = 0; n < Nop; n++) {
