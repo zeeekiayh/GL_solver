@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream> // for file in/out
 #include <string>
-#include <math.h>
 #include <complex>
 #include <vector>
 #include <chrono> // for timing

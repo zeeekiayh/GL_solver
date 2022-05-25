@@ -51,11 +51,14 @@ def plot_OP_comps_and_slices(Nop, organized_array, ext, h, size):
     ax2.set_xlabel(r'$z/\xi$')
     ax2.set_ylabel(r'$x/\xi$')
     ax2.set_zlabel(r'$|A_{\alpha i}|$')
-    X, Y = np.meshgrid( np.linspace(ext[0],ext[1],len(organized_array[0][0])),
-                        np.linspace(ext[2],ext[3],len(organized_array[0])) )
+    X, Y = np.meshgrid( np.linspace(ext[2],ext[3],len(organized_array[0][0])),
+                        np.linspace(ext[0],ext[1],len(organized_array[0])) )
     surf = None
     for i in range(Nop):
-        surf = ax2.plot_surface(X,Y,organized_array[i])
+        surf = ax2.plot_surface(X,Y,organized_array[i],label=f'OP comp #{i+1}')
+        surf._facecolors2d = surf._facecolor3d # We need these because of a strange bug in matplotlib;
+        surf._edgecolors2d = surf._edgecolor3d # see https://stackoverflow.com/questions/55531760/is-there-a-way-to-label-multiple-3d-surfaces-in-matplotlib
+    plt.legend()
     plt.show()
     plt.clf()
 
@@ -80,7 +83,7 @@ def main(argv):
     elif (len(argv)!=1):
         print("Incorrect number of arguments in python call!")
 
-    fig = plt.figure(figsize=(20,20))
+    # fig = plt.figure(figsize=(20,20))
     # gs = gridspec.GridSpec()
 
     # read in Nop from arguments
@@ -96,7 +99,7 @@ def main(argv):
     A = np.array([ np.reshape(OP_array[:,2*i+2], (size_z,size_x)) for i in range(Nop) ])
 
     # the domain extents for the imshow calls
-    ext = [min(OP_array[:,0]), max(OP_array[:,0]), min(OP_array[:,1]), max(OP_array[:,1])]
+    ext = [min(OP_array[:,1]), max(OP_array[:,1]), min(OP_array[:,0]), max(OP_array[:,0])]
 
     # debugging: visualize the initial guess
     if debug:
@@ -138,12 +141,21 @@ def main(argv):
         
         # but we'll always plot the total
         FE_bulk = np.loadtxt(f'totalFE{Nop}.txt')
+        FE_on_grid = np.reshape(FE_bulk[:,2], (size_z,size_x))
 
-        plt.xlabel(r'$z/\xi$')
-        plt.ylabel(r'$x/\xi$')
-        plt.title(f'Total Free Energy for OP-{Nop}')
-        im = plt.imshow(np.reshape(FE_bulk[:,2], (size_z,size_x)), extent=ext)
-        plt.colorbar(im)
+        fig, (ax1,ax2) = plt.subplots(1,2)
+        fig.suptitle(f'Total Free Energy for OP-{Nop}')
+
+        ax1.set_ylabel(r'$z/\xi$')
+        ax1.set_xlabel(r'$x/\xi$')
+        ax1.set_title('Total FE profile')
+        ax1.plot(np.linspace(ext[0],ext[1],size_x), FE_on_grid[len(FE_on_grid)//2,:])
+
+        ax2.set_xlabel(r'$z/\xi$')
+        ax2.set_ylabel(r'$x/\xi$')
+        im = ax2.imshow(FE_on_grid, extent=ext)
+        ax2.set_aspect(size_z/size_x)
+        fig.colorbar(im,ax=ax2)
         plt.show()
 
     elif size_x == 1: # basically for the 1D case
