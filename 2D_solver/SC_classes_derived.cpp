@@ -125,6 +125,16 @@ void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bo
 	}
 	freeEg /= h*h;
 }
+double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
+	double DefectEnergy = 0.;
+	for (int u = 0; u < Nu; u++) {
+		for (int v = 0; v < Nv; v++) {
+			int FE_id = ID(u,v,0);
+			DefectEnergy += freeEg(FE_id);
+		}
+	}
+	return DefectEnergy/(h*h);
+}
 
 
 void OneCompSC::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, VectorXd & FEb) {
