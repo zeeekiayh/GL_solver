@@ -9,6 +9,8 @@ using namespace Eigen;
 
 // prototype for function defined in linear_eq_solver.cpp
 void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+// prototype for function defined in 'he3bulk.cpp'
+double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 
 int main(int argc, char** argv)
 {
@@ -146,9 +148,9 @@ int main(int argc, char** argv)
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
 	cout << "solved!" << endl;
 
-	cout << "writing solution to file...";
-	pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1); // save the solution for plotting
-	cout << "done" << endl;
+	// cout << "writing solution to file...";
+	// pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1); // save the solution for plotting
+	// cout << "done" << endl;
 
 	cout << "calculating bulkRHS_FE...";
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
@@ -158,21 +160,27 @@ int main(int argc, char** argv)
 	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
 	cout << "done" << endl;
 	
-	// save the FE data
-	cout << "writing totalFE vector to file...";
-	T_vector totalFE = freeEb+freeEg;
-	pSC->WriteToFile(totalFE, "totalFE"+to_string(Nop)+".txt", 0);
-	cout << "done" << endl;
+	// // save the FE data
+	// cout << "writing totalFE vector to file...";
+	// T_vector totalFE = freeEb+freeEg;
+	// pSC->WriteToFile(totalFE, "totalFE"+to_string(Nop)+".txt", 0);
+	// cout << "done" << endl;
 
-	if (debug) {
-		cout << "writing bulkRHS_FE vector to file...";
-		pSC->WriteToFile(freeEb, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
-		cout << "done" << endl;
+	// // if (debug) {
+	// 	cout << "writing bulkRHS_FE vector to file...";
+	// 	pSC->WriteToFile(freeEb, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
+	// 	cout << "done" << endl;
 
-		cout << "writing FEgrad vector to file...";
-		pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
-		cout << "done" << endl;
-	}
+	// 	cout << "writing FEgrad vector to file...";
+	// 	pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
+	// 	cout << "done" << endl;
+	// // }
+
+	// write everything to file
+	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+".txt");
+
+	// calculate the defect energy
+	cout << "Energy defect: " << pSC->defectEnergy(freeEb, freeEg) << endl;
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
