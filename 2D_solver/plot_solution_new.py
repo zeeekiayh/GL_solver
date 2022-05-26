@@ -81,34 +81,77 @@ def read_FE_File(file_name):
     return Ncols, Nu, Nv, h, FE_data_array, labels
 
 # plot all the OP components in 2D and slices
-def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels):
+def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels, FE_file_name):
+    # initialize all axes
+    axs = []
+    for _ in range(Nop): axs.append(None)
+    # other axes we may use
+    FE_ax, FE_prof_ax, ax_empty, ax3D_if_wanted, fig = None, None, None, None, None
 
-    # if it's going to be hard to see in the 3d plot...
-    # if Nop > 3:
+    # shape the plot based on OP size
+    if Nop == 3:   fig, ((axs[0], axs[1], axs[2]), (FE_prof_ax, FE_ax, ax3D_if_wanted)) = plt.subplots(3,2)
+    elif Nop == 5: fig, ((axs[0], axs[1], axs[2]), (axs[3], axs[4], ax_empty), (FE_prof_ax, FE_ax, ax3D_if_wanted)) = plt.subplots(3,3)
+    else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
+
+    fig.suptitle(f'OP-{Nop}')
+
     # plot the 2D solution
     for i in range(Nop):
-        plt.xlabel(r'$z/\xi$')
-        plt.ylabel(r'$x/\xi$')
-        plt.title(f'OP component {labels[i]}')
-        im = plt.imshow(organized_array[i], extent=ext, cmap='bwr')
-        plt.colorbar(im)
-        plt.show()
-        plt.clf()
+        if i == 0:
+            axs[i].set_xlabel(r'$z/\xi_0$', labelpad=-15)
+            axs[i].set_ylabel(r'$x/\xi_0$', labelpad=0)
+            axs[i].set_title(f'comp: {labels[i]}', y=1.0)
+        elif i > 2:
+            axs[i].axes.xaxis.set_ticks([])
+            axs[i].axes.yaxis.set_ticks([])
+            axs[i].set_ylabel(f'comp: {labels[i]}')
+        elif i > 0:
+            axs[i].set_title(f'comp: {labels[i]}', y=1.0)
+            axs[i].axes.xaxis.set_ticks([])
+            axs[i].axes.yaxis.set_ticks([])
         
-    # plot 3D, all components
-    plt.title(f'OP-{Nop}')
-    ax = plt.subplot(111, projection='3d')
-    ax.set_xlabel(r'$x/\xi$')
-    ax.set_ylabel(r'$z/\xi$')
-    ax.set_zlabel(r'$|A_{\alpha i}|$')
-    for i in range(Nop):
-        # ax.scatter(X,Z,organized_array[i],label=f'OP comp {labels[i]}')
-        # If the 3D plot is too crowded, use thinned out arrays!
-        ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{i+1}')
-    plt.legend()
-    plt.show()
-    plt.clf()
+        # don't show the blank plots
+        if ax_empty != None: ax_empty.axis('off')
+        if ax3D_if_wanted != None: ax3D_if_wanted.axis('off')
 
+        im = axs[i].imshow(organized_array[i], extent=ext, cmap='bwr')
+        plt.colorbar(im,ax=axs[i])
+
+    # get the FE data
+    Ncols, Nu, Nv, h, totalFE, labels = read_FE_File(FE_file_name)
+    FE_on_grid = np.reshape(totalFE[:,2], (Nv,Nu))
+
+    # plot the FE profile
+    FE_prof_ax.set_xlabel(r'$z/\xi_0$', labelpad=0)
+    FE_prof_ax.set_ylabel('FE', labelpad=0)
+    FE_prof_ax.set_title('Total FE profile', y=1.0)
+    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), FE_on_grid[len(FE_on_grid)//2,:])
+
+    # plot the 2D heatmap of the FE
+    FE_ax.set_xlabel(r'$z/\xi_0$', labelpad=0)
+    FE_ax.set_ylabel(r'$x/\xi_0$', labelpad=0)
+    FE_ax.set_title('Total FE', y=1.0)
+    im = FE_ax.imshow(FE_on_grid.transpose(), extent=[0,ext[1],0,ext[3]], cmap='gist_heat')
+    fig.colorbar(im,ax=FE_ax)
+
+    # display all plots plotted above
+    plt.show()
+
+    # # FOR SOME REASON THIS 3D PLOT IS NOT WORKING ANY MORE...
+    # # plot 3D, all components
+    # plt.title(f'OP-{Nop}')
+    # ax = plt.subplot(111, projection='3d')
+    # ax.set_xlabel(r'$x/\xi_0$')
+    # ax.set_ylabel(r'$z/\xi_0$')
+    # ax.set_zlabel(r'$|A_{\alpha i}|$')
+    # for i in range(Nop):
+    #     # ax.scatter(X,Z,organized_array[i],label=f'OP comp {labels[i]}')
+    #     # If the 3D plot is too crowded, use thinned out arrays!
+    #     ax.scatter(X[::2,::2],Z[::2,::2],organized_array[i][::2,::2],label=f'OP comp #{labels[i]}')
+    # plt.legend()
+    # plt.show()
+
+    # plt.clf()
     # # plot slices for 1D view
     # plt.clf()
     # plt.title("Slices top to bottom")
@@ -152,7 +195,7 @@ def main(argv):
         initOP = np.array([ np.reshape(op[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
 
         if Nu > 1:
-            plot_OP_comps_and_slices( Nop, initOP, X, Z, ext, list(map(lambda l: l+"_guess", labels[2::2])) )
+            plot_OP_comps_and_slices( Nop, initOP, X, Z, ext, list(map(lambda l: l+"_guess", labels[2::2])), None )
         elif Nu == 1: # basically for the 1D case
             # plot only the slices, since the 2D view is not useful here
             plt.title("Slices top to bottom")
@@ -163,7 +206,7 @@ def main(argv):
             plt.show()
 
     if Nu > 1:
-        plot_OP_comps_and_slices(Nop, A, X, Z, ext, labels[2::2])
+        plot_OP_comps_and_slices(Nop, A, X, Z, ext, labels[2::2], f'totalFE{Nop}.txt' )
 
         if debug:
             # Plot the bulk free energy
@@ -182,24 +225,24 @@ def main(argv):
             plt.colorbar(im)
             plt.show()
         
-        # but we'll always plot the total
-        Ncols, Nu, Nv, h, totalFE, labels = read_FE_File(f'totalFE{Nop}.txt')
-        FE_on_grid = np.reshape(totalFE[:,2], (Nv,Nu))
+        # # but we'll always plot the total
+        # Ncols, Nu, Nv, h, totalFE, labels = read_FE_File(f'totalFE{Nop}.txt')
+        # FE_on_grid = np.reshape(totalFE[:,2], (Nv,Nu))
 
-        fig, (ax1,ax2) = plt.subplots(2,1)
-        fig.suptitle(f'Total Free Energy for OP-{Nop}')
+        # fig, (ax1,ax2) = plt.subplots(2,1)
+        # fig.suptitle(f'Total Free Energy for OP-{Nop}')
 
-        ax1.set_xlabel(r'$z/\xi$')
-        ax1.set_ylabel('FE')
-        ax1.set_title('Total FE profile')
-        ax1.plot(np.linspace(ext[2],ext[3],Nu), FE_on_grid[len(FE_on_grid)//2,:])
+        # ax1.set_xlabel(r'$z/\xi_0$')
+        # ax1.set_ylabel('FE')
+        # ax1.set_title('Total FE profile')
+        # ax1.plot(np.linspace(ext[2],ext[3],Nu), FE_on_grid[len(FE_on_grid)//2,:])
 
-        ax2.set_xlabel(r'$x/\xi$')
-        ax2.set_ylabel(r'$z/\xi$')
-        im = ax2.imshow(FE_on_grid, extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
-        # ax2.set_aspect(Nv/Nu)
-        fig.colorbar(im,ax=ax2)
-        plt.show()
+        # ax2.set_xlabel(r'$x/\xi_0$')
+        # ax2.set_ylabel(r'$z/\xi_0$')
+        # im = ax2.imshow(FE_on_grid, extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
+        # # ax2.set_aspect(Nv/Nu)
+        # fig.colorbar(im,ax=ax2)
+        # plt.show()
 
     elif Nu == 1: # basically for the 1D case
         # plot only the slices, since the 2D view is not useful here
