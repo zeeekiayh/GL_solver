@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
+# returns "Nop, Nu, Nv, h, np_data_array, labels" from the solution file
 def readSolutionFile(file_name):
     np_data_array = [] # to be converted to np.array() later
     labels = [] # to store the labels of all the columns
@@ -15,7 +16,6 @@ def readSolutionFile(file_name):
         # the first line should give us all the labels of the columns
         if line_count == 0:
             labels = line.split()
-            # print(f'{labels = }')
         else:
             # start reading in the values into np_data_array
             np_data_array.append(list(map(float,line.split())))
@@ -25,7 +25,6 @@ def readSolutionFile(file_name):
             if (abs(np_data_array[-1][1]) < 1e-8):
                 v_0_count += 1
         line_count += 1
-    # print(f'{np_data_array = }')
 
     # convert the data array
     np_data_array = np.array(np_data_array)
@@ -34,17 +33,15 @@ def readSolutionFile(file_name):
     # step size; we'll assume it will be the same in all directions
     h = np_data_array[1,0] - np_data_array[0,0]
     if abs(h) < 1e-8: h = np_data_array[1,1] - np_data_array[0,1] # in case position values are in a different order
-    # print(f'{h = }')
 
     Nop = (len(labels)-2)//2 # take off the 2 cols for location; /2 b/c of complex cols
 
-    # print(f'{u_0_count = }')
-    # print(f'{v_0_count = }')
     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
     Nv = int(u_0_count)
         
     return Nop, Nu, Nv, h, np_data_array, labels
 
+# returns "Ncols, Nu, Nv, h, FE_data_array, labels" from the FE file
 def read_FE_File(file_name):
     FE_data_array = [] # to be converted to np.array() later
     labels = [] # to store the labels of all the columns
@@ -98,15 +95,15 @@ def plot_OP_comps_and_slices(Nop, organized_array, X, Z, ext, labels, FE_file_na
     # plot the 2D solution
     for i in range(Nop):
         if i == 0:
-            axs[i].set_xlabel(r'$z/\xi_0$', labelpad=-15)
+            axs[i].set_xlabel(r'$z/\xi_0$', labelpad=-15) # shift the label up to not be hidden by the plot below it
             axs[i].set_ylabel(r'$x/\xi_0$', labelpad=0)
-            axs[i].set_title(f'comp: {labels[i]}', y=1.0)
+            axs[i].set_title(f'comp: {labels[i]}')
         elif i > 2:
-            axs[i].axes.xaxis.set_ticks([])
-            axs[i].axes.yaxis.set_ticks([])
-            axs[i].set_ylabel(f'comp: {labels[i]}')
+            axs[i].axes.xaxis.set_ticks([]) # remove tick marks for a cleaner plot;
+            axs[i].axes.yaxis.set_ticks([]) #   we only leave them on the first one for reference
+            axs[i].set_ylabel(f'comp: {labels[i]}') # put the title on the side for better legibility
         elif i > 0:
-            axs[i].set_title(f'comp: {labels[i]}', y=1.0)
+            axs[i].set_title(f'comp: {labels[i]}')
             axs[i].axes.xaxis.set_ticks([])
             axs[i].axes.yaxis.set_ticks([])
         
@@ -224,25 +221,6 @@ def main(argv):
             im = plt.imshow( np.reshape(FE_grad[:,2], (Nv,Nu)), cmap='gist_heat' )
             plt.colorbar(im)
             plt.show()
-        
-        # # but we'll always plot the total
-        # Ncols, Nu, Nv, h, totalFE, labels = read_FE_File(f'totalFE{Nop}.txt')
-        # FE_on_grid = np.reshape(totalFE[:,2], (Nv,Nu))
-
-        # fig, (ax1,ax2) = plt.subplots(2,1)
-        # fig.suptitle(f'Total Free Energy for OP-{Nop}')
-
-        # ax1.set_xlabel(r'$z/\xi_0$')
-        # ax1.set_ylabel('FE')
-        # ax1.set_title('Total FE profile')
-        # ax1.plot(np.linspace(ext[2],ext[3],Nu), FE_on_grid[len(FE_on_grid)//2,:])
-
-        # ax2.set_xlabel(r'$x/\xi_0$')
-        # ax2.set_ylabel(r'$z/\xi_0$')
-        # im = ax2.imshow(FE_on_grid, extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
-        # # ax2.set_aspect(Nv/Nu)
-        # fig.colorbar(im,ax=ax2)
-        # plt.show()
 
     elif Nu == 1: # basically for the 1D case
         # plot only the slices, since the 2D view is not useful here
