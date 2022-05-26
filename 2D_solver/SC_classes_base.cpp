@@ -781,3 +781,45 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
 	}
 	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
 }
+
+void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name) {
+	std::ofstream data (file_name); // open the file for writing
+	if (data.is_open()) {           // if opening was successful...
+      // set precision here
+      data << std::setprecision(8) << std::fixed;
+
+      // label the columns in the output file
+      data << "h*u     \th*v     ";
+
+      // loop through all OP components...
+      for (int n = 0; n < Nop; n++)
+         data << "\t#" << n << ".real     #" << n << ".imag   ";
+
+      // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
+      data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";//   \tFE_tot-FE_b";
+      data << std::endl; // end the line
+
+      // loop through the whole mesh...
+      for (int v = 0; v < Nv; v++) {
+         for (int u = 0; u < Nu; u++) {
+            data << h*u << "\t" << h*v; // write the position
+
+            // loop through all OP components...
+            for (int n = 0; n < Nop; n++) {
+               int id = ID(u, v, n); // get the id
+               data << "\t" << solution(id).real() << "  " << solution(id).imag();
+            }
+
+            int id = ID(u, v, 0); // get the id
+            // TODO: add more here! more columns like said above
+            data << "\t" << FE_bulk(id).real()+FE_grad(id).real(); // because it should already pure real!
+            data << "\t" << FE_bulk(id).real();
+            data << "\t" << FE_grad(id).real();
+            // data << "\t" << ... FE_total - FE_bulk = FE_grad ... ?
+
+            data << endl; // finish the line
+         }
+      }
+	}
+	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
+}
