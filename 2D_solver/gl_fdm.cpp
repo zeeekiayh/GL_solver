@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
 
-	
+
 	pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 	
 	
