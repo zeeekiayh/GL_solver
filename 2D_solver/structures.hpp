@@ -13,21 +13,18 @@
 
 // ===========================================
 // type definitions for complex OP
-
-typedef std::complex<double> T_scalar;
-typedef Eigen::VectorXcd  T_vector;
-typedef Eigen::MatrixXcd  T_matrix;
-typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
+   typedef std::complex<double> T_scalar;
+   typedef Eigen::VectorXcd  T_vector;
+   typedef Eigen::MatrixXcd  T_matrix;
+   typedef Eigen::SparseMatrix<Eigen::dcomplex> SpMat_cd;
 
 // ===========================================
 // type definitions for real OP
-
-/*
-typedef double T_scalar;
-typedef Eigen::VectorXd  T_vector;
-typedef Eigen::MatrixXd  T_matrix;
-typedef Eigen::SparseMatrix<double> SpMat_cd;
-*/
+   /*typedef double T_scalar;
+   typedef Eigen::VectorXd  T_vector;
+   typedef Eigen::MatrixXd  T_matrix;
+   typedef Eigen::SparseMatrix<double> SpMat_cd;
+   */
 
 // ===========================================
 // Boundary condition structure for a single OP
@@ -229,6 +226,46 @@ typedef Eigen::SparseMatrix<double> SpMat_cd;
                0,  0,  0,  0,  0,  0,  0, K3,  0,
                0,  0,  0,  0,  0,  0, K2,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0;
+      }
+
+      // a function to give the small K matrix to build the
+      //    solver matrix for smaller systems
+      inline Eigen::Matrix2d** smallKMatrix(int Nop, std::string D_components[]) {
+         // int K_element_size = D_components->length();
+
+         Eigen::Matrix2d** gradK;
+         gradK = new Eigen::Matrix2d *[Nop];
+         for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
+
+         for (int n = 0; n < Nop; n++) {
+            for (int m = 0; m < Nop; m++) {
+               if (D_components[0] == "xx")
+                  gradK[m][n](0,0) = XX(m,n);
+               else if (D_components[1] == "xz")
+                  gradK[m][n](0,1) = XZ(m,n);
+               else if (D_components[2] == "zx")
+                  gradK[m][n](1,0) = ZX(m,n);
+               else if (D_components[3] == "zz")
+                  gradK[m][n](1,1) = ZZ(m,n);
+               // else if (D_components[i] == "yy") {
+               //    //
+               // }
+               // else if (D_components[i] == "xy") {
+               //    //   
+               // }
+               // else if (D_components[i] == "yx") {
+               //    //   
+               // }
+               // else if (D_components[i] == "yz") {
+               //    //
+               // }
+               // else if (D_components[i] == "zy") {
+               //    //
+               // }
+            }
+         }
+
+         return gradK;
       }
    };
 // ========================================================
