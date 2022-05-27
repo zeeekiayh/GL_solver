@@ -1,6 +1,4 @@
 #include "SC_classes.hpp"
-
-
 #include "structures.hpp"
 #include <vector>
 
@@ -12,6 +10,9 @@ using namespace Eigen;
 // input: temp t, pressure p, matrix A, 
 // output: betaB parameter that gives the bulk free energy of B-phase; derivative matrix dFdA, bulk free energy FE
 void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, Eigen::Matrix<T_scalar,3,3> & dFdA, double & FE);
+
+// prototype for function defined in 'SC_classes_base.cpp'
+SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm);
 
 // --- Nop, grid_size are variables stored in base class
 
@@ -158,3 +159,42 @@ void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Boun
 	//
 }
 
+void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
+	I.setIdentity(vect_size,vect_size); // set the identity matrix to the right size
+	Dr.resize(vect_size,vect_size);
+	Dz.resize(vect_size,vect_size);
+	r_inv.resize(vect_size,vect_size);
+
+	T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
+	T_vector rhsBC; // ? should it actually be passed in as an argument?
+	
+	SpMat_cd R(grid_size,grid_size);
+	for (int u = 0; u < Nu; u++) {
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,0);
+			R.coeffRef(id,id) = (u == 0) ? 1e10 : 1./(u*h);
+		}
+	}
+
+	for (int n = 0; n < Nop; n++) {
+		Dr += Place_subMatrix(n,n,vect_size,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
+		Dz += Place_subMatrix(n,n,vect_size,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
+		r_inv += Place_subMatrix(n,n,vect_size,R);
+	}
+}
+
+void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	//
+}
+
+void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb) {
+	//
+}
+
+void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	//
+}
+
+double Cylindrical::defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
+	//
+}
