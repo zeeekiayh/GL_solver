@@ -621,7 +621,33 @@ void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, v
             //    double z = h*v;
             //    OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
             // }
-            else OPvector(id) = 0.5;
+            else OPvector(id) = 0.;
+
+
+            // for (int n = 0; n < Nop; n++) {
+            //    // loop over the whole mesh
+            //    for (int u = 0; u < Nu; u++) {
+            //       for (int v = 0; v < Nv; v++) {
+            //          int id = ID(u,v,n);
+
+            //          if (u == 0) {
+            //             OPvector(id) = eta_BC[n].valueL;
+            //          } else if (u == Nu-1) {
+            //             OPvector(id) = eta_BC[n].valueR;
+            //          } else if (v == 0) {
+            //             OPvector(id) = eta_BC[n].valueB;
+            //          } else if (v == Nv-1) {
+            //             OPvector(id) = eta_BC[n].valueT;
+            //          } else if (n == 1) { // for only Ayy:
+            //             OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
+            //          } else if (n == 3 || n == 4) {
+            //             OPvector(id) = 0.;
+            //          } else {
+            //             OPvector(id) = 1.;
+            //          }
+            //       }
+            //    }
+            // }
          }
       }
    }
@@ -636,7 +662,7 @@ void SC_class :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPv
    // we will create the circular domain in the middle of Ayy to be -1
 
    // the radius of the domain...we're assuming that the domain itself is large enough
-   double r = 10;
+   double r = 16;
    if (Nu*h/2 <= r || Nv*h/2 <= r)
       cout << "WARNING: the circular domain will be too large!" << endl;
    
@@ -668,30 +694,30 @@ void SC_class :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPv
          }
       }
    }
-   // smooth off the initial guess a little
-   for (int i = 0; i < 30; i++) {
-      for (int n = 0; n < Nop; n++) {
-         for (int u = 0; u < Nu; u++) {
-            for (int v = 0; v < Nv; v++) {
-               if ( (u > 0) && (u < Nu-1) && (v > 0) && (v < Nv-1) && (n == 0) && (n == 2) ) {
-                  int id = ID(u,v,n);
-                     // cout << "id = " << id << endl;
-                  int idU = ID(u,v+1,n);
-                     // cout << "idU = " << idU << endl;
-                  int idL = ID(u-1,v,n);
-                     // cout << "idL = " << idL << endl;
-                  int idD = ID(u,v-1,n);
-                     // cout << "idD = " << idD << endl;
-                  int idR = ID(u+1,v,n);
-                     // cout << "idR = " << idR << endl;
+   // // smooth off the initial guess a little
+   // for (int i = 0; i < 30; i++) {
+      // for (int n = 0; n < Nop; n++) {
+      //    for (int u = 0; u < Nu; u++) {
+      //       for (int v = 0; v < Nv; v++) {
+      //          if ( (u > 0) && (u < Nu-1) && (v > 0) && (v < Nv-1) && (n == 0) && (n == 2) ) {
+      //             int id = ID(u,v,n);
+      //                // cout << "id = " << id << endl;
+      //             int idU = ID(u,v+1,n);
+      //                // cout << "idU = " << idU << endl;
+      //             int idL = ID(u-1,v,n);
+      //                // cout << "idL = " << idL << endl;
+      //             int idD = ID(u,v-1,n);
+      //                // cout << "idD = " << idD << endl;
+      //             int idR = ID(u+1,v,n);
+      //                // cout << "idR = " << idR << endl;
 
-                  OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
-                  // cout << "OPvector(id) = " << (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4. << endl;
-               }
-            }
-         }
-      }
-   }
+      //             OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
+      //             // cout << "OPvector(id) = " << (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4. << endl;
+      //          }
+      //       }
+      //    }
+      // }
+   // }
 }
 
 
@@ -750,6 +776,48 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
                // TODO: add more here! more columns like said above
                data << "\t" << vector(id).real() << endl; // because it should already pure real!
             }
+         }
+      }
+	}
+	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
+}
+
+void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name) {
+	std::ofstream data (file_name); // open the file for writing
+	if (data.is_open()) {           // if opening was successful...
+      // set precision here
+      data << std::setprecision(8) << std::fixed;
+
+      // label the columns in the output file
+      data << "h*u     \th*v     ";
+
+      // loop through all OP components...
+      for (int n = 0; n < Nop; n++)
+         data << "\t#" << n << ".real     #" << n << ".imag   ";
+
+      // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
+      data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";//   \tFE_tot-FE_b";
+      data << std::endl; // end the line
+
+      // loop through the whole mesh...
+      for (int v = 0; v < Nv; v++) {
+         for (int u = 0; u < Nu; u++) {
+            data << h*u << "\t" << h*v; // write the position
+
+            // loop through all OP components...
+            for (int n = 0; n < Nop; n++) {
+               int id = ID(u, v, n); // get the id
+               data << "\t" << solution(id).real() << "  " << solution(id).imag();
+            }
+
+            int id = ID(u, v, 0); // get the id
+            // TODO: add more here! more columns like said above
+            data << "\t" << FE_bulk(id).real()+FE_grad(id).real(); // because it should already pure real!
+            data << "\t" << FE_bulk(id).real();
+            data << "\t" << FE_grad(id).real();
+            // data << "\t" << ... FE_total - FE_bulk = FE_grad ... ?
+
+            data << endl; // finish the line
          }
       }
 	}

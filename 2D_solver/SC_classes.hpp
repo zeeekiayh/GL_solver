@@ -62,11 +62,13 @@ class SC_class{
 		
 		// write out a vector to a file
 		void WriteToFile(const T_vector& vector, std::string file_name, int flag);
+		void WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name);
 
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
 		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
 		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
+		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){};
 };
 
 // derived_classes depends on the particular form of the bulk free energy, that gives the appropriate RHS vector
@@ -106,6 +108,7 @@ class FiveCompHe3 : public SC_class {
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
 };
 
 #endif
