@@ -14,6 +14,9 @@ double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 
 int main(int argc, char** argv)
 {
+	// build the general K matrices
+	kMatrix::BuildKMatrices();
+	
 	// To calculate a solution based on the initial guess of this here...
 	// -----------------------------------------------------------------------------
 	// cout << "solving for initial guess..." << endl;
@@ -122,10 +125,10 @@ int main(int argc, char** argv)
 	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
 
 
-	pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
+	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 	
 	
-	// pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
+	pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 
 
 	// pSC->initOPguess_AzzFlip_WS2016(eta_BC, OPvector, no_update);
