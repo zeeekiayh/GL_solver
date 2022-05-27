@@ -1,6 +1,7 @@
 #include "SC_classes.hpp"
 #include "structures.hpp"
 #include <vector>
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Place_subMatrix
 
 using namespace std;
 using namespace Eigen;
@@ -165,6 +166,7 @@ void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
 	
 	Dr.resize(vect_size,vect_size);
 	Dz.resize(vect_size,vect_size);
+	Dphi.resize(vect_size,vect_size);
 	r_inv.resize(grid_size,grid_size);
 
 	T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
@@ -183,6 +185,20 @@ void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
 		Dz += Place_subMatrix(n,n,vect_size,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
 		// r_inv += Place_subMatrix(n,n,vect_size,R);
 	}
+
+	MatrixXd temp(9,9);
+	temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
+			0, 0, 0, 0, 0, 1, 1, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,-1,
+			0, 0, 0, 0, 0, 0, 0,-1, 0,
+			1,-1, 0, 0, 0, 0, 0, 0, 0,
+			1,-1, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 1, 0, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0;
+	SpMat_cd small_I(grid_size,grid_size);
+	small_I.setIdentity();
+	Dphi = kroneckerProduct(temp,small_I);
 }
 void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	// make all the matrices in eq. (54)
@@ -202,28 +218,67 @@ void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vec
 			 Dz_gsize(grid_size,grid_size);
 	SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
 
+	// the matrices -- 2 parts of the solver matrix
+	SpMat_cd DK23(vect_size,vect_size), DK1(vect_size,vect_size);
+
 	for (int n = 0; n < Nop; n++) {
 		// initialize the D matrices based on BC's
+		// only make those that we ABOLUTELY need, because these take a LONG time to build!
 		Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC);
 		Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC);
-		Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC);
-		Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
-		Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
+		if (n == 0 || n == 2 || n == 3 || n == 4) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC);
+		if (n == 0 || n == 1) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
+		if (n == 0) Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
 		Dr_over_r = Dr_gsize*r_inv;
-		Dz_over_r = Dz_gsize*r_inv;
+		if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = Dz_gsize*r_inv;
 
 		// build each complicated D matrix
-		Dr2t = Dr2_gsize + Dr_over_r - r2_inv;
-		Drp = Dr_gsize + r_inv;
-		Drm = Dr_gsize - r_inv;
-		Drzp = Drz_gsize + Dz_over_r;
+		if (n == 0 || n == 3) Dr2t = Dr2_gsize + Dr_over_r - r2_inv;
+		if (n == 0) Drp = Dr_gsize + r_inv;
+		if (n == 1) Drm = Dr_gsize - r_inv;
+		if (n == 0 || n == 3) Drzp = Drz_gsize + Dz_over_r;
 		D2t = Dz2_gsize + Dr2_gsize + Dr_over_r - r2_inv;
 
 		// TODO/WARNING: this is hard-coded for the 5-component system!!
 		// Can we, or do we even need to make it for larger systems as well?
 
-		// TODO: build eq.'s (55-56) here!
+		// build eq.'s (55-56)
+		if (n == 0) {
+			DK23 += Place_subMatrix(0,n,vect_size,Dr2t)
+				  + Place_subMatrix(1,n,vect_size,Drp*r_inv)
+				  + Place_subMatrix(4,n,vect_size,Drzp);
+			
+			DK1 += Place_subMatrix(0,n,vect_size,D2t-r2_inv)
+			     + Place_subMatrix(1,n,vect_size,2.*r2_inv);
+		} else if (n == 1) {
+			DK23 += Place_subMatrix(0,n,vect_size,-Drm)
+				  + Place_subMatrix(1,n,vect_size,-r2_inv)
+				  + Place_subMatrix(4,n,vect_size,-Dz_over_r);
+			
+			DK1 += Place_subMatrix(1,n,vect_size,D2t-r2_inv)
+			     + Place_subMatrix(0,n,vect_size,2.*r2_inv);
+		} else if (n == 2) {
+			DK23 += Place_subMatrix(2,n,vect_size,Dz2_gsize)
+			      + Place_subMatrix(3,n,vect_size,Drz_gsize);
+			
+			DK1 += Place_subMatrix(n,n,vect_size,D2t+r2_inv);
+		} else if (n == 3) {
+			DK23 += Place_subMatrix(2,n,vect_size,Drzp)
+			      + Place_subMatrix(3,n,vect_size,Dr2t);
+			
+			DK1 += Place_subMatrix(n,n,vect_size,D2t);
+		} else if (n == 4) {
+			DK23 += Place_subMatrix(0,n,vect_size,Drz_gsize)
+				  + Place_subMatrix(1,n,vect_size,Dz_over_r)
+				  + Place_subMatrix(4,n,vect_size,Dz2_gsize);
+			
+			DK1 += Place_subMatrix(n,n,vect_size,D2t);
+		}
 	}
+
+	// constants
+	int K1 = 1, K23 = 2;
+	M = K1 * DK1 + K23 * DK23;
 }
 void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb) {
 	//
