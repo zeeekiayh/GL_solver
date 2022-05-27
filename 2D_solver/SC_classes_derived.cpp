@@ -160,41 +160,77 @@ void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Boun
 }
 
 void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
-	I.setIdentity(vect_size,vect_size); // set the identity matrix to the right size
+	I.resize(vect_size,vect_size); // set the identity matrix to the right size
+	I.setIdentity();
+	
 	Dr.resize(vect_size,vect_size);
 	Dz.resize(vect_size,vect_size);
-	r_inv.resize(vect_size,vect_size);
+	r_inv.resize(grid_size,grid_size);
 
 	T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
 	T_vector rhsBC; // ? should it actually be passed in as an argument?
 	
-	SpMat_cd R(grid_size,grid_size);
+	// SpMat_cd R(grid_size,grid_size); // there is no need for the vect_size x vect_size r_inv?
 	for (int u = 0; u < Nu; u++) {
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,0);
-			R.coeffRef(id,id) = (u == 0) ? 1e10 : 1./(u*h);
+			r_inv.coeffRef(id,id) = (u == 0) ? 1e10 : 1./(u*h);
 		}
 	}
 
 	for (int n = 0; n < Nop; n++) {
 		Dr += Place_subMatrix(n,n,vect_size,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
 		Dz += Place_subMatrix(n,n,vect_size,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
-		r_inv += Place_subMatrix(n,n,vect_size,R);
+		// r_inv += Place_subMatrix(n,n,vect_size,R);
 	}
 }
-
 void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	//
-}
+	// make all the matrices in eq. (54)
+	SpMat_cd Dr2t(grid_size,grid_size); // D_r^2 ~
+	SpMat_cd Drp(grid_size,grid_size);  // D_r^+
+	SpMat_cd Drm(grid_size,grid_size);  // D_r^-
+	SpMat_cd Drzp(grid_size,grid_size); // D_rz^+
+	SpMat_cd D2t(grid_size,grid_size);  // D^2 ~
 
+	// define D matrices that are used in others' definitions
+	SpMat_cd Dr2_gsize(grid_size,grid_size),
+			 Dr_gsize(grid_size,grid_size),
+			 Dr_over_r(grid_size,grid_size),
+			 Drz_gsize(grid_size,grid_size),
+			 Dz_over_r(grid_size,grid_size),
+			 Dz2_gsize(grid_size,grid_size),
+			 Dz_gsize(grid_size,grid_size);
+	SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
+
+	for (int n = 0; n < Nop; n++) {
+		// initialize the D matrices based on BC's
+		Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC);
+		Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC);
+		Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC);
+		Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
+		Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
+		Dr_over_r = Dr_gsize*r_inv;
+		Dz_over_r = Dz_gsize*r_inv;
+
+		// build each complicated D matrix
+		Dr2t = Dr2_gsize + Dr_over_r - r2_inv;
+		Drp = Dr_gsize + r_inv;
+		Drm = Dr_gsize - r_inv;
+		Drzp = Drz_gsize + Dz_over_r;
+		D2t = Dz2_gsize + Dr2_gsize + Dr_over_r - r2_inv;
+
+		// TODO/WARNING: this is hard-coded for the 5-component system!!
+		// Can we, or do we even need to make it for larger systems as well?
+
+		// TODO: build eq.'s (55-56) here!
+	}
+}
 void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb) {
 	//
 }
-
 void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	//
 }
-
 double Cylindrical::defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
 	//
 }
