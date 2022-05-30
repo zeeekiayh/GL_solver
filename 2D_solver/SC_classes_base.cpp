@@ -465,6 +465,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 	return;
 }
 
+
 // a method of initializing a guess based on a previous solution
 // NOTE: this funciton will mess things up if grid_size for solution is different than the grid_size for OPvector
 void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update) {
@@ -479,9 +480,6 @@ void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector 
       OPvector(i) = 0.;
    // And what will happen to the solution of the new one (i.e. what OPvector will become)
    //    if the derivative matrices are different? Will it still converge?
-
-   // "take the initial guess as 3-component solution from left to right (Dirichlet on
-   //    left/right and top/bottom) - should converge within 1 iteration, since this is a solution"
 }
 
 
@@ -608,46 +606,35 @@ void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, v
 
    for (int n = 0; n < Nop; n++) {
       for (int v = 0; v < Nv; v++) {
+         double z = h*v/16.;
          for (int u = 0; u < Nu; u++) {
-            double x = h*u;
+            double x = h*(u-Nu/2)/4.;
             int id = ID(u,v,n);
             int id_init = v + GridSize_init*n;
-            if (n < 3)
-               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? tanh((x-h*Nu/2)/2) : 1. );
-            // else {
-            //    auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-            //    auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
-            //    auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
-            //    double z = h*v;
-            //    OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
-            // }
-            else OPvector(id) = 0.;
+            
+            if (n < 3) {
+               OPvector(id) = OPvector_init(id_init) * ( (n==2)?tanh(x):1. );
+            } else if (n == 3 || n == 4) {
+               if (n == 4) {
+                  OPvector(id) = 0.5 * pow(2.718, -x/2.*x/2.)*-x/2. * z*pow(2.718, -z*z);
+               } else {
+                  OPvector(id) = 0.;
+               }
 
-
-            // for (int n = 0; n < Nop; n++) {
-            //    // loop over the whole mesh
-            //    for (int u = 0; u < Nu; u++) {
-            //       for (int v = 0; v < Nv; v++) {
-            //          int id = ID(u,v,n);
-
-            //          if (u == 0) {
-            //             OPvector(id) = eta_BC[n].valueL;
-            //          } else if (u == Nu-1) {
-            //             OPvector(id) = eta_BC[n].valueR;
-            //          } else if (v == 0) {
-            //             OPvector(id) = eta_BC[n].valueB;
-            //          } else if (v == Nv-1) {
-            //             OPvector(id) = eta_BC[n].valueT;
-            //          } else if (n == 1) { // for only Ayy:
-            //             OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
-            //          } else if (n == 3 || n == 4) {
-            //             OPvector(id) = 0.;
-            //          } else {
-            //             OPvector(id) = 1.;
-            //          }
-            //       }
-            //    }
-            // }
+               if (u == 0) {
+                  OPvector(id) = eta_BC[n].valueL;
+                  if (eta_BC[n].typeL == "D") { no_update.push_back(id); cout << "adding id=" << id << " to 'no_update'." << endl; }
+               } else if (u == Nu-1) {
+                  OPvector(id) = eta_BC[n].valueR;
+                  if (eta_BC[n].typeR == "D") { no_update.push_back(id); cout << "adding id=" << id << " to 'no_update'." << endl; }
+               } else if (v == 0) {
+                  OPvector(id) = eta_BC[n].valueB;
+                  if (eta_BC[n].typeB == "D") { no_update.push_back(id); cout << "adding id=" << id << " to 'no_update'." << endl; }
+               } else if (v == Nv-1) {
+                  OPvector(id) = eta_BC[n].valueT;
+                  if (eta_BC[n].typeT == "D") { no_update.push_back(id); cout << "adding id=" << id << " to 'no_update'." << endl; }
+               }
+            }
          }
       }
    }
@@ -720,22 +707,6 @@ void SC_class :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPv
    // }
 }
 
-
-// Some way to have this function solve for the solution to use as guess?
-// void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-//    // get all the information from the "conditions.txt"
-// 	in_conditions cond;
-// 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
-// 	Matrix2d **gradK;            // gradient coefficients in GL functional
-// 	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
-// 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
-
-// 	read_input_data(Nop, cond, eta_BC, gradK, conditions_file);
-// 	//confirm_input_data(Nop, cond, eta_BC, gradK);
-   
-//    SC.initialOPguess(eta_BC, OPvector, no_update);
-//    SC.BuildSolverMatrix()
-// }
 
 // Write out the vector to a file (this is written for a 2D system,
 //    but can write 1D vectors just fine if Nv or Nu = 1).

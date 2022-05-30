@@ -68,7 +68,7 @@ class SC_class{
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
 		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
 		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
-		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){};
+		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){return 0.;};
 };
 
 // derived_classes depends on the particular form of the bulk free energy, that gives the appropriate RHS vector

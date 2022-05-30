@@ -15,8 +15,9 @@ double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 int main(int argc, char** argv)
 {
 	// build the general K matrices
-	kMatrix::BuildKMatrices();
-	
+	kMatrix K;
+	K.BuildKMatrices();
+
 	// To calculate a solution based on the initial guess of this here...
 	// -----------------------------------------------------------------------------
 	// cout << "solving for initial guess..." << endl;
