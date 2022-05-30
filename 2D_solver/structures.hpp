@@ -133,24 +133,24 @@
 // ===========================================
 // K matrix structure:
 //    to not get the K matrices mixed up with anything else
-   struct kMatrix {
+   namespace kMatrix {
       static const int matSize = 9;
-      int K1 = 1, K2 = 1, K3 = 1;
-      int K123 = K1 + K2 + K3;
+      const int K1 = 1, K2 = 1, K3 = 1;
+      const int K123 = K1 + K2 + K3;
 
       // define all the K matrices
-      Eigen::Matrix<int, matSize, matSize> XX;
-      Eigen::Matrix<int, matSize, matSize> YY; // eq. (48)
-      Eigen::Matrix<int, matSize, matSize> ZZ;
+      extern Eigen::Matrix<int, matSize, matSize> XX;
+      extern Eigen::Matrix<int, matSize, matSize> YY; // eq. (48)
+      extern Eigen::Matrix<int, matSize, matSize> ZZ;
 
-      Eigen::Matrix<int, matSize, matSize> XY;
-      Eigen::Matrix<int, matSize, matSize> YX; // eq. (49)
+      extern Eigen::Matrix<int, matSize, matSize> XY;
+      extern Eigen::Matrix<int, matSize, matSize> YX; // eq. (49)
       
-      Eigen::Matrix<int, matSize, matSize> ZY;
-      Eigen::Matrix<int, matSize, matSize> YZ; // eq. (50)
+      extern Eigen::Matrix<int, matSize, matSize> ZY;
+      extern Eigen::Matrix<int, matSize, matSize> YZ; // eq. (50)
 
-      Eigen::Matrix<int, matSize, matSize> ZX;
-      Eigen::Matrix<int, matSize, matSize> XZ; // eq. (51)
+      extern Eigen::Matrix<int, matSize, matSize> ZX;
+      extern Eigen::Matrix<int, matSize, matSize> XZ; // eq. (51)
 
       // build all the K matrices
       inline void BuildKMatrices() {
@@ -239,27 +239,27 @@
 
          for (int n = 0; n < Nop; n++) {
             for (int m = 0; m < Nop; m++) {
-               if (D_components[0] == "xx")
+               if (D_components[0] == std::string("xx"))
                   gradK[m][n](0,0) = XX(m,n);
-               else if (D_components[1] == "xz")
+               if (D_components[1] == std::string("xz"))
                   gradK[m][n](0,1) = XZ(m,n);
-               else if (D_components[2] == "zx")
+               if (D_components[2] == std::string("zx"))
                   gradK[m][n](1,0) = ZX(m,n);
-               else if (D_components[3] == "zz")
+               if (D_components[3] == std::string("zz"))
                   gradK[m][n](1,1) = ZZ(m,n);
-               // else if (D_components[i] == "yy") {
+               // if (D_components[i] == std::string("yy")) {
                //    //
                // }
-               // else if (D_components[i] == "xy") {
+               // if (D_components[i] == std::string("xy")) {
                //    //   
                // }
-               // else if (D_components[i] == "yx") {
+               // if (D_components[i] == std::string("yx")) {
                //    //   
                // }
-               // else if (D_components[i] == "yz") {
+               // if (D_components[i] == std::string("yz")) {
                //    //
                // }
-               // else if (D_components[i] == "zy") {
+               // if (D_components[i] == std::string("zy")) {
                //    //
                // }
             }

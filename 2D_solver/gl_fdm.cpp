@@ -12,11 +12,25 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 // prototype for function defined in 'he3bulk.cpp'
 double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 
+// define all the K matrices here (but they are accessible from the kMatrix namespace in any file?)
+	static const int kMS = kMatrix::matSize;
+	Eigen::Matrix<int, kMS, kMS> XX;
+	Eigen::Matrix<int, kMS, kMS> YY; // eq. (48)
+	Eigen::Matrix<int, kMS, kMS> ZZ;
+
+	Eigen::Matrix<int, kMS, kMS> XY;
+	Eigen::Matrix<int, kMS, kMS> YX; // eq. (49)
+
+	Eigen::Matrix<int, kMS, kMS> ZY;
+	Eigen::Matrix<int, kMS, kMS> YZ; // eq. (50)
+
+	Eigen::Matrix<int, kMS, kMS> ZX;
+	Eigen::Matrix<int, kMS, kMS> XZ; // eq. (51)
+
 int main(int argc, char** argv)
 {
 	// build the general K matrices
-	kMatrix K;
-	K.BuildKMatrices();
+	kMatrix::BuildKMatrices();
 
 	// To calculate a solution based on the initial guess of this here...
 	// -----------------------------------------------------------------------------
@@ -68,15 +82,20 @@ int main(int argc, char** argv)
 	else if (argc != 2) {cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
 	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
+	// the list of K-matrix components to be used in building the small K-matrix
+	string names[4] = {string("xx"),string("xz"),string("zx"),string("zz")};
+	// build the small K-matrix based on the OP size
+	auto smKMat = kMatrix::smallKMatrix(Nop, names);
+
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
-	Matrix2d **gradK;            // gradient coefficients in GL functional
-	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
-	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
+	// Matrix2d **gradK;            // gradient coefficients in GL functional
+	// gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
+	// for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
-	read_input_data(Nop, cond, eta_BC, gradK, "conditions"+to_string(Nop)+".txt");
-	//confirm_input_data(Nop, cond, eta_BC, gradK);
+	read_input_data(Nop, cond, eta_BC, smKMat, "conditions"+to_string(Nop)+".txt");
+	// confirm_input_data(Nop, cond, eta_BC, smKMat);
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
@@ -141,7 +160,7 @@ int main(int argc, char** argv)
 	}
 
 	cout << "building solver matrix...";
-	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
+	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, smKMat );
 	cout << "done" << endl;
 
 	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
@@ -161,7 +180,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "calculating gradFE...";
-	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
+	pSC->gradFE(freeEg, OPvector, eta_BC, smKMat); // get the gradient contribution to free energy
 	cout << "done" << endl;
 	
 	// // save the FE data
@@ -186,9 +205,9 @@ int main(int argc, char** argv)
 	// calculate the defect energy
 	cout << "Energy defect: " << pSC->defectEnergy(freeEb, freeEg) << endl;
 
-	//------  de-allocating gradK array ------------------
-	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
-	delete[] gradK; 
+	//------  de-allocating smKMat array ------------------
+	for(int i = 0; i <Nop; i++) delete[] smKMat[i]; 
+	delete[] smKMat; 
 	delete pSC;
 
 	return 0;
