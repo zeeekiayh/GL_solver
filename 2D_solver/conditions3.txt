@@ -11,7 +11,7 @@ K MATRIX
 ()        (1,0,0,1) ()
 ()        ()        (1,0,0,3)
 
-20 25 # mesh size (x, z)
+30 30 # mesh size (x, z)
 0.8    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
