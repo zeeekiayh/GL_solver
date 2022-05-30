@@ -164,7 +164,7 @@ def plot_OP_comps_and_slices(file_name):
     custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
 
     # the domain extents for the imshow calls
-    ext = [0*h, Nu*h, 0*h, Nv*h]
+    ext = [0*h, Nv*h, 0*h, Nu*h]
 
     # initialize all axes
     axs = []
@@ -177,13 +177,30 @@ def plot_OP_comps_and_slices(file_name):
     if Nop == 3:
         fig, axes = plt.subplots(3,2)
         # then unpack the axes tuple
-        ((FE_prof_ax, FE_ax, grad_FE_ax),(axs[0], axs[1], axs[2])) = axes
+        ((grad_FE_ax, axs[0]),
+         (FE_ax,      axs[1]),
+         (FE_prof_ax, axs[2])) = axes
+
+        axs[0].axes.xaxis.set_ticks([])
+        axs[1].axes.xaxis.set_ticks([])
+        axs[0].axes.yaxis.set_ticks([])
+        axs[1].axes.yaxis.set_ticks([])
+        axs[2].set_xlabel(rf'$z/\xi_0$ (right)')
     elif Nop == 5:
         fig, axes = plt.subplots(3,3)
         # then unpack the axes tuple
         ((grad_FE_ax, axs[0], axs[3]),
-        (FE_ax,      axs[1], axs[4]),
-        (FE_prof_ax, axs[2], empty_ax)) = axes
+         (FE_ax,      axs[1], axs[4]),
+         (FE_prof_ax, axs[2], empty_ax)) = axes
+
+        axs[0].axes.xaxis.set_ticks([])
+        axs[1].axes.xaxis.set_ticks([])
+        axs[3].axes.xaxis.set_ticks([])
+        axs[0].axes.yaxis.set_ticks([])
+        axs[1].axes.yaxis.set_ticks([])
+        axs[3].axes.yaxis.set_ticks([])
+        axs[2].set_xlabel(rf'$z/\xi_0$ (right)')
+        axs[4].set_xlabel(rf'$z/\xi_0$ (right)')
     else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
 
     fig.suptitle(f'OP-{Nop}')
@@ -191,39 +208,39 @@ def plot_OP_comps_and_slices(file_name):
     # plot the 2D solution
     for i in range(Nop):
         axs[i].set_title(f'{custom_labels[i]}')
-        axs[i].axes.xaxis.set_ticks([]) # remove tick marks for a cleaner plot;
-        axs[i].axes.yaxis.set_ticks([]) #   we only leave them on one for reference
-        im = axs[i].imshow(OP_data_array[i].transpose(), extent=ext, cmap='bwr')
+        # axs[i].axes.xaxis.set_ticks([]) # remove tick marks for a cleaner plot;
+        # axs[i].axes.yaxis.set_ticks([]) #   we only leave them on one for reference
+        im = axs[i].imshow(OP_data_array[i], extent=ext, cmap='bwr') # .transpose()
         plt.colorbar(im,ax=axs[i])
     
-    # don't show the blank plots
-    # if empty_ax != None: empty_ax.axis('off')
-    # if grad_FE_ax != None: grad_FE_ax.axis('off')
-
-    # use the blank plot to show axes labels
-    empty_ax.imshow(np.zeros(np.shape(OP_data_array[0])), extent=ext, vmin=-0.1, vmax=0.1, cmap='bwr')
-    empty_ax.set_xlabel(rf'$x/\xi_0$')
-    empty_ax.set_ylabel(rf'$z/\xi_0$')
-    empty_ax.set_title('axes labels')
+    if empty_ax != None:
+        empty_ax.axis('off') # don't show the blank plots
+    #     # use the blank plot to show axes labels
+    #     empty_ax.imshow(np.zeros(np.shape(OP_data_array[0])), extent=ext, vmin=-0.1, vmax=0.1, cmap='bwr')
+    #     empty_ax.set_xlabel(rf'$z/\xi_0$ (right)')
+    #     empty_ax.set_ylabel(rf'$x/\xi_0$ (bottom/surface)')
+    #     empty_ax.set_title('axes labels')
 
     # plot the FE profile
     FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
     FE_prof_ax.set_ylabel('FE')
     FE_prof_ax.set_title('Total FE profile')
-    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), FE_data_array[0].transpose()[len(FE_data_array[0])//2,:])
+    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0])//2,:]))) # .transpose()
 
     # plot the 2D heatmap of the FE
     FE_ax.set_title('Total FE')
     FE_ax.axes.xaxis.set_ticks([])
-    FE_ax.axes.yaxis.set_ticks([])
-    im = FE_ax.imshow(FE_data_array[0].transpose(), extent=[0,ext[1],0,ext[3]], cmap='gist_heat')
+    # FE_ax.axes.yaxis.set_ticks([])
+    FE_ax.set_ylabel(rf'$x/\xi_0$ (bottom/surface)')
+    im = FE_ax.imshow(FE_data_array[0], extent=[0,ext[1],0,ext[3]], cmap='gist_heat') # .transpose()
     fig.colorbar(im,ax=FE_ax)
 
     # plot the defect energy
     grad_FE_ax.set_title('Grad free energy')
     grad_FE_ax.axes.xaxis.set_ticks([])
-    grad_FE_ax.axes.yaxis.set_ticks([])
-    im = grad_FE_ax.imshow(FE_data_array[2].transpose(), extent=[0,ext[1],0,ext[3]], cmap='gist_heat')
+    # grad_FE_ax.axes.yaxis.set_ticks([])
+    grad_FE_ax.set_ylabel(rf'$x/\xi_0$ (bottom/surface)')
+    im = grad_FE_ax.imshow(FE_data_array[2], extent=[0,ext[1],0,ext[3]], cmap='gist_heat') # .transpose()
     fig.colorbar(im,ax=grad_FE_ax)
 
     # display all plots plotted above
