@@ -154,8 +154,8 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       if (BC.typeB == std::string("D")) // Dirichlet
       {
          int id=ID(u,0,op_component);
-		rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
-         	//rhsBC(id) = initOPvector(id);
+		   rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+         //rhsBC(id) = initOPvector(id);
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
@@ -166,7 +166,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       if (BC.typeT == std::string("D")) // Dirichlet
       {
          int id=ID(u,Nv-1,op_component);
-		rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+		   rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
          //	rhsBC(id) = initOPvector(id);
       }
    }
@@ -427,15 +427,11 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 
          M += Place_subMatrix( m, n, Nop, toInsertM );
          FEgrad += Place_subMatrix( m, n, Nop, toInsertFE );
-
-	      //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
    }
-
-   //cout << "M=\n" << M << endl;
-   //cout << "rhsBC=\n" << rhsBC << endl;
 }
 
+// The basic initial guess function ... use BC's to make a guess
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 

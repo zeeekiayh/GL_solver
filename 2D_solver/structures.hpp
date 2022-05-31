@@ -25,6 +25,7 @@
    typedef Eigen::MatrixXd  T_matrix;
    typedef Eigen::SparseMatrix<double> SpMat_cd;
    */
+// ===========================================
 
 // ===========================================
 // Boundary condition structure for a single OP
@@ -131,14 +132,14 @@
 // ===========================================
 
 // ===========================================
-// K matrix structure:
+// K matrix namespace:
 //    to not get the K matrices mixed up with anything else
    namespace kMatrix {
       static const int matSize = 9;
       const int K1 = 1, K2 = 1, K3 = 1;
       const int K123 = K1 + K2 + K3;
 
-      // define all the K matrices
+      // functions to return each of the K matrices
       // eq. (48)
       inline Eigen::Matrix<int, matSize, matSize> XX() {
          Eigen::Matrix<int, matSize, matSize> xx;
@@ -246,8 +247,6 @@
       // a function to give the small K matrix to build the
       //    solver matrix for smaller systems
       inline Eigen::Matrix2d** smallKMatrix(int Nop, std::vector<bool> D_components) {
-         // int K_element_size = D_components->length();
-
          Eigen::Matrix2d** gradK;
          gradK = new Eigen::Matrix2d *[Nop];
          for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
@@ -265,6 +264,8 @@
                if (D_components[1]) gradK[m][n](0,1) = XZ()(m,n);
                if (D_components[2]) gradK[m][n](1,0) = ZX()(m,n);
                if (D_components[3]) gradK[m][n](1,1) = ZZ()(m,n);
+
+               // WILL WE EVER NEED THESE? NO?
                // if (D_components[i]) { // "yy"
                //    //
                // }
