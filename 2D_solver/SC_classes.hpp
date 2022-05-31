@@ -12,10 +12,9 @@ class SC_class{
 		int vect_size; // full vector size of 
 		double h; // grid step size
 		T_scalar *eta_bulk; // OP components (pointer) 
+		Eigen::Matrix2d **gK;            // gradient coefficients in GL functional, each gK matrix is (xx, xz, // zx, zz)
       	SpMat_cd Du2, Dv2, Duv, Du, Dv; // base derivative matrices, without boundary conditions
-      	// bool use_no_update = 0; // says whether or not to use the no_update vector
-      	// vector<int> no_update; // stores all the indices that will not be modified in the RHS
-		SpMat_cd FEgrad; // the F_hat_grad matrix in equation 36 in Latex file
+		SpMat_cd Du_FE, Dv_FE; // full first-order Derivative matrices to be used in FE calculation 
 	public:
 		//constructor 
 		// SC_op () {Nop=1; *eta_bulk = 1;}; // default constructor for single-component OP 
@@ -23,11 +22,17 @@ class SC_class{
 		SC_class(int n, int nx, int ny, double step) {
 			Nop=n; Nu=nx; Nv=ny; grid_size=nx*ny; vect_size=grid_size * Nop; h=step; 
 			eta_bulk=new T_scalar [n];
+			gK = new Eigen::Matrix2d *[n]; 
+			for (int i = 0; i < n; i++) gK[i] = new Eigen::Matrix2d [n];
 			this->Build_D_Matrices(); // build all general D-matrices for anything that will need them
 		}; 
 
 		//destructor: declared  virtual so that derived classes could destroy the base class
-		virtual ~SC_class () {delete eta_bulk;}
+		virtual ~SC_class () {
+			delete[] eta_bulk;
+			for(int i = 0; i <Nop; i++) delete[] gK[i]; 
+			delete[] gK; 
+		}
 
 		// common functions -----------------------------------------------------------
 		int sizeOP (void) {return Nop;}
@@ -50,12 +55,8 @@ class SC_class{
 		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		// a method of initializing a guess based on a previous solution
-		// void initialOPguessFromSolution(SC_class & SC, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update); 
 		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
@@ -77,7 +78,10 @@ class OneCompSC : public SC_class {
 		// some new variables... 
 	public: 
 		//constructor: we need to construct the base class too 
-		OneCompSC (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
+		OneCompSC (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {
+				gK[0][0] << 1, 0, 
+						0, 1; 
+		} 
 		//destructor : automatically calls virtual ~SC_class()
 		~OneCompSC () {} 
 
@@ -90,7 +94,14 @@ class ThreeCompHe3 : public SC_class {
 	protected:
 	public: 
 		//constructor: we need to construct the base class too 
-		ThreeCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
+		ThreeCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {
+			int c[]={0,1,2}; // fill the gK matrix for OP components 0,1,2=(Axx, Ayy, Azz)
+			for(int m=0; m<3; m++) for(int k=0; k<3; k++){
+				gK[m][k] << Kuu[c[m]][c[k]], Kuv[c[m]][c[k]], 
+						Kvu[c[m]][c[k]], Kvv[c[m]][c[k]] ;
+				//std::cout << "\n gK["<<m<<"]["<<k<<"]=\n" << gK[m][k] << "\n";
+			}
+		} 
 		~ThreeCompHe3 () {} 
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
@@ -102,7 +113,13 @@ class FiveCompHe3 : public SC_class {
 	protected:
 	public: 
 		//constructor: we need to construct the base class too 
-		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
+		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) { 
+			int c[]={0,1,2,3,4}; // fill the gK matrix for OP components 0,1,2,3,4=(Axx, Ayy, Azz, Azx, Axz)
+			for(int m=0; m<5; m++) for(int k=0; k<5; k++){
+				gK[m][k] << Kuu[c[m]][c[k]], Kuv[c[m]][c[k]], 
+						Kvu[c[m]][c[k]], Kvv[c[m]][c[k]] ;
+			}
+		}
 		~FiveCompHe3 () {} 
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 

@@ -225,6 +225,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 		// the reference vector does not play role for linear equations, we take the one that we just added 
 		int ref_v=Nstored-1;
 
+		if(details) cout << " Building Acceleration system... ";
 		for ( i=0; i < Nstored; i++ ){ 
 			if(i==ref_v) continue;
 			devi = stored[i].dev -stored[ref_v].dev;
@@ -234,11 +235,14 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 			}
 			r(i) = - devi.dot( stored[ref_v].dev );
 		}
+		if(details) {cout << " done \n "; }
 
+		if(details) {cout << " Solving for Acceleration coeffs c ... "; fflush(NULL);}
 		// find the coefficients that will minimize the norm 
 		c = M.colPivHouseholderQr().solve(r); 
 		// find the relative error to estimate if the matrix is singular (this should be real small if M is invertible)
 		double relative_error = (M*c - r).norm() / r.norm();
+		if(details){ cout << " done \n ";  fflush(NULL);}
 
 		if( relative_error > 1e-6 ){ 
 			if(details) cout << " Andrs Accel. has singular matrix. Det(M) = " << M.determinant() << endl; 

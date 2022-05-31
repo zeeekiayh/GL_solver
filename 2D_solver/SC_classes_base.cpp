@@ -53,7 +53,7 @@ void SC_class :: Build_D_Matrices() {
          coeffs_u2.push_back( Trpl(id, ID(um,v,0),  1.0) );
          coeffs_u2.push_back( Trpl(id, ID(up,v,0),  1.0) );
          // Du -matrix triplets
-         Wu = 1.0/(up-um); // =1/2 for inside points; =1 for boundary points
+         Wu = (up-um) ? 1.0/(up-um) : 0.0; // =1/2 for inside points; =1 for boundary points, 0 if no range
          coeffs_u.push_back( Trpl(id, ID(um,v,0),  -Wu) );
          coeffs_u.push_back( Trpl(id, ID(up,v,0),   Wu) );
 
@@ -62,7 +62,7 @@ void SC_class :: Build_D_Matrices() {
          coeffs_v2.push_back( Trpl(id, ID(u,vm,0),  1.0) );
          coeffs_v2.push_back( Trpl(id, ID(u,vp,0),  1.0) );
          // Dv -matrix triplets
-         Wv = 1.0/(vp-vm);
+         Wv = (vp-vm) ? 1.0/(vp-vm) : 0.0; 
          coeffs_v.push_back( Trpl(id, ID(u,vm,0),  -Wv) );
          coeffs_v.push_back( Trpl(id, ID(u,vp,0),   Wv) );
 
@@ -90,6 +90,8 @@ void SC_class :: Build_D_Matrices() {
    Duv.setFromTriplets(coeffs_uv.begin(), coeffs_uv.end());
    Du.setFromTriplets(coeffs_u.begin(), coeffs_u.end());
    Dv.setFromTriplets(coeffs_v.begin(), coeffs_v.end());
+
+	return;
 }
 
 // -------------------------------------------------------------------------------
@@ -336,7 +338,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector &
    for (int v = 0; v < Nv; v++) 
    {
       id =             ID(Nu-1, v, 0); 
-      Du_copy.coeffRef(id,id) = -1.0/(2.*BC.slipR);
+      Du_copy.coeffRef(id,id) = -h/(BC.slipR);
 
       id_disconnect = ID(Nu-2, v, 0); 
       Du_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -347,7 +349,7 @@ SpMat_cd    SC_class::Du_BD 	 (Bound_Cond BC, int op_component, const T_vector &
    for (int v = 0; v < Nv; v++) 
    {
       id =             ID(0, v, 0); 
-      Du_copy.coeffRef(id,id) = 1./(2.*BC.slipL);
+      Du_copy.coeffRef(id,id) = h/(BC.slipL);
 
       id_disconnect = ID(1, v, 0); 
       Du_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -370,7 +372,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector &
    for (int u = 0; u < Nu; u++) 
    {
       id =             ID(u, Nv-1, 0); 
-      Dv_copy.coeffRef(id,id) = -1.0/(2.*BC.slipT);
+      Dv_copy.coeffRef(id,id) = -h/(BC.slipT);
 
       id_disconnect = ID(u,Nv-2, 0); 
       Dv_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -381,7 +383,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector &
    for (int u = 0; u < Nu; u++) 
    {
       id =             ID(u, 0, 0); 
-      Dv_copy.coeffRef(id,id) = 1./(2.*BC.slipB);
+      Dv_copy.coeffRef(id,id) = h/(BC.slipB);
 
       id_disconnect = ID(u, 1, 0); 
       Dv_copy.coeffRef(id,id_disconnect) = 0.0;
@@ -396,66 +398,89 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    int x = 0, z = 1; // indexes for the K-matrix
    // Use equ. (15) in the Latex file:
    //    [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
-   // For free energy matrix we use the equation (10) and (36) in the latex file
    
-   // initialize the FEgrad matrix
-   FEgrad.resize(vect_size,vect_size);
-
    for (int m = 0; m < Nop; m++) {
       for (int n = 0; n < Nop; n++) {
          SpMat_cd toInsertM(grid_size,grid_size);
-         SpMat_cd toInsertFE(grid_size,grid_size);
 
          if (gradK[m][n](x,x) != 0 && Nu > 1){
             toInsertM += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
-
-            toInsertFE += gradK[m][n](x,x) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
    	   }
 
          if (gradK[m][n](z,z) != 0 && Nv > 1){
             toInsertM += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
             if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
-            
-            toInsertFE += gradK[m][n](x,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
    	   }
 
          if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
             toInsertM += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            
-            toInsertFE += gradK[m][n](z,x) * Dv_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Du_BD(eta_BC[n], n, initOPvector, rhsBClocal)
-            		      + gradK[m][n](x,z) * Du_BD(eta_BC[m], m, initOPvector, rhsBClocal).adjoint() * Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
    	   }
 
          M += Place_subMatrix( m, n, Nop, toInsertM );
-         FEgrad += Place_subMatrix( m, n, Nop, toInsertFE );
+	//std::cout << "\n gradK["<<m<<"]["<<n<<"]=\n" << gradK[m][n];
 
-	      //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
+	  //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
    }
 
+   // For free energy matrix we use the equation (10) and (36) in the latex file
+   SpMat_cd toInsertD(grid_size,grid_size);
+
+   if(Nu > 1) { // we have u-derivatives 
+   	Du_FE.resize(vect_size,vect_size);
+      for (int n = 0; n < Nop; n++) {
+            toInsertD = Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+         	Du_FE += Place_subMatrix( n, n, Nop, toInsertD );
+   	 }
+   }
+   if(Nv > 1) { // we have v-derivatives 
+   	Dv_FE.resize(vect_size,vect_size);
+      for (int n = 0; n < Nop; n++) {
+            toInsertD = Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+         	Dv_FE += Place_subMatrix( n, n, Nop, toInsertD );
+   	 }
+   }
+
    //cout << "M=\n" << M << endl;
+   //cout << "FEgrad=\n" << FEgrad << endl;
    //cout << "rhsBC=\n" << rhsBC << endl;
 }
 
+T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
+T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return v1+(v2-v1)*tanh((x-x0)/2.0); };
+
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
+	T_scalar (* profileX)(double, double, T_scalar, T_scalar); 
+	T_scalar (* profileZ)(double, double, T_scalar, T_scalar); 
+	double x0, z0;
 
 	for (int n = 0; n < Nop; n++) {
-		auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-		auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
-		auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
+		// from boundary conditions determine which profile function to use 
+		if ( real( eta_BC[n].valueL * eta_BC[n].valueR) < -0.1 ) {
+			x0 = (Nu/2)*h; 
+			profileX = profile_dom_wall; 
+		}else{
+			x0 = (Nu-1)*h; 
+			profileX = profile_dbl_tanh; 
+		}
+
+		if ( real( eta_BC[n].valueT * eta_BC[n].valueB) < -0.1 ) {
+			z0 = (Nv/2)*h; 
+			profileZ = profile_dom_wall; 
+		}else{
+			z0 = (Nv-1)*h; 
+			profileZ = profile_dbl_tanh; 
+		}
 
 		// going through the entire grid
-		for (int u = 0; u < Nu; u++) {
-			// double x = h*u; // to put the domain wall at x=0
-			double x = h*(u - Nu/2); // to put the domain wall at the middle: x=h*Nu/2
-			for (int v = 0; v < Nv; v++) {
-				double z = h*v;
+		for (int u = 0; u < Nu; u++) { double x = h*u; 
+			for (int v = 0; v < Nv; v++) { double z = h*v;  
 				int id = ID(u,v,n);
 
-				OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
-
+				OPvector( id ) = profileX(x, x0, eta_BC[n].valueL, eta_BC[n].valueR ) 
+						   * profileZ(z, z0, eta_BC[n].valueB, eta_BC[n].valueT ); 
 			}
 		}
 	}
@@ -465,192 +490,48 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 	return;
 }
 
+
+
 // a method of initializing a guess based on a previous solution
-// NOTE: this funciton will mess things up if grid_size for solution is different than the grid_size for OPvector
-void SC_class :: initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update) {
-   if (solution.size() > OPvector.size()) {
-      cout << "ERROR: can't initialize a guess with a previous solution larger than the current:\n\tsolution.size() = " << solution.size() << "; OPvector.size()" << OPvector.size() << endl;
-      return;
-   }
-   // should we fix the boundaries...? using no_update?
-   for (int i = 0; i < solution.size(); i++)
-      OPvector(i) = solution(i);
-   for (int i = solution.size(); i < OPvector.size(); i++)
-      OPvector(i) = 0.;
-   // And what will happen to the solution of the new one (i.e. what OPvector will become)
-   //    if the derivative matrices are different? Will it still converge?
-
-   // "take the initial guess as 3-component solution from left to right (Dirichlet on
-   //    left/right and top/bottom) - should converge within 1 iteration, since this is a solution"
-}
-
-
-void SC_class :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // use "conditions3_1DChannel.txt"
-   // cout << "initOPguess_NarrowChannel()" << endl;
-   // solve for the normal 3-component system
-   int Nop_init = 3;
-   in_conditions cond_init;
-   Bound_Cond eta_BC_init[Nop_init];
-   Matrix2d **gradK_init;
-   gradK_init = new Matrix2d *[Nop_init];
-   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
-   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_normal.txt");
-   cond_init.maxStore = 5;
-   cond_init.rel_p = 0.1;
-   cond_init.wait = 1;
+// Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
+void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update)
+{
    vector<int> no_update_init;
-   // for us, we need this to be the z-length of our system
-   cond_init.SIZEv = Nv;
-   cond_init.SIZEu = 1;
-   cond_init.STEP = h;
+   in_conditions cond_init=cond; // copy the conditions, 
+   // but change them appropriately to fit this guess 
+      cond_init.Nop=3;
+      cond_init.SIZEu = 1; // make it vertical, effectively setting u=0 
+   Bound_Cond eta_BC_init[cond_init.Nop]; // change the Top boundary conditons 
+   	eta_BC_init[0]=eta_BC[0]; // eta_BC_init[0].typeT="D"; eta_BC_init[0].slipT=1e-10; 
+   	eta_BC_init[1]=eta_BC[1]; // eta_BC_init[1].typeT="D"; eta_BC_init[1].slipT=1e-10;
+   	eta_BC_init[2]=eta_BC[2]; // eta_BC_init[2].typeT="D"; eta_BC_init[2].slipT=1e-10;
+   // cout << endl << eta_BC[0] << endl << eta_BC_init[0] << endl << endl;
+   // cout << eta_BC[1] << endl << eta_BC_init[1] << endl << endl;
+   // cout << eta_BC[2] << endl << eta_BC_init[2] << endl << endl;
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
    T_vector OPvector_init(VectSize_init);
    SpMat_cd M_init(VectSize_init,VectSize_init);
    T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+   SC_class *pSC_init = new ThreeCompHe3( cond_init.Nop, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
    pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
+   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK );
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-
-   for (int n = 0; n < Nop; n++) {
-      for (int v = 0; v < Nv; v++) {
-         int id_forward = ID(0,v,n);
-         int id_backward = ID(0,Nv-1-v,n);
-         OPvector(id_forward) = OPvector_init(id_forward)*OPvector_init(id_backward);
-      }
-   }
-	return;
-}
-
-
-void SC_class :: initOPguess_AzzFlip_WS2016(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // use "conditions5_W&S2016.txt"
-   // cout << "initOPguess_AzzFlip()" << endl;
-   // solve for the normal 3-component system
-   int Nop_init = 3;
-   in_conditions cond_init;
-   Bound_Cond eta_BC_init[Nop_init];
-   Matrix2d **gradK_init;
-   gradK_init = new Matrix2d *[Nop_init];
-   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
-   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_1DChannel.txt");
-   cond_init.maxStore = 5;
-   cond_init.rel_p = 0.1;
-   cond_init.wait = 1;
-   vector<int> no_update_init;
-   // for us, we need this to be the z-length of our system
-   cond_init.SIZEv = Nv;
-   cond_init.SIZEu = 1;
-   cond_init.STEP = h;
-   int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
-   int VectSize_init = cond_init.Nop * GridSize_init;
-   T_vector OPvector_init(VectSize_init);
-   SpMat_cd M_init(VectSize_init,VectSize_init);
-   T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-	pSC_init->initOPguess_1DNarrowChannel(eta_BC_init, OPvector_init, no_update_init);
-   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
-   Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-
-   // going through the entire grid
-   for (int u = 0; u < Nu; u++) {
-      for (int v = 0; v < Nv; v++) {
-         for (int n = 0; n < Nop; n++) {
-            double x = h*u;
-				int id      = ID(u,v,n);
-            int id_init = v + GridSize_init*n;
-
-            if (n == 0 || n == 1)
-               OPvector(id) = OPvector_init( id_init );
-            else if (n == 2)
-               OPvector(id) = tanh((x-h*Nu/2)/2) * OPvector_init( id_init );
-            else if (n == 3 || n == 4)
-               OPvector(id) = 0.;
-			}
-		}
-	}
-	return;
-}
-
-
-// "and the interesting thing to check is take the initial guess of 3-compnent solution on the
-//    left side smoothly changing to 3-component solution with Azz flipped on the right side."
-
-void SC_class :: initOPguess_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // use "conditions5_xDeform.txt"
-   // solve for the normal 3-component system for the initial guess
-   int Nop_init = 3;
-   in_conditions cond_init;
-   Bound_Cond eta_BC_init[Nop_init];
-   Matrix2d **gradK_init;
-   gradK_init = new Matrix2d *[Nop_init];
-   for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
-   read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions3_normal.txt");
-   cond_init.maxStore = 5;
-   cond_init.rel_p = 0.1;
-   cond_init.wait = 1;
-   vector<int> no_update_init;
-   // for us, we need this to be the z-length of our system
-   cond_init.SIZEv = Nv;
-   cond_init.SIZEu = 1;
-   cond_init.STEP = h;
-   int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
-   int VectSize_init = cond_init.Nop * GridSize_init;
-   T_vector OPvector_init(VectSize_init);
-   SpMat_cd M_init(VectSize_init,VectSize_init);
-   T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-   SC_class *pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-   pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
-   Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
+   pSC_init->WriteToFile(OPvector_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt",1);
 
    for (int n = 0; n < Nop; n++) {
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
-            double x = h*u;
+            double x = h*(u-Nu/2);
             int id = ID(u,v,n);
             int id_init = v + GridSize_init*n;
             if (n < 3)
-               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? tanh((x-h*Nu/2)/2) : 1. );
-            // else {
-            //    auto deltaZ = eta_BC[n].valueT - eta_BC[n].valueB;
-            //    auto deltaX = 0.5*(eta_BC[n].valueR - eta_BC[n].valueL);
-            //    auto middleX = 0.5*(eta_BC[n].valueR + eta_BC[n].valueL);
-            //    double z = h*v;
-            //    OPvector( id ) = (eta_BC[n].valueB + deltaZ * tanh(z/2)) * ( middleX + deltaX * tanh(x/2));
-            // }
+               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? tanh(x/2) : 1. );
             else OPvector(id) = 0.;
-
-
-            // for (int n = 0; n < Nop; n++) {
-            //    // loop over the whole mesh
-            //    for (int u = 0; u < Nu; u++) {
-            //       for (int v = 0; v < Nv; v++) {
-            //          int id = ID(u,v,n);
-
-            //          if (u == 0) {
-            //             OPvector(id) = eta_BC[n].valueL;
-            //          } else if (u == Nu-1) {
-            //             OPvector(id) = eta_BC[n].valueR;
-            //          } else if (v == 0) {
-            //             OPvector(id) = eta_BC[n].valueB;
-            //          } else if (v == Nv-1) {
-            //             OPvector(id) = eta_BC[n].valueT;
-            //          } else if (n == 1) { // for only Ayy:
-            //             OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
-            //          } else if (n == 3 || n == 4) {
-            //             OPvector(id) = 0.;
-            //          } else {
-            //             OPvector(id) = 1.;
-            //          }
-            //       }
-            //    }
-            // }
          }
       }
    }
+	delete pSC_init;
 	return;
 }
 
@@ -749,7 +630,7 @@ void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int 
       data << std::setprecision(8) << std::fixed;
 
       // label the columns in the output file
-      data << "h*u     \th*v     ";
+      data << "#h*u     \th*v     ";
       if (flag == 1) { // OP vector
          // loop through all OP components...
          for (int n = 0; n < Nop; n++)
@@ -789,7 +670,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
       data << std::setprecision(8) << std::fixed;
 
       // label the columns in the output file
-      data << "h*u     \th*v     ";
+      data << "# h*u     \th*v     ";
 
       // loop through all OP components...
       for (int n = 0; n < Nop; n++)

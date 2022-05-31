@@ -30,7 +30,7 @@ $(PROGRAM) : $(PROGRAMo) $(SUBRo)
 #################################
 
 clean_this: 
-	rm     $(PROGRAMo) 
+	rm     $(PROGRAMo) SC_classes_base.o SC_classes_derived.o 
 
 clean:
 	rm *.o;

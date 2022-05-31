@@ -14,44 +14,6 @@ double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 
 int main(int argc, char** argv)
 {
-	// To calculate a solution based on the initial guess of this here...
-	// -----------------------------------------------------------------------------
-	// cout << "solving for initial guess..." << endl;
-		// int Nop_init = 3;
-		// in_conditions cond_init;
-		// Bound_Cond eta_BC_init[Nop_init];
-		// Matrix2d **gradK_init;
-		// gradK_init = new Matrix2d *[Nop_init];
-		// for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
-
-		// read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions"+to_string(Nop_init)+".txt");
-
-		// cond_init.maxStore = 5;
-		// cond_init.rel_p = 0.1;
-		// cond_init.wait = 1;
-
-		// vector<int> no_update_init;
-
-		// int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
-		// int VectSize_init = cond_init.Nop * GridSize_init;
-
-		// T_vector OPvector_init(VectSize_init);
-		// T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-		// SpMat_cd M_init(VectSize_init,VectSize_init);
-
-		// SC_class *pSC_init;
-		// 	if (Nop_init == 3) pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else if (Nop_init == 5) pSC_init = new FiveCompHe3 ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else if (Nop_init == 1) pSC_init = new OneCompSC   ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
-
-		// pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-		// pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
-		// Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-	// cout << "solved solution for initial guess." << endl;
-	// -----------------------------------------------------------------------------
-
-
 	bool debug = false;
 	if (argc == 3) {
 		// using debugging!
@@ -107,6 +69,8 @@ int main(int argc, char** argv)
 	VectorXd freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
 	// add other observables here as desired...
 
+	// ===============================================================================================================
+
 	cout << "initializing object...";
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
@@ -116,25 +80,20 @@ int main(int argc, char** argv)
 	else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
 	cout << "done" << endl;
 
+	// ===============================================================================================================
+
 	cout << "initializing guess...";
 	// - - - - switch these here to initialize in other ways
-	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
-
-
-	pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-	
-	
-	// pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-
-
-	// pSC->initOPguess_AzzFlip_WS2016(eta_BC, OPvector, no_update);
-	// pSC->initOPguess_1DNarrowChannel(eta_BC, OPvector, no_update);
+	pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+	// pSC->initOPguess_special(cond, eta_BC, OPvector, gradK, no_update); // Anton's version
+	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
 		pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
 	}
+
+	// ===============================================================================================================
 
 	cout << "building solver matrix...";
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
@@ -143,6 +102,8 @@ int main(int argc, char** argv)
 	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
 		// cout << endl << "M =\n" << M << endl;
 	}
+
+	// ===============================================================================================================
 
 	cout << "solving system..." << endl;
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
@@ -160,27 +121,13 @@ int main(int argc, char** argv)
 	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
 	cout << "done" << endl;
 	
-	// // save the FE data
-	// cout << "writing totalFE vector to file...";
-	// T_vector totalFE = freeEb+freeEg;
-	// pSC->WriteToFile(totalFE, "totalFE"+to_string(Nop)+".txt", 0);
-	// cout << "done" << endl;
-
-	// // if (debug) {
-	// 	cout << "writing bulkRHS_FE vector to file...";
-	// 	pSC->WriteToFile(freeEb, "bulkRHS_FE"+to_string(Nop)+".txt", 0);
-	// 	cout << "done" << endl;
-
-	// 	cout << "writing FEgrad vector to file...";
-	// 	pSC->WriteToFile(freeEg, "FEgrad"+to_string(Nop)+".txt", 0);
-	// 	cout << "done" << endl;
-	// // }
-
 	// write everything to file
 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+".txt");
 
 	// calculate the defect energy
-	cout << "Energy defect: " << pSC->defectEnergy(freeEb, freeEg) << endl;
+	// cout << "Energy defect: " << pSC->defectEnergy(freeEb, freeEg) << endl;
+
+	// ===============================================================================================================
 
 	//------  de-allocating gradK array ------------------
 	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 

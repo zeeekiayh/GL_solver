@@ -50,29 +50,38 @@ void ThreeCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_v
 
 	return;
 }
-void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	// Follow equation 10 and 36 in Latex doc
-	// cout << "In 'ThreeCompHe3::gradFE'" << endl;
-	// freeEg = Eigen::VectorXd(grid_size*grid_size); // resize the free energy grad vector
-	T_vector eta_dag = OPvector.adjoint();         // eta daggar; for more readable calculations
-	T_vector F_times_eta = FEgrad * OPvector;      // the rhs vector in equation 36
+void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
+{
+   T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 
-	// loop over all points on the grid
+   if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
+   if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
+
+   T_vector Du_eta_dag=Du_eta.adjoint(), 
+   		Dv_eta_dag=Dv_eta.adjoint(); 
+   
+   int x = 0, z = 1; // indeces for the K-matrix
+
 	for (int u = 0; u < Nu; u++) {
 		for (int v = 0; v < Nv; v++) {
+			int FE_id = ID(u,v,0);
+			freeEg( FE_id ) = 0;
 
-			int FE_id = ID(u,v,0); // calculate the ID of the point
-			freeEg( FE_id ) = 0;   // make sure the element starts at 0
+			   for (int m = 0; m < Nop; m++) {
+				for (int n = 0; n < Nop; n++) {
+					int id_m = ID(u,v,m);
+					int id_n = ID(u,v,n);
 
-			// loop over all OP comonents...get all contributions to the FE at this point
-			for (int n = 0; n < Nop; n++) {
-				int id = ID(u,v,n);
-				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
-			}
+					freeEg( FE_id ) += gradK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+				}
+			   }
 		}
 	}
-	freeEg /= h*h;
-	// cout << "freeEg = " << freeEg << endl;
+	freeEg *= 2.0/3.0/(h*h);
+	return; 
 }
 
 
@@ -109,21 +118,38 @@ void FiveCompHe3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_ve
 
 	return;
 }
-void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	// freeEg = Eigen::VectorXd(grid_size*grid_size);
-	T_vector eta_dag = OPvector.adjoint();
-	T_vector F_times_eta = FEgrad * OPvector;
+void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
+{
+   T_vector Du_eta(vect_size), Dv_eta(vect_size); 
+
+   if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
+   if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
+
+   T_vector Du_eta_dag=Du_eta.adjoint(), 
+   		Dv_eta_dag=Dv_eta.adjoint(); 
+   
+   int x = 0, z = 1; // indeces for the K-matrix
+
 	for (int u = 0; u < Nu; u++) {
 		for (int v = 0; v < Nv; v++) {
 			int FE_id = ID(u,v,0);
 			freeEg( FE_id ) = 0;
-			for (int n = 0; n < Nop; n++) {
-				int id = ID(u,v,n);
-				freeEg( FE_id ) += ( eta_dag(id) * F_times_eta(id) ).real();
-			}
+
+			   for (int m = 0; m < Nop; m++) {
+				for (int n = 0; n < Nop; n++) {
+					int id_m = ID(u,v,m);
+					int id_n = ID(u,v,n);
+
+					freeEg( FE_id ) += gradK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+				}
+			   }
 		}
 	}
-	freeEg /= h*h;
+	freeEg *= 2.0/3.0/(h*h);
+	return; 
 }
 double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
 	double DefectEnergy = 0.;
@@ -133,7 +159,7 @@ double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::
 			DefectEnergy += freeEg(FE_id);
 		}
 	}
-	return DefectEnergy/(h*h);
+	return DefectEnergy * (h*h);
 }
 
 
@@ -155,6 +181,36 @@ void OneCompSC::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vect
 	return;
 }
 void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-	//
+
+   T_vector Du_eta(vect_size), Dv_eta(vect_size); 
+
+   if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
+   if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
+
+   T_vector Du_eta_dag=Du_eta.adjoint(), 
+   		Dv_eta_dag=Dv_eta.adjoint(); 
+   
+   int x = 0, z = 1; // indeces for the K-matrix
+
+	for (int u = 0; u < Nu; u++) {
+		for (int v = 0; v < Nv; v++) {
+			int FE_id = ID(u,v,0);
+			freeEg( FE_id ) = 0;
+
+			   for (int m = 0; m < Nop; m++) {
+				for (int n = 0; n < Nop; n++) {
+					int id_m = ID(u,v,m);
+					int id_n = ID(u,v,n);
+
+					freeEg( FE_id ) += gradK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gradK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+				}
+			   }
+		}
+	}
+	freeEg *= 2/(h*h);
+	return; 
 }
 
