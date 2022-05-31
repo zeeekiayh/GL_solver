@@ -12,64 +12,8 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 // prototype for function defined in 'he3bulk.cpp'
 double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
 
-// define all the K matrices here (but they are accessible from the kMatrix namespace in any file?)
-	static const int kMS = kMatrix::matSize;
-	Eigen::Matrix<int, kMS, kMS> XX;
-	Eigen::Matrix<int, kMS, kMS> YY; // eq. (48)
-	Eigen::Matrix<int, kMS, kMS> ZZ;
-
-	Eigen::Matrix<int, kMS, kMS> XY;
-	Eigen::Matrix<int, kMS, kMS> YX; // eq. (49)
-
-	Eigen::Matrix<int, kMS, kMS> ZY;
-	Eigen::Matrix<int, kMS, kMS> YZ; // eq. (50)
-
-	Eigen::Matrix<int, kMS, kMS> ZX;
-	Eigen::Matrix<int, kMS, kMS> XZ; // eq. (51)
-
 int main(int argc, char** argv)
 {
-	// build the general K matrices
-	kMatrix::BuildKMatrices();
-
-	// To calculate a solution based on the initial guess of this here...
-	// -----------------------------------------------------------------------------
-	// cout << "solving for initial guess..." << endl;
-		// int Nop_init = 3;
-		// in_conditions cond_init;
-		// Bound_Cond eta_BC_init[Nop_init];
-		// Matrix2d **gradK_init;
-		// gradK_init = new Matrix2d *[Nop_init];
-		// for (int i = 0; i < Nop_init; i++) gradK_init[i] = new Matrix2d [Nop_init];
-
-		// read_input_data(Nop_init, cond_init, eta_BC_init, gradK_init, "conditions"+to_string(Nop_init)+".txt");
-
-		// cond_init.maxStore = 5;
-		// cond_init.rel_p = 0.1;
-		// cond_init.wait = 1;
-
-		// vector<int> no_update_init;
-
-		// int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
-		// int VectSize_init = cond_init.Nop * GridSize_init;
-
-		// T_vector OPvector_init(VectSize_init);
-		// T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-		// SpMat_cd M_init(VectSize_init,VectSize_init);
-
-		// SC_class *pSC_init;
-		// 	if (Nop_init == 3) pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else if (Nop_init == 5) pSC_init = new FiveCompHe3 ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else if (Nop_init == 1) pSC_init = new OneCompSC   ( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
-		// else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
-
-		// pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-		// pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK_init );
-		// Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-	// cout << "solved solution for initial guess." << endl;
-	// -----------------------------------------------------------------------------
-
-
 	bool debug = false;
 	if (argc == 3) {
 		// using debugging!
@@ -83,9 +27,10 @@ int main(int argc, char** argv)
 	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
 	// the list of K-matrix components to be used in building the small K-matrix
-	string names[4] = {string("xx"),string("xz"),string("zx"),string("zz")};
+	vector<bool> components;
+	components.insert(components.end(),{true,true,true,true});
 	// build the small K-matrix based on the OP size
-	auto smKMat = kMatrix::smallKMatrix(Nop, names);
+	auto smKMat = kMatrix::smallKMatrix(Nop, components);
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
@@ -94,8 +39,8 @@ int main(int argc, char** argv)
 	// gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
 	// for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
-	read_input_data(Nop, cond, eta_BC, smKMat, "conditions"+to_string(Nop)+".txt");
-	// confirm_input_data(Nop, cond, eta_BC, smKMat);
+	read_input_data(Nop, cond, eta_BC, "conditions"+to_string(Nop)+".txt");
+	if (debug) confirm_input_data(Nop, cond, eta_BC, smKMat);
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
@@ -142,15 +87,9 @@ int main(int argc, char** argv)
 	cout << "initializing guess...";
 	// - - - - switch these here to initialize in other ways
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	// pSC->initialOPguessFromSolution(OPvector_init, OPvector, no_update);
-
-
+	pSC->initialOPguessFromSolution(OPvector, no_update);
 	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-	
-	
-	pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-
-
+	// pSC->initOPguess_AzzFlip(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 	// pSC->initOPguess_AzzFlip_WS2016(eta_BC, OPvector, no_update);
 	// pSC->initOPguess_1DNarrowChannel(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
@@ -163,9 +102,9 @@ int main(int argc, char** argv)
 	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, smKMat );
 	cout << "done" << endl;
 
-	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-		// cout << endl << "M =\n" << M << endl;
-	}
+	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+	// 	cout << endl << "M =\n" << M << endl;
+	// }
 
 	cout << "solving system..." << endl;
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above

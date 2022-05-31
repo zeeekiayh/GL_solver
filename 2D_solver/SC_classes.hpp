@@ -21,10 +21,12 @@ class SC_class{
 		// SC_op () {Nop=1; *eta_bulk = 1;}; // default constructor for single-component OP 
 		//      - eliminate default constructor for now, and always initiate the class ourselves  
 		SC_class(int n, int nx, int ny, double step) {
+			std::cout << "in parent class SC_class" << std::endl;
 			Nop=n; Nu=nx; Nv=ny; grid_size=nx*ny; vect_size=grid_size * Nop; h=step; 
 			eta_bulk=new T_scalar [n];
 			this->Build_D_Matrices(); // build all general D-matrices for anything that will need them
-		}; 
+			std::cout << "leaving parent class SC_class" << std::endl;
+		};
 
 		//destructor: declared  virtual so that derived classes could destroy the base class
 		virtual ~SC_class () {delete eta_bulk;}
@@ -49,13 +51,12 @@ class SC_class{
 
 		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		// a method of initializing a guess based on a previous solution
-		// void initialOPguessFromSolution(SC_class & SC, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguessFromSolution(const T_vector & solution, T_vector & OPvector, std::vector<int> & no_update);
-		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		// methods of initializing a guess based on a previous solution
+		virtual void initialOPguessFromSolution(T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
@@ -96,19 +97,31 @@ class ThreeCompHe3 : public SC_class {
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+
+		// iniital guess function prototypes
+		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class FiveCompHe3 : public SC_class {
 	protected:
 	public: 
 		//constructor: we need to construct the base class too 
-		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
+		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {
+			std::cout << "in 5 comp class" << std::endl;
+			std::cout << "leaiving 5 comp class" << std::endl;
+		} 
 		~FiveCompHe3 () {} 
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
+
+		// initial guess function prototypes
+		void initialOPguessFromSolution(T_vector & OPvector, std::vector<int> & no_update);
+		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class Cylindrical : public SC_class {

@@ -139,30 +139,30 @@
       const int K123 = K1 + K2 + K3;
 
       // define all the K matrices
-      extern Eigen::Matrix<int, matSize, matSize> XX;
-      extern Eigen::Matrix<int, matSize, matSize> YY; // eq. (48)
-      extern Eigen::Matrix<int, matSize, matSize> ZZ;
+      // eq. (48)
+      inline Eigen::Matrix<int, matSize, matSize> XX() {
+         Eigen::Matrix<int, matSize, matSize> xx;
+         xx.setZero();
+         for (int i = 0; i < matSize; i++) xx(i,i) = (i == 0 || i == 3 || i == 6) ? K123 : K1;
+         return xx;
+      }
+      inline Eigen::Matrix<int, matSize, matSize> YY() {
+         Eigen::Matrix<int, matSize, matSize> yy;
+         yy.setZero();
+         for (int i = 0; i < matSize; i++) yy(i,i) = (i == 1 || i == 5 || i == 8) ? K123 : K1;
+         return yy;
+      }
+      inline Eigen::Matrix<int, matSize, matSize> ZZ() {
+         Eigen::Matrix<int, matSize, matSize> zz;
+         zz.setZero();
+         for (int i = 0; i < matSize; i++) zz(i,i) = (i == 2 || i == 4 || i == 7) ? K123 : K1;
+         return zz;
+      }
 
-      extern Eigen::Matrix<int, matSize, matSize> XY;
-      extern Eigen::Matrix<int, matSize, matSize> YX; // eq. (49)
-      
-      extern Eigen::Matrix<int, matSize, matSize> ZY;
-      extern Eigen::Matrix<int, matSize, matSize> YZ; // eq. (50)
-
-      extern Eigen::Matrix<int, matSize, matSize> ZX;
-      extern Eigen::Matrix<int, matSize, matSize> XZ; // eq. (51)
-
-      // build all the K matrices
-      inline void BuildKMatrices() {
-         // the easy ones
-         for (int i = 0; i < matSize; i++) {
-            XX(i,i) = (i == 0 || i == 3 || i == 6) ? K123 : K1;
-            YY(i,i) = (i == 1 || i == 5 || i == 8) ? K123 : K1;
-            ZZ(i,i) = (i == 2 || i == 4 || i == 7) ? K123 : K1;
-         }
-
-         // =====================================
-         XY << 0,  0,  0,  0,  0, K2,  0,  0,  0,
+      // eq. (49)
+      inline Eigen::Matrix<int, matSize, matSize> XY() {
+         Eigen::Matrix<int, matSize, matSize> xy;
+         xy << 0,  0,  0,  0,  0, K2,  0,  0,  0,
                0,  0,  0,  0,  0,  0, K3,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0, K2,
@@ -171,9 +171,11 @@
                0, K2,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0, K3,  0,  0,  0,  0,  0;
-
-         // =====================================
-         YX << 0,  0,  0,  0,  0, K3,  0,  0,  0,
+         return xy;
+      }
+      inline Eigen::Matrix<int, matSize, matSize> YX() {
+         Eigen::Matrix<int, matSize, matSize> yx;
+         yx << 0,  0,  0,  0,  0, K3,  0,  0,  0,
                0,  0,  0,  0,  0,  0, K2,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0, K3,
@@ -182,9 +184,13 @@
                0, K3,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0, K2,  0,  0,  0,  0,  0;
-
-         // =====================================
-         ZY << 0,  0,  0,  0,  0,  0,  0,  0,  0,
+         return yx;
+      }
+      
+      // eq. (50)
+      inline Eigen::Matrix<int, matSize, matSize> ZY() {
+         Eigen::Matrix<int, matSize, matSize> zy;
+         zy << 0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0, K3,  0,
                0,  0,  0,  0,  0,  0,  0,  0, K2,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -193,9 +199,11 @@
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0, K2,  0,  0,  0,  0,  0,  0,  0,
                0,  0, K3,  0,  0,  0,  0,  0,  0;
-
-         // =====================================
-         YZ << 0,  0,  0,  0,  0,  0,  0,  0,  0,
+         return zy;
+      }
+      inline Eigen::Matrix<int, matSize, matSize> YZ() {
+         Eigen::Matrix<int, matSize, matSize> yz;
+         yz << 0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0, K2,  0,
                0,  0,  0,  0,  0,  0,  0,  0, K3,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -204,9 +212,13 @@
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0, K3,  0,  0,  0,  0,  0,  0,  0,
                0,  0, K2,  0,  0,  0,  0,  0,  0;
+         return yz;
+      }
 
-         // =====================================
-         ZX << 0,  0,  0,  0, K2,  0,  0,  0,  0,
+      // eq. (51)
+      inline Eigen::Matrix<int, matSize, matSize> ZX() {
+         Eigen::Matrix<int, matSize, matSize> zx;
+         zx << 0,  0,  0,  0, K2,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0, K3,  0,  0,  0,  0,  0,
                0,  0, K2,  0,  0,  0,  0,  0,  0,
@@ -215,9 +227,11 @@
                0,  0,  0,  0,  0,  0,  0, K2,  0,
                0,  0,  0,  0,  0,  0, K3,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0;
-
-         // =====================================
-         XZ << 0,  0,  0,  0, K3,  0,  0,  0,  0,
+         return zx;
+      }
+      inline Eigen::Matrix<int, matSize, matSize> XZ() {
+         Eigen::Matrix<int, matSize, matSize> xz;
+         xz << 0,  0,  0,  0, K3,  0,  0,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0,
                0,  0,  0, K2,  0,  0,  0,  0,  0,
                0,  0, K3,  0,  0,  0,  0,  0,  0,
@@ -226,40 +240,44 @@
                0,  0,  0,  0,  0,  0,  0, K3,  0,
                0,  0,  0,  0,  0,  0, K2,  0,  0,
                0,  0,  0,  0,  0,  0,  0,  0,  0;
+         return xz;
       }
 
       // a function to give the small K matrix to build the
       //    solver matrix for smaller systems
-      inline Eigen::Matrix2d** smallKMatrix(int Nop, std::string D_components[]) {
+      inline Eigen::Matrix2d** smallKMatrix(int Nop, std::vector<bool> D_components) {
          // int K_element_size = D_components->length();
 
          Eigen::Matrix2d** gradK;
          gradK = new Eigen::Matrix2d *[Nop];
          for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
 
+         // make sure the whole starts at 0!
          for (int n = 0; n < Nop; n++) {
             for (int m = 0; m < Nop; m++) {
-               if (D_components[0] == std::string("xx"))
-                  gradK[m][n](0,0) = XX(m,n);
-               if (D_components[1] == std::string("xz"))
-                  gradK[m][n](0,1) = XZ(m,n);
-               if (D_components[2] == std::string("zx"))
-                  gradK[m][n](1,0) = ZX(m,n);
-               if (D_components[3] == std::string("zz"))
-                  gradK[m][n](1,1) = ZZ(m,n);
-               // if (D_components[i] == std::string("yy")) {
+               gradK[m][n] << 0, 0, 0, 0;
+            }
+         }
+
+         for (int n = 0; n < Nop; n++) {
+            for (int m = 0; m < Nop; m++) {
+               if (D_components[0]) gradK[m][n](0,0) = XX()(m,n);
+               if (D_components[1]) gradK[m][n](0,1) = XZ()(m,n);
+               if (D_components[2]) gradK[m][n](1,0) = ZX()(m,n);
+               if (D_components[3]) gradK[m][n](1,1) = ZZ()(m,n);
+               // if (D_components[i]) { // "yy"
                //    //
                // }
-               // if (D_components[i] == std::string("xy")) {
+               // if (D_components[i]) { // "xy"
                //    //   
                // }
-               // if (D_components[i] == std::string("yx")) {
+               // if (D_components[i]) { // "yx"
                //    //   
                // }
-               // if (D_components[i] == std::string("yz")) {
+               // if (D_components[i]) { // "yz"
                //    //
                // }
-               // if (D_components[i] == std::string("zy")) {
+               // if (D_components[i]) { // "zy"
                //    //
                // }
             }
