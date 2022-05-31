@@ -2,13 +2,13 @@
 
 BOUNDARY CONDITIONS
 top           bottom         left           right     ( D/N : slip : value )
-N  1e10  1    N  1e10  1    D  1e-10  1    D  1e-10  -1  # Azz
+D  1e-10  1    D  1e-10  1     D  1e-10  0    D  1e-10  1  # psi
 
 K MATRIX
 (1,0,0,1)
 
-50 25 # mesh size (x, z)
-0.8    # h (step size)
+51 1 # mesh size (x, z)
+0.2    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
 1e-6    # accuracy
