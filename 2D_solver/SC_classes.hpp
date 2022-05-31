@@ -21,11 +21,9 @@ class SC_class{
 		// SC_op () {Nop=1; *eta_bulk = 1;}; // default constructor for single-component OP 
 		//      - eliminate default constructor for now, and always initiate the class ourselves  
 		SC_class(int n, int nx, int ny, double step) {
-			std::cout << "in parent class SC_class" << std::endl;
 			Nop=n; Nu=nx; Nv=ny; grid_size=nx*ny; vect_size=grid_size * Nop; h=step; 
 			eta_bulk=new T_scalar [n];
 			this->Build_D_Matrices(); // build all general D-matrices for anything that will need them
-			std::cout << "leaving parent class SC_class" << std::endl;
 		};
 
 		//destructor: declared  virtual so that derived classes could destroy the base class
@@ -106,10 +104,7 @@ class FiveCompHe3 : public SC_class {
 	protected:
 	public: 
 		//constructor: we need to construct the base class too 
-		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {
-			std::cout << "in 5 comp class" << std::endl;
-			std::cout << "leaiving 5 comp class" << std::endl;
-		} 
+		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) {} 
 		~FiveCompHe3 () {} 
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 

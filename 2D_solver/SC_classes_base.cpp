@@ -454,8 +454,6 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 		}
 	}
 
-   // if (debug) cout << "initial guess:\n" << OPvector << endl;
-
 	return;
 }
 

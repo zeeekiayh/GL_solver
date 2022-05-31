@@ -63,7 +63,6 @@ using namespace Eigen;
 
 	void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 		// Follow equation 10 and 36 in Latex doc
-		// cout << "In 'ThreeCompHe3::gradFE'" << endl;
 		// freeEg = Eigen::VectorXd(grid_size*grid_size); // resize the free energy grad vector
 		T_vector eta_dag = OPvector.adjoint();         // eta daggar; for more readable calculations
 		T_vector F_times_eta = FEgrad * OPvector;      // the rhs vector in equation 36
@@ -83,7 +82,6 @@ using namespace Eigen;
 			}
 		}
 		freeEg /= h*h;
-		// cout << "freeEg = " << freeEg << endl;
 	}
 
 	void ThreeCompHe3 :: initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
@@ -255,7 +253,6 @@ using namespace Eigen;
 
 	void FiveCompHe3 :: initOPguess_AzzFlip_WS2016(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 		// use "conditions5_W&S2016.txt"
-		// cout << "initOPguess_AzzFlip()" << endl;
 		// solve for the normal 3-component system
 		int Nop_init = 3;
 		in_conditions cond_init;
