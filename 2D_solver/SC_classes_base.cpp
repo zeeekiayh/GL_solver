@@ -7,10 +7,8 @@
 using namespace Eigen;
 using namespace std;
 
-
 // prototype for function defined in linear_eq_solver.cpp
 void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
-
 
 typedef Triplet<double> Trpl;
 
@@ -158,8 +156,8 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       if (BC.typeB == std::string("D")) // Dirichlet
       {
          int id=ID(u,0,op_component);
-		rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
-         	//rhsBC(id) = initOPvector(id);
+		   rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+         //rhsBC(id) = initOPvector(id);
       }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
@@ -170,7 +168,7 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       if (BC.typeT == std::string("D")) // Dirichlet
       {
          int id=ID(u,Nv-1,op_component);
-		rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+		   rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
          //	rhsBC(id) = initOPvector(id);
       }
    }
@@ -536,87 +534,9 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
 }
 
 
-void SC_class :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
-   // use "conditions5_AyyFlip.txt"
-
-   // all boundaries should be Dirichlet => 1
-   // we will create the circular domain in the middle of Ayy to be -1
-
-   // the radius of the domain...we're assuming that the domain itself is large enough
-   double r = 16;
-   if (Nu*h/2 <= r || Nv*h/2 <= r)
-      cout << "WARNING: the circular domain will be too large!" << endl;
-   
-   // location of the ceter of the grid
-   int u_center = round(Nu/2);
-   int v_center = round(Nv/2);
-
-   for (int n = 0; n < Nop; n++) {
-      // loop over the whole mesh
-      for (int u = 0; u < Nu; u++) {
-         for (int v = 0; v < Nv; v++) {
-            int id = ID(u,v,n);
-
-            if (u == 0) {
-               OPvector(id) = eta_BC[n].valueL;
-            } else if (u == Nu-1) {
-               OPvector(id) = eta_BC[n].valueR;
-            } else if (v == 0) {
-               OPvector(id) = eta_BC[n].valueB;
-            } else if (v == Nv-1) {
-               OPvector(id) = eta_BC[n].valueT;
-            } else if (n == 1) { // for only Ayy:
-               OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
-            } else if (n == 3 || n == 4) {
-               OPvector(id) = 0.;
-            } else {
-               OPvector(id) = 1.;
-            }
-         }
-      }
-   }
-   // // smooth off the initial guess a little
-   // for (int i = 0; i < 30; i++) {
-      // for (int n = 0; n < Nop; n++) {
-      //    for (int u = 0; u < Nu; u++) {
-      //       for (int v = 0; v < Nv; v++) {
-      //          if ( (u > 0) && (u < Nu-1) && (v > 0) && (v < Nv-1) && (n == 0) && (n == 2) ) {
-      //             int id = ID(u,v,n);
-      //                // cout << "id = " << id << endl;
-      //             int idU = ID(u,v+1,n);
-      //                // cout << "idU = " << idU << endl;
-      //             int idL = ID(u-1,v,n);
-      //                // cout << "idL = " << idL << endl;
-      //             int idD = ID(u,v-1,n);
-      //                // cout << "idD = " << idD << endl;
-      //             int idR = ID(u+1,v,n);
-      //                // cout << "idR = " << idR << endl;
-
-      //             OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
-      //             // cout << "OPvector(id) = " << (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4. << endl;
-      //          }
-      //       }
-      //    }
-      // }
-   // }
-}
 
 
-// Some way to have this function solve for the solution to use as guess?
-// void SC_class :: initialOPguessFromSolution(SC_class & SC, std::string conditions_file, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-//    // get all the information from the "conditions.txt"
-// 	in_conditions cond;
-// 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
-// 	Matrix2d **gradK;            // gradient coefficients in GL functional
-// 	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
-// 	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
-// 	read_input_data(Nop, cond, eta_BC, gradK, conditions_file);
-// 	//confirm_input_data(Nop, cond, eta_BC, gradK);
-   
-//    SC.initialOPguess(eta_BC, OPvector, no_update);
-//    SC.BuildSolverMatrix()
-// }
 
 // Write out the vector to a file (this is written for a 2D system,
 //    but can write 1D vectors just fine if Nv or Nu = 1).

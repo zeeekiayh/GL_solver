@@ -6,14 +6,14 @@
 #include <sstream>
 
 // read in the conditions from the file
-inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK, std::string conditions_file) {
-   std::string line;
-   int OP_size;
-   std::ifstream conditions(conditions_file);
+inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_BC[], std::string conditions_file) {
+	std::string line;
+	int OP_size;
+	std::ifstream conditions(conditions_file);
 
-   // get conditions from the file
-   if (conditions.is_open()) {
-		conditions >> OP_size;     conditions.ignore(256,'\n');
+	// get conditions from the file
+	if (conditions.is_open()) {
+		conditions >> OP_size; conditions.ignore(256,'\n');
 		if(OP_size != Nop){ 
 			std::cout << "wrong conditions file, OP size should be " << Nop << "; but read " << OP_size << " -- Exiting!\n"; 
 			exit(1);
@@ -29,33 +29,36 @@ inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_
 			conditions >> eta_BC[i]; conditions.ignore(256,'\n');
 		}
 
-		// find the line where the K matrix starts
-		while (line != "K MATRIX") {getline(conditions,line);}
-		// read the K matrix
-		for (int row = 0; row < Nop; row++) {
-		getline(conditions,line);
+		// NO NEED TO READ IN THE K MATRIX SINCE WE CAN BUILD THESE SMALL ONES
+		// 		FROM THE BIG ONES STORED ELSEWHERE
 
-		int col=0;
-		double xx,xy,yx,yy;
-		char c;
-		std::istringstream iss(line);
-		std::string word;
-		// reading iss stream word by word, words are separated by spaces
-		while(iss >> word) {
-			if( word[0]=='(' && word[1]==')' ) {
-				gradK[row][col] << 0, 0, 0, 0; // zero matrix; 
-			}
-			else{
-				std::istringstream word_stream(word);
-				// extract data from word that has comma-separated format "(number,number,number,number)"
-				word_stream >> c >> xx >> c >> xy >> c >> yx >> c >> yy >>c;
-				// sscanf(word.c_str(),"(%lf,%lf,%lf,%lf)", &xx, &xy, &yx, &yy); // C-analogue: needs #include <cstdio> 
-				gradK[row][col] << 	xx, xy, 
-								yx, yy;
-			}
-			col++;
-			}
-		} // end for (row)
+		// // find the line where the K matrix starts
+		// while (line != "K MATRIX") {getline(conditions,line);}
+		// // read the K matrix
+		// for (int row = 0; row < Nop; row++) {
+		// getline(conditions,line);
+
+		// int col=0;
+		// double xx,xy,yx,yy;
+		// char c;
+		// std::istringstream iss(line);
+		// std::string word;
+		// // reading iss stream word by word, words are separated by spaces
+		// while(iss >> word) {
+		// 	if( word[0]=='(' && word[1]==')' ) {
+		// 		gradK[row][col] << 0, 0, 0, 0; // zero matrix; 
+		// 	}
+		// 	else{
+		// 		std::istringstream word_stream(word);
+		// 		// extract data from word that has comma-separated format "(number,number,number,number)"
+		// 		word_stream >> c >> xx >> c >> xy >> c >> yx >> c >> yy >>c;
+		// 		// sscanf(word.c_str(),"(%lf,%lf,%lf,%lf)", &xx, &xy, &yx, &yy); // C-analogue: needs #include <cstdio> 
+		// 		gradK[row][col] << 	xx, xy, 
+		// 						yx, yy;
+		// 	}
+		// 	col++;
+		// 	}
+		// } // end for (row)
 
 		getline(conditions,line); // empty line
 
@@ -76,13 +79,12 @@ inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_
 		cond.maxStore = 4;
 		cond.rel_p = 0.1;
 		cond.wait = 2;
-   }
-   else std::cout << "Unable to open file: " << conditions_file << std::endl;
+	}
+	else std::cout << "Unable to open file: " << conditions_file << std::endl;
 }
 
 // output the things read in so we can visually confirm the input from the conditions*.txt
-inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
-{
+inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 	std::cout << "Grid is " << cond.SIZEu << " x " << cond.SIZEv << std::endl;
 	std::cout << "with step size h = " << cond.STEP << std::endl << std::endl;
 

@@ -36,4 +36,4 @@ clean:
 	rm *.o;
 
 plot:
-	python3 plot_solution.py 3
+	python3 plot_solution_new.py output_OP5.txt

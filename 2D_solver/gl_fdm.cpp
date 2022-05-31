@@ -7,10 +7,11 @@
 using namespace std;
 using namespace Eigen;
 
-// prototype for function defined in linear_eq_solver.cpp
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
-// prototype for function defined in 'he3bulk.cpp'
-double DefectEnergy(const T_vector & solution, const T_vector & FE_bulk);
+// ===========================================================
+// Function prototypes defined in other files
+	// prototype for function defined in linear_eq_solver.cpp
+	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+// ===========================================================
 
 int main(int argc, char** argv)
 {
@@ -26,15 +27,18 @@ int main(int argc, char** argv)
 	else if (argc != 2) {cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
 	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
 
+	// the list of K-matrix components to be used in building the small K-matrix
+	vector<bool> components;
+	components.insert(components.end(),{true,true,true,true});
+	// build the small K-matrix based on the OP size
+	auto smKMat = kMatrix::smallKMatrix(Nop, components);
+
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
-	Matrix2d **gradK;            // gradient coefficients in GL functional
-	gradK = new Matrix2d *[Nop]; // the K matrix from eq. 12
-	for (int i = 0; i < Nop; i++) gradK[i] = new Matrix2d [Nop];
 
-	read_input_data(Nop, cond, eta_BC, gradK, "conditions"+to_string(Nop)+".txt");
-	//confirm_input_data(Nop, cond, eta_BC, gradK);
+	read_input_data(Nop, cond, eta_BC, "conditions"+to_string(Nop)+".txt");
+	if (debug) confirm_input_data(Nop, cond, eta_BC, smKMat);
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
@@ -96,12 +100,12 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
+	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, smKMat );
 	cout << "done" << endl;
 
-	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-		// cout << endl << "M =\n" << M << endl;
-	}
+	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+	// 	cout << endl << "M =\n" << M << endl;
+	// }
 
 	// ===============================================================================================================
 
@@ -109,18 +113,16 @@ int main(int argc, char** argv)
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
 	cout << "solved!" << endl;
 
-	// cout << "writing solution to file...";
-	// pSC->WriteToFile(OPvector, "solution"+to_string(Nop)+".txt", 1); // save the solution for plotting
-	// cout << "done" << endl;
-
 	cout << "calculating bulkRHS_FE...";
 	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
 	cout << "done" << endl;
 
 	cout << "calculating gradFE...";
-	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
+	pSC->gradFE(freeEg, OPvector, eta_BC, smKMat); // get the gradient contribution to free energy
 	cout << "done" << endl;
-	
+
+	// ===============================================================================================================
+
 	// write everything to file
 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+".txt");
 
@@ -129,9 +131,9 @@ int main(int argc, char** argv)
 
 	// ===============================================================================================================
 
-	//------  de-allocating gradK array ------------------
-	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
-	delete[] gradK; 
+	//------  de-allocating smKMat array ----------
+	for(int i = 0; i <Nop; i++) delete[] smKMat[i]; 
+	delete[] smKMat; 
 	delete pSC;
 
 	return 0;

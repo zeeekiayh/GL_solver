@@ -25,7 +25,7 @@ class SC_class{
 			gK = new Eigen::Matrix2d *[n]; 
 			for (int i = 0; i < n; i++) gK[i] = new Eigen::Matrix2d [n];
 			this->Build_D_Matrices(); // build all general D-matrices for anything that will need them
-		}; 
+		};
 
 		//destructor: declared  virtual so that derived classes could destroy the base class
 		virtual ~SC_class () {
@@ -56,7 +56,9 @@ class SC_class{
 		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		// a method of initializing a guess based on a previous solution
 		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update); 
-		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		//void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		// not sure why we need virtual here but OK ... -Anton 
+		virtual void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
@@ -69,7 +71,7 @@ class SC_class{
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
 		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
 		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
-		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){};
+		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){return 0.;};
 };
 
 // derived_classes depends on the particular form of the bulk free energy, that gives the appropriate RHS vector
@@ -107,6 +109,9 @@ class ThreeCompHe3 : public SC_class {
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+
+		// iniital guess function prototypes
+		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class FiveCompHe3 : public SC_class {
@@ -123,6 +128,33 @@ class FiveCompHe3 : public SC_class {
 		~FiveCompHe3 () {} 
 
 		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
+
+		// initial guess function prototypes
+		void initialOPguessFromSolution(T_vector & OPvector, std::vector<int> & no_update);
+		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+};
+
+class Cylindrical : public SC_class {
+	protected:
+		// inherits all the basic D matrices
+		
+		// define covariant matrices ::: I can be used for imaginary unit sometimes 
+		SpMat_cd Dr, Dz, Dphi, Ident, r_inv;
+	public:
+		// the constructor should call the parent constructor and some other functions.
+		Cylindrical (int n, int nr, int nz, double h, Bound_Cond eta_BC[]) : SC_class(n,nr,nz,h) {
+			// call derivative-matrix-building functions here
+			// call K-matrix-building functions here?
+		}
+		~Cylindrical(){}
+
+		void Build_curvilinear_matrices(Bound_Cond eta_BC[]);
+		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
