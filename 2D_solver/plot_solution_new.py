@@ -3,80 +3,80 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-# returns "Nop, Nu, Nv, h, np_data_array, labels" from the solution file
-def readSolutionFile(file_name):
-    np_data_array = [] # to be converted to np.array() later
-    labels = [] # to store the labels of all the columns
+# # returns "Nop, Nu, Nv, h, np_data_array, labels" from the solution file
+# def readSolutionFile(file_name):
+#     np_data_array = [] # to be converted to np.array() later
+#     labels = [] # to store the labels of all the columns
 
-    u_0_count = 0
-    v_0_count = 0
+#     u_0_count = 0
+#     v_0_count = 0
 
-    line_count = 0
-    for line in open(file_name,'r'):
-        # the first line should give us all the labels of the columns
-        if line_count == 0:
-            labels = line.split()
-        else:
-            # start reading in the values into np_data_array
-            np_data_array.append(list(map(float,line.split())))
+#     line_count = 0
+#     for line in open(file_name,'r'):
+#         # the first line should give us all the labels of the columns
+#         if line_count == 0:
+#             labels = line.split()
+#         else:
+#             # start reading in the values into np_data_array
+#             np_data_array.append(list(map(float,line.split())))
 
-            if (abs(np_data_array[-1][0]) < 1e-8):
-                u_0_count += 1
-            if (abs(np_data_array[-1][1]) < 1e-8):
-                v_0_count += 1
-        line_count += 1
+#             if (abs(np_data_array[-1][0]) < 1e-8):
+#                 u_0_count += 1
+#             if (abs(np_data_array[-1][1]) < 1e-8):
+#                 v_0_count += 1
+#         line_count += 1
 
-    # convert the data array
-    np_data_array = np.array(np_data_array)
-    # this is now in the exact for that we had in the other python plotting file!
+#     # convert the data array
+#     np_data_array = np.array(np_data_array)
+#     # this is now in the exact for that we had in the other python plotting file!
 
-    # step size; we'll assume it will be the same in all directions
-    h = np_data_array[1,0] - np_data_array[0,0]
-    if abs(h) < 1e-8: h = np_data_array[1,1] - np_data_array[0,1] # in case position values are in a different order
+#     # step size; we'll assume it will be the same in all directions
+#     h = np_data_array[1,0] - np_data_array[0,0]
+#     if abs(h) < 1e-8: h = np_data_array[1,1] - np_data_array[0,1] # in case position values are in a different order
 
-    Nop = (len(labels)-2)//2 # take off the 2 cols for location; /2 b/c of complex cols
+#     Nop = (len(labels)-2)//2 # take off the 2 cols for location; /2 b/c of complex cols
 
-    Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
-    Nv = int(u_0_count)
-    # print(f'{Nu = }; {Nv = }')
+#     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
+#     Nv = int(u_0_count)
+#     # print(f'{Nu = }; {Nv = }')
         
-    return Nop, Nu, Nv, h, np_data_array, labels
+#     return Nop, Nu, Nv, h, np_data_array, labels
 
-# returns "Ncols, Nu, Nv, h, FE_data_array, labels" from the FE file
-def read_FE_File(file_name):
-    FE_data_array = [] # to be converted to np.array() later
-    labels = [] # to store the labels of all the columns
-    u_0_count = 0
-    v_0_count = 0
-    line_count = 0
-    for line in open(file_name,'r'):
-        # the first line should give us all the labels of the columns
-        if line_count == 0:
-            labels = line.split()
-        else:
-            # start reading in the values into FE_data_array
-            FE_data_array.append(list(map(float,line.split())))
-            if (abs(FE_data_array[-1][0]) < 1e-8):
-                u_0_count += 1
-            if (abs(FE_data_array[-1][1]) < 1e-8):
-                v_0_count += 1
-        line_count += 1
+# # returns "Ncols, Nu, Nv, h, FE_data_array, labels" from the FE file
+# def read_FE_File(file_name):
+#     FE_data_array = [] # to be converted to np.array() later
+#     labels = [] # to store the labels of all the columns
+#     u_0_count = 0
+#     v_0_count = 0
+#     line_count = 0
+#     for line in open(file_name,'r'):
+#         # the first line should give us all the labels of the columns
+#         if line_count == 0:
+#             labels = line.split()
+#         else:
+#             # start reading in the values into FE_data_array
+#             FE_data_array.append(list(map(float,line.split())))
+#             if (abs(FE_data_array[-1][0]) < 1e-8):
+#                 u_0_count += 1
+#             if (abs(FE_data_array[-1][1]) < 1e-8):
+#                 v_0_count += 1
+#         line_count += 1
 
-    # convert the data array
-    FE_data_array = np.array(FE_data_array)
-    # this is now in the exact for that we had in the other python plotting file!
+#     # convert the data array
+#     FE_data_array = np.array(FE_data_array)
+#     # this is now in the exact for that we had in the other python plotting file!
 
-    # step size; we'll assume it will be the same in all directions
-    h = FE_data_array[1,0] - FE_data_array[0,0]
-    if abs(h) < 1e-8: h = FE_data_array[1,1] - FE_data_array[0,1] # in case position values are in a different order
+#     # step size; we'll assume it will be the same in all directions
+#     h = FE_data_array[1,0] - FE_data_array[0,0]
+#     if abs(h) < 1e-8: h = FE_data_array[1,1] - FE_data_array[0,1] # in case position values are in a different order
 
-    # the number of columns in the FE file
-    Ncols = int(len(labels)-2) # take off the 2 cols for location
+#     # the number of columns in the FE file
+#     Ncols = int(len(labels)-2) # take off the 2 cols for location
 
-    Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
-    Nv = int(u_0_count)
+#     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
+#     Nv = int(u_0_count)
         
-    return Ncols, Nu, Nv, h, FE_data_array, labels
+#     return Ncols, Nu, Nv, h, FE_data_array, labels
 
 # to return "Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels"
 def read_file(file_name):
@@ -225,12 +225,11 @@ def plot_OP_comps_and_slices(file_name):
     FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
     FE_prof_ax.set_ylabel('FE')
     FE_prof_ax.set_title('Total FE profile')
-    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0])//2,:]))) # .transpose()
+    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,:]))) # .transpose()
 
     # plot the 2D heatmap of the FE
     FE_ax.set_title('Total FE')
     FE_ax.axes.xaxis.set_ticks([])
-    # FE_ax.axes.yaxis.set_ticks([])
     FE_ax.set_ylabel(rf'$x/\xi_0$ (bottom/surface)')
     im = FE_ax.imshow(FE_data_array[0], extent=[0,ext[1],0,ext[3]], cmap='gist_heat') # .transpose()
     fig.colorbar(im,ax=FE_ax)
@@ -238,7 +237,6 @@ def plot_OP_comps_and_slices(file_name):
     # plot the defect energy
     grad_FE_ax.set_title('Grad free energy')
     grad_FE_ax.axes.xaxis.set_ticks([])
-    # grad_FE_ax.axes.yaxis.set_ticks([])
     grad_FE_ax.set_ylabel(rf'$x/\xi_0$ (bottom/surface)')
     im = grad_FE_ax.imshow(FE_data_array[2], extent=[0,ext[1],0,ext[3]], cmap='gist_heat') # .transpose()
     fig.colorbar(im,ax=grad_FE_ax)
