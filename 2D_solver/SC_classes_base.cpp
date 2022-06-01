@@ -446,7 +446,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 }
 
 T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
-T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return v1+(v2-v1)*tanh((x-x0)/2.0); };
+T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return 0.5*(v2+v1) + 0.5*(v2-v1)*tanh((x-x0)/2.0); };
 
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
