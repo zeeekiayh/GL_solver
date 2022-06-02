@@ -136,19 +136,16 @@
 // K matrix namespace:
 //    to not get the K matrices mixed up with anything else
    namespace kMatrix {
-      // a function to give the small Kk matrix to build the
-      //    solver matrix for smaller systems
+      // a function to give the small Kk matrix to build the solver matrix for smaller systems
       inline Eigen::Matrix2d** smallKMatrix(int Nop, std::vector<bool> D_components) {
          Eigen::Matrix2d** gradK;
          gradK = new Eigen::Matrix2d *[Nop];
          for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
 
          // make sure the whole starts at 0!
-         for (int n = 0; n < Nop; n++) {
-            for (int m = 0; m < Nop; m++) {
+         for (int n = 0; n < Nop; n++)
+            for (int m = 0; m < Nop; m++)
                gradK[m][n] << 0, 0, 0, 0;
-            }
-         }
 
          for (int n = 0; n < Nop; n++) {
             for (int m = 0; m < Nop; m++) {
