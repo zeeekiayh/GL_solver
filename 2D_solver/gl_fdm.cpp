@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 	cout << "initializing guess...";
 	// - - - - switch these here to initialize in other ways
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initOPguess_special(cond, eta_BC, OPvector, smKMat, no_update); // Anton's version
+	pSC->initOPguess_special(cond, eta_BC, OPvector, gradK, no_update); // Anton's version
 	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
 	cout << "done" << endl;
 
