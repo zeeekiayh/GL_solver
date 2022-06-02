@@ -58,6 +58,9 @@ class SC_class{
 		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update); 
 		//void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		// not sure why we need virtual here but OK ... -Anton 
+		// Needs to be virtual so that it can be accessed by "pSC" in 'gl_fdm.cpp', because it is defined as a 'SC_class' object;
+		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
+		//		classes, and thus will all need to be virtual as well.
 		virtual void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
