@@ -180,7 +180,7 @@ double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::
 		// we will create the circular domain in the middle of Ayy to be -1
 
 		// the radius of the domain...we're assuming that the domain itself is large enough
-		double r = 16;
+		double r = 20;
 		if (Nu*h/2 <= r || Nv*h/2 <= r)
 			cout << "WARNING: the circular domain will be too large!" << endl;
 		
@@ -188,28 +188,18 @@ double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::
 		int u_center = round(Nu/2);
 		int v_center = round(Nv/2);
 
-		for (int n = 0; n < Nop; n++) {
-			// loop over the whole mesh
-			for (int u = 0; u < Nu; u++) {
-				for (int v = 0; v < Nv; v++) {
-					int id = ID(u,v,n);
+		// loop over the whole mesh
+		for (int u = 0; u < Nu; u++) { 
+			double x= h*(u-u_center); 
+			for (int v = 0; v < Nv; v++) { 
+				double z= h*(v-v_center);
+				double rho = sqrt(x*x + z*z);
 
-					if (u == 0) {
-						OPvector(id) = eta_BC[n].valueL;
-					} else if (u == Nu-1) {
-						OPvector(id) = eta_BC[n].valueR;
-					} else if (v == 0) {
-						OPvector(id) = eta_BC[n].valueB;
-					} else if (v == Nv-1) {
-						OPvector(id) = eta_BC[n].valueT;
-					} else if (n == 1) { // for only Ayy:
-						OPvector(id) = tanh(  (sqrt(pow(h*(u-u_center),2) + pow(h*(v-v_center),2)) - r)/3.  );
-					} else if (n == 3 || n == 4) {
-						OPvector(id) = 0.;
-					} else {
-						OPvector(id) = 1.;
-					}
-				}
+				OPvector(ID(u,v,0))=1;  
+				OPvector(ID(u,v,1))=tanh( (rho -r)/2.0 ); 
+				OPvector(ID(u,v,2))=1;
+				OPvector(ID(u,v,3))=0;
+				OPvector(ID(u,v,4))=0;
 			}
 		}
 		return;

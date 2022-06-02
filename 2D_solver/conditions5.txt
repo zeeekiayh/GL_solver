@@ -1,16 +1,16 @@
-5       # OP size (make sure that this is consistant with the K matrix below)
+5       # OP size 
 
 BOUNDARY CONDITIONS
 top               bottom           left             right     ( D/N : slip : value )
-N  1e10  1        D  1e-10 1.12    D  1e-10  1      D  1e-10  1     # Axx
-N  1e10  1        D  1e-10 1.12    D  1e-10  1      D  1e-10  1     # Ayy
-N  1e10  1        D  1e-10 1.12    D  1e-10  1      D  1e-10  -1    # Azz
-D  1e-10 1e-10    N  1e10  1e-10   D  1e-10 1e-10   D  1e-10 1e-10  # Azx
-D  1e-10 1e-10    D  1e-10 1e-10   D  1e-10 1e-10   D  1e-10 1e-10  # Axz
+N  1e+06  1       N  1e+06  1       D  1e-10  1    D  1e-10  1  # Axx
+N  1e+06  1       N  1e+06  1       D  1e-10  1    D  1e-10  1  # Ayy
+D  1e-10  1       D  1e-10  0       D  1e-10  1    D  1e-10  1  # Azz
+D  1e-10  0       N  1e+10  0       N  1e+10  0    N  1e+10  0  # Azx
+D  1e-10  0       D  1e-10  0       D  1e-10  0    D  1e-10  0  # Axz
 
-80 60 # mesh size
-0.3    # h (step size)
-0.5e-4  # temperature
-1e5     # pressure
+151 51 # mesh size
+0.4    # h (step size)
+0.5     # temperature
+0       # pressure
 1e-6    # accuracy
-500     # number loops
+300     # number loops

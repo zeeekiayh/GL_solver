@@ -212,9 +212,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       id_disconnectN = ID(Nu-1,Nv-2,0);
       id_disconnectC = ID(Nu-2,Nv-2,0);
 
-      // if one of the slip lengths has notbeen initialized,
-		//   we don't want it to blow up, so act as if it were 1
-		Duv_copy.coeffRef(id,id) = h*h/(BC.slipR * BC.slipT);
+	Duv_copy.coeffRef(id,id) = h*h/(BC.slipR * BC.slipT);
       Duv_copy.coeffRef(id,id_disconnectP) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectN) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectC) = 0.0;
@@ -245,9 +243,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       id_disconnectN = ID(0,Nv-2,0);
       id_disconnectC = ID(1,Nv-2,0);
 
-      // if one of the slip lengths has notbeen initialized,
-		//   we don't want it to blow up, so act as if it were 1
-		Duv_copy.coeffRef(id,id) = -h*h/(BC.slipL * BC.slipT);
+	Duv_copy.coeffRef(id,id) = -h*h/(BC.slipL * BC.slipT);
       Duv_copy.coeffRef(id,id_disconnectP) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectN) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectC) = 0.0;
@@ -278,9 +274,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       id_disconnectN = ID(0,1,0);
       id_disconnectC = ID(1,1,0);
       
-      // if one of the slip lengths has notbeen initialized,
-		//   we don't want it to blow up, so act as if it were 1
-		Duv_copy.coeffRef(id,id) = h*h/(BC.slipL * BC.slipB);
+	Duv_copy.coeffRef(id,id) = h*h/(BC.slipL * BC.slipB);
       Duv_copy.coeffRef(id,id_disconnectP) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectN) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectC) = 0.0;
@@ -311,9 +305,7 @@ SpMat_cd    SC_class::Duv_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       id_disconnectN = ID(Nu-2,0,0);
       id_disconnectC = ID(Nu-2,1,0);
 
-      // if one of the slip lengths has notbeen initialized,
-		//   we don't want it to blow up, so act as if it were 1
-		Duv_copy.coeffRef(id,id) = -h*h/(BC.slipR * BC.slipB);
+	Duv_copy.coeffRef(id,id) = -h*h/(BC.slipR * BC.slipB);
       Duv_copy.coeffRef(id,id_disconnectP) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectN) = 0.0;
       Duv_copy.coeffRef(id,id_disconnectC) = 0.0;
@@ -446,7 +438,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 }
 
 T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
-T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return v1+(v2-v1)*tanh((x-x0)/2.0); };
+T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return 0.5*(v2+v1)+0.5*(v2-v1)*tanh((x-x0)/2.0); };
 
 void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
@@ -500,12 +492,15 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
       cond_init.Nop=3;
       cond_init.SIZEu = 1; // make it vertical, effectively setting u=0 
    Bound_Cond eta_BC_init[cond_init.Nop]; // change the Top boundary conditons 
-   	eta_BC_init[0]=eta_BC[0]; // eta_BC_init[0].typeT="D"; eta_BC_init[0].slipT=1e-10; 
-   	eta_BC_init[1]=eta_BC[1]; // eta_BC_init[1].typeT="D"; eta_BC_init[1].slipT=1e-10;
-   	eta_BC_init[2]=eta_BC[2]; // eta_BC_init[2].typeT="D"; eta_BC_init[2].slipT=1e-10;
-   // cout << endl << eta_BC[0] << endl << eta_BC_init[0] << endl << endl;
-   // cout << eta_BC[1] << endl << eta_BC_init[1] << endl << endl;
-   // cout << eta_BC[2] << endl << eta_BC_init[2] << endl << endl;
+   	eta_BC_init[0]=eta_BC[0]; 
+   	eta_BC_init[1]=eta_BC[1]; 
+   	eta_BC_init[2]=eta_BC[2]; 
+	// if Azz > 0 we want semi-infinite system along z, and we improve convergence of initial solution by setting D on top
+	if(abs(eta_BC[2].valueT)>0.1) { 
+		eta_BC_init[0].typeT="D"; eta_BC_init[0].slipT=1e-10; 
+		eta_BC_init[1].typeT="D"; eta_BC_init[1].slipT=1e-10;
+		eta_BC_init[2].typeT="D"; eta_BC_init[2].slipT=1e-10;
+	}
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
    T_vector OPvector_init(VectSize_init);
@@ -590,7 +585,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
       data << std::setprecision(8) << std::fixed;
 
       // label the columns in the output file
-      data << "# h*u     \th*v     ";
+      data << "# x/xi     \t z/xi     ";
 
       // loop through all OP components...
       for (int n = 0; n < Nop; n++)
@@ -603,7 +598,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
       // loop through the whole mesh...
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
-            data << h*u << "\t" << h*v; // write the position
+            data << h*(u-Nu/2) << "\t" << h*v; // write the position
 
             // loop through all OP components...
             for (int n = 0; n < Nop; n++) {
