@@ -62,6 +62,7 @@ class SC_class{
 		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
 		//		classes, and thus will all need to be virtual as well.
 		virtual void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
@@ -158,6 +159,9 @@ class Cylindrical : public SC_class {
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
+
+		// initial guess function prototypes
+		void initialOPguess_Cylindrical(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 #endif

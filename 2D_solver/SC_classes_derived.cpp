@@ -260,8 +260,7 @@ using namespace Eigen;
 // ===========================================================
 
 
-/*
-// ===========================================================
+/* ===========================================================
 // Cylindrical :: function definitions
 	void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
 		Ident.resize(vect_size,vect_size); // set the identity matrix to the right size
@@ -308,11 +307,11 @@ using namespace Eigen;
 
 	void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 		// make all the matrices in eq. (54)
-		SpMat_cd Dr2t(grid_size,grid_size); // D_r^2 ~
-		SpMat_cd Drp(grid_size,grid_size);  // D_r^+
-		SpMat_cd Drm(grid_size,grid_size);  // D_r^-
-		SpMat_cd Drzp(grid_size,grid_size); // D_rz^+
-		SpMat_cd D2t(grid_size,grid_size);  // D^2 ~
+		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
+				Drp(grid_size,grid_size),   // D_r^+
+				Drm(grid_size,grid_size),   // D_r^-
+				Drzp(grid_size,grid_size),  // D_rz^+
+				D2t(grid_size,grid_size);   // D^2 ~
 
 		// define D matrices that are used in others' definitions
 		SpMat_cd Dr2_gsize(grid_size,grid_size),
@@ -348,8 +347,6 @@ using namespace Eigen;
 			// TODO/WARNING: this is hard-coded for the 5-component system!!
 			// Can we, or do we even need to make it for larger systems as well?
 
-		}
-
 			// build eq.'s (55-56)
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,vect_size,Dr2t)
@@ -383,17 +380,60 @@ using namespace Eigen;
 				DK1 += Place_subMatrix(n,n,vect_size,D2t);
 			}
 
+		}
+
+		// make M from these 2 matrices
+		M = DK1 + DK23;
+
 		return;
 	}
-	void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb) {
-		//
+
+	// this one should be the same as the 5-component system, right? (says just below eq. (38).)
+	void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb) {
+		int grid_point; 
+
+		for (int v = 0; v < Nv; v++) 
+		for (int u = 0; u < Nu; u++){ 
+			// we go over all grid points, 
+			grid_point = ID(u,v,0);
+			// and for all grid points collect all OP components into one eta_bulk[] array
+			for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
+
+			// create He3 OP matrix
+			Matrix<T_scalar,3,3> A; 
+						A <<  eta_bulk[0],    0,      eta_bulk[4],
+								0,          eta_bulk[1],    0,
+							  eta_bulk[3],    0,      eta_bulk[2];
+
+			Matrix<T_scalar,3,3> dFdA;
+			double FEbulk, betaB;
+			T_scalar dFdeta[5];
+			// find the derivatives and bulk Free energy
+			he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk); 
+			dFdeta[0] = dFdA(0,0);
+			dFdeta[1] = dFdA(1,1);
+			dFdeta[2] = dFdA(2,2);
+			dFdeta[3] = dFdA(2,0);
+			dFdeta[4] = dFdA(0,2);
+			// and put them into the big vector in the same order as OP components 
+			for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
+			FEb(grid_point) = FEbulk;
+		}
+
+		return;
 	}
+
 	void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
-		//
+		// we only need this for the energy inspection...not for the solution
 	}
+
 	double Cylindrical::defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
 		//
 		return 0.;
 	}
-// ===========================================================
-*/
+
+	// initial guess functions
+	void Cylindrical::initialOPguess_Cylindrical(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		//
+	}
+// ===========================================================*/
