@@ -133,10 +133,7 @@ class FiveCompHe3 : public SC_class {
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes
-		void initialOPguessFromSolution(T_vector & OPvector, std::vector<int> & no_update);
 		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip        (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initOPguess_AzzFlip_WS2016 (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class Cylindrical : public SC_class {
