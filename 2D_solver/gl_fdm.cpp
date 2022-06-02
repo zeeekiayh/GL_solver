@@ -31,14 +31,14 @@ int main(int argc, char** argv)
 	vector<bool> components;
 	components.insert(components.end(),{true,true,true,true});
 	// build the small K-matrix based on the OP size
-	auto smKMat = kMatrix::smallKMatrix(Nop, components);
+	auto gradK = kMatrix::smallKMatrix(Nop, components);
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
 	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
 
 	read_input_data(Nop, cond, eta_BC, "conditions"+to_string(Nop)+".txt");
-	if (debug) confirm_input_data(Nop, cond, eta_BC, smKMat);
+	if (debug) confirm_input_data(Nop, cond, eta_BC, gradK);
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
@@ -94,13 +94,14 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
-		pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
+		// pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
+		pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
 	}
 
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, smKMat );
+	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
 	cout << "done" << endl;
 
 	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
@@ -118,7 +119,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "calculating gradFE...";
-	pSC->gradFE(freeEg, OPvector, eta_BC, smKMat); // get the gradient contribution to free energy
+	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
 	cout << "done" << endl;
 
 	// ===============================================================================================================
@@ -131,9 +132,9 @@ int main(int argc, char** argv)
 
 	// ===============================================================================================================
 
-	//------  de-allocating smKMat array ----------
-	for(int i = 0; i <Nop; i++) delete[] smKMat[i]; 
-	delete[] smKMat; 
+	//------  de-allocating gradK array ----------
+	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
+	delete[] gradK; 
 	delete pSC;
 
 	return 0;
