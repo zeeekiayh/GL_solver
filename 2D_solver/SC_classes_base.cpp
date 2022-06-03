@@ -480,8 +480,6 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 	return;
 }
 
-
-
 // a method of initializing a guess based on a previous solution
 // Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
 void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update)
@@ -527,11 +525,6 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
 	delete pSC_init;
 	return;
 }
-
-
-
-
-
 
 // Write out the vector to a file (this is written for a 2D system,
 //    but can write 1D vectors just fine if Nv or Nu = 1).
