@@ -2,7 +2,7 @@
 #include "readwrite.hpp"
 #include "structures.hpp"
 #include <vector>
-#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Place_subMatrix
+#include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Build_curvilinear_matrices
 
 using namespace std;
 using namespace Eigen;
@@ -260,20 +260,29 @@ using namespace Eigen;
 // ===========================================================
 
 
-/* ===========================================================
+//* ===========================================================
 // Cylindrical :: function definitions
 	void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
+		// cout << "\tin Build_curvilinear_matrices" << endl;
 		Ident.resize(vect_size,vect_size); // set the identity matrix to the right size
 		Ident.setIdentity();
 		
+		// cout << "\there 0" << endl;
+
 		Dr.resize(vect_size,vect_size);
 		Dz.resize(vect_size,vect_size);
 		Dphi.resize(vect_size,vect_size);
 		r_inv.resize(grid_size,grid_size);
 
+		// cout << "\there 1" << endl;
+
 		T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
 		T_vector rhsBC; // ? should it actually be passed in as an argument?
+		// neither of these are actually used below...we just have them as arguments in
+		// 	the D*_BD() functions below, but those functions don't use them either!
 		
+		// cout << "\there 2" << endl;
+
 		// SpMat_cd R(grid_size,grid_size); // there is no need for the vect_size x vect_size r_inv?
 		for (int u = 0; u < Nu; u++) {
 			for (int v = 0; v < Nv; v++) {
@@ -281,12 +290,17 @@ using namespace Eigen;
 				r_inv.coeffRef(id,id) = (u == 0) ? 1e10 : 1./(u*h);
 			}
 		}
+		
+		// cout << "\there 3" << endl;
 
 		for (int n = 0; n < Nop; n++) {
-			Dr += Place_subMatrix(n,n,vect_size,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
-			Dz += Place_subMatrix(n,n,vect_size,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
-			// r_inv += Place_subMatrix(n,n,vect_size,R);
+			// cout << "\t\tn=" << n << endl;
+			Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
+			Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
+			// r_inv += Place_subMatrix(n,n,Nop,R);
 		}
+		
+		// cout << "\there 4" << endl;
 
 		MatrixXd temp(9,9);
 		temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
@@ -301,11 +315,13 @@ using namespace Eigen;
 		SpMat_cd small_I(grid_size,grid_size);
 		small_I.setIdentity();
 		Dphi = kroneckerProduct(temp,small_I);
+		
+		// cout << "\there 5" << endl;
 
 		return;
 	}
 
-	void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -349,41 +365,42 @@ using namespace Eigen;
 
 			// build eq.'s (55-56)
 			if (n == 0) {
-				DK23 += Place_subMatrix(0,n,vect_size,Dr2t)
-					+ Place_subMatrix(1,n,vect_size,Drp*r_inv)
-					+ Place_subMatrix(4,n,vect_size,Drzp);
+				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
+					+ Place_subMatrix(1,n,Nop,Drp*r_inv)
+					+ Place_subMatrix(4,n,Nop,Drzp);
 				
-				DK1 += Place_subMatrix(0,n,vect_size,D2t-r2_inv)
-					+ Place_subMatrix(1,n,vect_size,2.*r2_inv);
+				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
+					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
 			} else if (n == 1) {
-				DK23 += Place_subMatrix(0,n,vect_size,-Drm)
-					+ Place_subMatrix(1,n,vect_size,-r2_inv)
-					+ Place_subMatrix(4,n,vect_size,-Dz_over_r);
+				DK23 += Place_subMatrix(0,n,Nop,-Drm)
+					+ Place_subMatrix(1,n,Nop,-r2_inv)
+					+ Place_subMatrix(4,n,Nop,-Dz_over_r);
 				
-				DK1 += Place_subMatrix(1,n,vect_size,D2t-r2_inv)
-					+ Place_subMatrix(0,n,vect_size,2.*r2_inv);
+				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
+					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
 			} else if (n == 2) {
-				DK23 += Place_subMatrix(2,n,vect_size,Dz2_gsize)
-					+ Place_subMatrix(3,n,vect_size,Drz_gsize);
+				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize)
+					+ Place_subMatrix(3,n,Nop,Drz_gsize);
 				
-				DK1 += Place_subMatrix(n,n,vect_size,D2t+r2_inv);
+				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
 			} else if (n == 3) {
-				DK23 += Place_subMatrix(2,n,vect_size,Drzp)
-					+ Place_subMatrix(3,n,vect_size,Dr2t);
+				DK23 += Place_subMatrix(2,n,Nop,Drzp)
+					+ Place_subMatrix(3,n,Nop,Dr2t);
 				
-				DK1 += Place_subMatrix(n,n,vect_size,D2t);
+				DK1 += Place_subMatrix(n,n,Nop,D2t);
 			} else if (n == 4) {
-				DK23 += Place_subMatrix(0,n,vect_size,Drz_gsize)
-					+ Place_subMatrix(1,n,vect_size,Dz_over_r)
-					+ Place_subMatrix(4,n,vect_size,Dz2_gsize);
+				DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
+					+ Place_subMatrix(1,n,Nop,Dz_over_r)
+					+ Place_subMatrix(4,n,Nop,Dz2_gsize);
 				
-				DK1 += Place_subMatrix(n,n,vect_size,D2t);
+				DK1 += Place_subMatrix(n,n,Nop,D2t);
 			}
 
 		}
 
 		// make M from these 2 matrices
-		M = DK1 + DK23;
+		M = 1.*DK1 + 2.*DK23; // TODO: FIX K-VALUES HERE!
+		// Should they be passed in as arguments? Can we take them from the gradK matrix?
 
 		return;
 	}
@@ -434,6 +451,52 @@ using namespace Eigen;
 
 	// initial guess functions
 	void Cylindrical::initialOPguess_Cylindrical(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-		//
+		// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them!
+		double radius, r_wall = 0.5*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
+
+		// for (int n = 0; n < Nop; n++) {
+			// going through the entire grid
+			for (int u = 0; u < Nu; u++) { double r = h*u; 
+				for (int v = 0; v < Nv; v++) { double z = h*v;  
+					int id = ID(u,v,2);
+					radius = sqrt(r*r + z*z);
+					OPvector( id ) = tanh( (radius-r_wall)/2. );
+				}
+			}
+		// }
+
+		// set some boundary values based on conditions file
+		for (int n = 0; n < Nop; n++)
+		if  (n != 2)
+		for (int u = 0; u < Nu; u++) // loop over the whole mesh
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+
+			if (u == 0) {
+				OPvector(id) = eta_BC[n].valueL;
+			} else if (u == Nu-1) {
+				OPvector(id) = eta_BC[n].valueR;
+			} else if (v == 0) {
+				OPvector(id) = eta_BC[n].valueB;
+			} else if (v == Nv-1) {
+				OPvector(id) = eta_BC[n].valueT;
+			}
+		}
+		// smooth off the initial guess a little
+		for (int i = 0; i < 10; i++)
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			 if ( n != 2 ) {
+				int id = ID(u,v,n);
+				int idU = ID(u,(v<Nv-1)?v+1:v,n);
+				int idL = ID((u>0)?u-1:u,v,n);
+				int idD = ID(u,(v>0)?v-1:v,n);
+				int idR = ID((u<Nu-1)?u+1:u,v,n);
+				OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
+			}
+		}
+
+		return;
 	}
 // ===========================================================*/
