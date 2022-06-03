@@ -15,3 +15,6 @@ gl_fdm
 # ignore any temporary debugging codes
 debugging.py
 debugging_files/
+
+test.cpp
+initGuess_output_OP?.txt
