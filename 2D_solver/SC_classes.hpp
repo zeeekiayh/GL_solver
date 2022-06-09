@@ -55,7 +55,7 @@ class SC_class{
 		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		// a method of initializing a guess based on a previous solution
-		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update); 
+		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update); 
 		//void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		// not sure why we need virtual here but OK ... -Anton 
 		// Needs to be virtual so that it can be accessed by "pSC" in 'gl_fdm.cpp', because it is defined as a 'SC_class' object;
@@ -65,8 +65,8 @@ class SC_class{
 		virtual void initialOPguess_Cylindrical (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
-		void BuildSolverMatrix   ( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK );
-		virtual void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
+		void BuildSolverMatrix   ( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[] );
+		virtual void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]){};
 		
 		// write out a vector to a file
 		void WriteToFile(const T_vector& vector, std::string file_name, int flag);
@@ -74,8 +74,8 @@ class SC_class{
 
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
-		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
-		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK){};
+		virtual void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]){};
+		virtual void gradFE_curv(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]){};
 		virtual double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg){return 0.;};
 };
 
@@ -92,9 +92,9 @@ class OneCompSC : public SC_class {
 		//destructor : automatically calls virtual ~SC_class()
 		~OneCompSC () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]);
 };
 
 class ThreeCompHe3 : public SC_class {
@@ -111,9 +111,9 @@ class ThreeCompHe3 : public SC_class {
 		} 
 		~ThreeCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]);
 
 		// iniital guess function prototypes
 		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
@@ -132,9 +132,9 @@ class FiveCompHe3 : public SC_class {
 		}
 		~FiveCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]);
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes
@@ -158,10 +158,10 @@ class Cylindrical : public SC_class {
 		~Cylindrical(){}
 
 		void Build_curvilinear_matrices(Bound_Cond eta_BC[]);
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK); 
-		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
+		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]);
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK);
+		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]);
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes

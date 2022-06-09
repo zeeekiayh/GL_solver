@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 	vector<bool> components;
 	components.insert(components.end(),{true,true,true,true});
 	// build the small K-matrix based on the OP size
-	auto gradK = kMatrix::smallKMatrix(Nop, components);
+	// Matrix2d** gradK;// = kMatrix::smallKMatrix(Nop, components);
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
 	string file_name = (Nop == 5 && *(argv[2]) == 'c') ? "conditions5c.txt" : "conditions"+to_string(Nop)+".txt";
 	read_input_data(Nop, cond, eta_BC, file_name);
-	if (debug) confirm_input_data(Nop, cond, eta_BC, gradK);
+	// if (debug) confirm_input_data(Nop, cond, eta_BC); // DO WE WANT TO PASS ", gK" AS AN ARGUMNET, EVER?
 	
 	// default parameters for the Convergence Accelerator
 	cond.maxStore = 5; // 4
@@ -104,9 +104,9 @@ int main(int argc, char** argv)
 	cout << "initializing guess...";
 	// - - - - switch these here to initialize in other ways
 	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	// pSC->initOPguess_special(cond, eta_BC, OPvector, gradK, no_update); // Anton's version
+	pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
 	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-	pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
+	// pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
 	cout << "done" << endl;
 
 	if (debug) { // write the initial guess to file, for debugging
@@ -118,9 +118,9 @@ int main(int argc, char** argv)
 
 	cout << "building solver matrix...";
 	if (*(argv[2]) == 'c')
-		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC, gradK );
+		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC );
 	else
-		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC, gradK );
+		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
 	cout << "done" << endl;
 
 	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
 	cout << "done" << endl;
 
 	cout << "calculating gradFE...";
-	pSC->gradFE(freeEg, OPvector, eta_BC, gradK); // get the gradient contribution to free energy
+	pSC->gradFE(freeEg, OPvector, eta_BC); // MAY NEED TO PASS IN ", gK" AS ANOTHER ARGUMENT? // get the gradient contribution to free energy
 	cout << "done" << endl;
 
 	// ===============================================================================================================
@@ -154,9 +154,7 @@ int main(int argc, char** argv)
 
 	// ===============================================================================================================
 
-	//------  de-allocating gradK array ----------
-	for(int i = 0; i <Nop; i++) delete[] gradK[i]; 
-	delete[] gradK; 
+	// de-allocating memory
 	delete pSC;
 
 	return 0;

@@ -383,7 +383,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector &
 }
 
 // The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
-void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[], Matrix2d **gradK) {
+void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[]) {
    auto rhsBClocal=rhsBC;
    int x = 0, z = 1; // indexes for the K-matrix
    // Use equ. (15) in the Latex file:
@@ -393,22 +393,22 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
       for (int n = 0; n < Nop; n++) {
          SpMat_cd toInsertM(grid_size,grid_size);
 
-         if (gradK[m][n](x,x) != 0 && Nu > 1){
-            toInsertM += gradK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==n) rhsBC += gradK[m][n](x,x) * rhsBClocal;
+         if (gK[m][n](x,x) != 0 && Nu > 1){
+            toInsertM += gK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gK[m][n](x,x) * rhsBClocal;
    	   }
 
-         if (gradK[m][n](z,z) != 0 && Nv > 1){
-            toInsertM += gradK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==n) rhsBC += gradK[m][n](z,z) * rhsBClocal;
+         if (gK[m][n](z,z) != 0 && Nv > 1){
+            toInsertM += gK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gK[m][n](z,z) * rhsBClocal;
    	   }
 
-         if (gradK[m][n](z,x) + gradK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
-            toInsertM += (gradK[m][n](z,x) + gradK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+         if (gK[m][n](z,x) + gK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
+            toInsertM += (gK[m][n](z,x) + gK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
    	   }
 
          M += Place_subMatrix( m, n, Nop, toInsertM );
-	//std::cout << "\n gradK["<<m<<"]["<<n<<"]=\n" << gradK[m][n];
+	//std::cout << "\n gK["<<m<<"]["<<n<<"]=\n" << gK[m][n];
 
 	  //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
@@ -482,7 +482,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 
 // a method of initializing a guess based on a previous solution
 // Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
-void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, Eigen::Matrix2d **gradK, std::vector<int> & no_update)
+void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update)
 {
    vector<int> no_update_init;
    in_conditions cond_init=cond; // copy the conditions, 
@@ -506,7 +506,7 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
    T_vector rhsBC_init = T_vector::Zero(VectSize_init);
    SC_class *pSC_init = new ThreeCompHe3( cond_init.Nop, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
    pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init, gradK );
+   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init );
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
    pSC_init->WriteToFile(OPvector_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt",1);
 

@@ -84,7 +84,7 @@ inline void read_input_data(const int Nop, in_conditions & cond, Bound_Cond eta_
 }
 
 // output the things read in so we can visually confirm the input from the conditions*.txt
-inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[]) { // , Eigen::Matrix2d **gK
 	std::cout << "Grid is " << cond.SIZEu << " x " << cond.SIZEv << std::endl;
 	std::cout << "with step size h = " << cond.STEP << std::endl << std::endl;
 
@@ -92,15 +92,17 @@ inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta
 		std::cout << "bound condition OP component "<< i << " is \n" << eta_BC[i] << std::endl;
 	}
 
-	std::cout << "K-matrix:\n";
-	for(int i=0; i<2*Nop; i++){ 
-		for(int j=0; j<2*Nop; j++){
-			std::cout << gradK[i/2][j/2](i%2,j%2)<<" "; 
-			if(j%2 != 0) std::cout << "\t";
-		}
-		std::cout << std::endl;
-		if(i%2 != 0) std::cout << "\n";
-	}
+	// Would need to pass in gK to this function to display here!
+	// It is not read in through the conditions file, so we don't need to confirm it as input data
+	// std::cout << "K-matrix:\n";
+	// for(int i=0; i<2*Nop; i++){ 
+	// 	for(int j=0; j<2*Nop; j++){
+	// 		std::cout << gK[i/2][j/2](i%2,j%2)<<" "; 
+	// 		if(j%2 != 0) std::cout << "\t";
+	// 	}
+	// 	std::cout << std::endl;
+	// 	if(i%2 != 0) std::cout << "\n";
+	// }
 
 	return;
 }

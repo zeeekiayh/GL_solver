@@ -57,7 +57,7 @@ using namespace Eigen;
 		return;
 	}
 
-	void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
+	void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) 
 	{
 		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 
@@ -79,10 +79,10 @@ using namespace Eigen;
 						int id_m = ID(u,v,m);
 						int id_n = ID(u,v,n);
 
-						freeEg( FE_id ) += gradK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
 					}
 				}
 			}
@@ -129,7 +129,7 @@ using namespace Eigen;
 		return;
 	}
 
-	void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) 
+	void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) 
 	{
 		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 
@@ -151,10 +151,10 @@ using namespace Eigen;
 						int id_m = ID(u,v,m);
 						int id_n = ID(u,v,n);
 
-						freeEg( FE_id ) += gradK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gradK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+						freeEg( FE_id ) += gK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
 					}
 				}
 			}
@@ -228,7 +228,7 @@ using namespace Eigen;
 		return;
 	}
 
-	void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) {
 
 		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 
@@ -248,10 +248,10 @@ using namespace Eigen;
 					int id_m = ID(u,v,0);
 					int id_n = ID(u,v,0);
 
-					freeEg( FE_id ) += gradK[0][0](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-					freeEg( FE_id ) += gradK[0][0](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-					freeEg( FE_id ) += gradK[0][0](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-					freeEg( FE_id ) += gradK[0][0](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+					freeEg( FE_id ) += gK[0][0](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gK[0][0](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+					freeEg( FE_id ) += gK[0][0](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
+					freeEg( FE_id ) += gK[0][0](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
 			}
 		}
 		freeEg *= 2/(h*h);
@@ -321,7 +321,7 @@ using namespace Eigen;
 		return;
 	}
 
-	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]) {
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -400,7 +400,7 @@ using namespace Eigen;
 
 		// make M from these 2 matrices
 		M = 1.*DK1 + 2.*DK23; // TODO: FIX K-VALUES HERE!
-		// Should they be passed in as arguments? Can we take them from the gradK matrix?
+		// Should they be passed in as arguments?
 
 		return;
 	}
@@ -440,7 +440,7 @@ using namespace Eigen;
 		return;
 	}
 
-	void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[], Eigen::Matrix2d **gradK) {
+	void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) {
 		// we only need this for the energy inspection...not for the solution
 	}
 

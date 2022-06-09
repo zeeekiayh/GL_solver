@@ -132,50 +132,53 @@
    };
 // ===========================================
 
+
+// WE DON'T NEED ANY OF THIS ANYMORE, CORRECT? ALL K-MATRIX STUFF IS DONE
+//    IN THE CONSTRUCTORS OF EACH DERIVED CLASS!
 // ===========================================
 // K matrix namespace:
 //    to not get the K matrices mixed up with anything else
-   namespace kMatrix {
-      // a function to give the small Kk matrix to build the solver matrix for smaller systems
-      inline Eigen::Matrix2d** smallKMatrix(int Nop, std::vector<bool> D_components) {
-         Eigen::Matrix2d** gradK;
-         gradK = new Eigen::Matrix2d *[Nop];
-         for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
+   // namespace kMatrix {
+   //    // a function to give the small Kk matrix to build the solver matrix for smaller systems
+   //    inline Eigen::Matrix2d** smallKMatrix(int Nop, std::vector<bool> D_components) {
+   //       Eigen::Matrix2d** gradK;
+   //       gradK = new Eigen::Matrix2d *[Nop];
+   //       for (int i = 0; i < Nop; i++) gradK[i] = new Eigen::Matrix2d [Nop];
 
-         // make sure the whole starts at 0!
-         for (int n = 0; n < Nop; n++)
-            for (int m = 0; m < Nop; m++)
-               gradK[m][n] << 0, 0, 0, 0;
+   //       // make sure the whole starts at 0!
+   //       for (int n = 0; n < Nop; n++)
+   //          for (int m = 0; m < Nop; m++)
+   //             gradK[m][n] << 0, 0, 0, 0;
 
-         for (int n = 0; n < Nop; n++) {
-            for (int m = 0; m < Nop; m++) {
-               if (D_components[0]) gradK[m][n](0,0) = Kuu[m][n];
-               if (D_components[1]) gradK[m][n](0,1) = Kuv[m][n];
-               if (D_components[2]) gradK[m][n](1,0) = Kvu[m][n];
-               if (D_components[3]) gradK[m][n](1,1) = Kvv[m][n];
+   //       for (int n = 0; n < Nop; n++) {
+   //          for (int m = 0; m < Nop; m++) {
+   //             if (D_components[0]) gradK[m][n](0,0) = Kuu[m][n];
+   //             if (D_components[1]) gradK[m][n](0,1) = Kuv[m][n];
+   //             if (D_components[2]) gradK[m][n](1,0) = Kvu[m][n];
+   //             if (D_components[3]) gradK[m][n](1,1) = Kvv[m][n];
 
-               // WILL WE EVER NEED THESE? NO?
-               // if (D_components[i]) { // "yy"
-               //    //
-               // }
-               // if (D_components[i]) { // "xy"
-               //    //   
-               // }
-               // if (D_components[i]) { // "yx"
-               //    //   
-               // }
-               // if (D_components[i]) { // "yz"
-               //    //
-               // }
-               // if (D_components[i]) { // "zy"
-               //    //
-               // }
-            }
-         }
+   //             // WILL WE EVER NEED THESE? NO?
+   //             // if (D_components[i]) { // "yy"
+   //             //    //
+   //             // }
+   //             // if (D_components[i]) { // "xy"
+   //             //    //   
+   //             // }
+   //             // if (D_components[i]) { // "yx"
+   //             //    //   
+   //             // }
+   //             // if (D_components[i]) { // "yz"
+   //             //    //
+   //             // }
+   //             // if (D_components[i]) { // "zy"
+   //             //    //
+   //             // }
+   //          }
+   //       }
 
-         return gradK;
-      }
-   };
+   //       return gradK;
+   //    }
+   // };
 // ========================================================
 
 #endif
