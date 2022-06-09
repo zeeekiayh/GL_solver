@@ -8,6 +8,8 @@ bulkRHS_FE?.txt
 FEgrad?.txt
 totalFE?.txt
 output_OP?.txt
+initGuess_output_OP?.txt
+initial_guess_OP?.txt
 
 # ignore gl_fdm changes
 gl_fdm
@@ -17,4 +19,3 @@ debugging.py
 debugging_files/
 
 test.cpp
-initGuess_output_OP?.txt
