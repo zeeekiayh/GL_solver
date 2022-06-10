@@ -49,11 +49,9 @@ int main(int argc, char** argv)
 	if (Nop == 3) {
 		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	} else if (Nop == 5 && argc == 3) {
-		if (*(argv[2]) == 'c') {
+	} else if (Nop == 5 && argc == 3 && *(argv[2]) == 'c') {
 			pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 			pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
-		}
 	} else if (Nop == 5) {
 		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
@@ -77,7 +75,7 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	if (*(argv[2]) == 'c')
+	if (argc == 3 && *(argv[2]) == 'c')
 		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC );
 	else
 		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
