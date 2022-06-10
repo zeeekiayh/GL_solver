@@ -10,3 +10,6 @@ D  1e-10  1    D  1e-10  1     D  1e-10  0    D  1e-10  1  # psi
 1e5     # pressure
 1e-6    # accuracy
 100     # number loops
+5       # maxStore
+0.1     # relaxation parameter
+1       # wait

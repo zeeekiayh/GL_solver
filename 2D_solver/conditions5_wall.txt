@@ -14,3 +14,6 @@ D  1e-10  0       D  1e-10  0      D  1e-10  0      D  1e-10  0     # Axz
 1e5     # pressure
 1e-6    # accuracy
 350     # number loops
+5       # maxStore
+0.1     # relaxation parameter
+1       # wait
