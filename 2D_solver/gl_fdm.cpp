@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 {
 	int Nop;// = *(argv[1]) - '0'; // read in the int from the terminal call
 	if (argc < 2 || argc > 3) {
-		cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm <file_name> [c]'." << endl;
+		cout << "ERROR: need an argument for 'file_name'; do so like: '$ ./gl_fdm <file_name> [c]'." << endl;
 		return 1;
 	}
 	string file_name = string(argv[1]);
