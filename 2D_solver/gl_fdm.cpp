@@ -60,9 +60,10 @@ int main(int argc, char** argv)
 		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	} else if (Nop == 5) {
 		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-		// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-		// pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
+		// ---- set the OP vector to a good guess based on BC's ----
+		// pSC->initialOPguess(eta_BC, OPvector, no_update);
+		// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
+		pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version // use the conditions5_wall.txt file
 	} else if (Nop == 1) {
 		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	} else {
