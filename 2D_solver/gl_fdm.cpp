@@ -15,66 +15,24 @@ using namespace Eigen;
 
 int main(int argc, char** argv)
 {
-	bool debug = false;
-	if (argc == 3 && *(argv[2]) == 'd') {
-		// using debugging!
-		cout << "NOTICE: using debugging methods...\nDo you want to proceed? (y/n) ";
-		string ans;
-		cin >> ans;
-		if (ans=="y"||ans=="Y") debug = true;
-		else cout << endl << "NOT USING DEBUGGING ANYMORE." << endl;
-	} else if (argc == 3 && *(argv[2]) == 'c') { // c -> cylindrical!
-		cout << "cylindrical!" << endl;
-	} else if (argc == 4 && *(argv[2]) == 'c' && *(argv[3]) == 'd') {
-		cout << "cylindrical!" << endl;
-		// using debugging!
-		cout << "NOTICE: using debugging methods...\nDo you want to proceed? (y/n) ";
-		string ans;
-		cin >> ans;
-		if (ans=="y"||ans=="Y") debug = true;
-		else cout << endl << "NOT USING DEBUGGING ANYMORE." << endl;
-	} else if (argc != 2) {cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm 3'." << endl; return 1;}
-	const int Nop = *(argv[1]) - '0'; // read in the int from the terminal call
-
-	// the list of K-matrix components to be used in building the small K-matrix
-	vector<bool> components;
-	components.insert(components.end(),{true,true,true,true});
-	// build the small K-matrix based on the OP size
-	// Matrix2d** gradK;// = kMatrix::smallKMatrix(Nop, components);
+	int Nop;// = *(argv[1]) - '0'; // read in the int from the terminal call
+	if (argc < 2 || argc > 3) {
+		cout << "ERROR: need an argument for 'Nop'; do so like: '$ ./gl_fdm <file_name> [c]'." << endl;
+		return 1;
+	}
+	string file_name = string(argv[1]);
 
 	// get all the information from the "conditions.txt"
 	in_conditions cond;
-	Bound_Cond eta_BC[Nop];      // boundary conditions for OP components
+	Bound_Cond *eta_BC; // boundary conditions for OP components
 
-	string file_name = (Nop == 5 && *(argv[2]) == 'c') ? "conditions5c.txt" : "conditions"+to_string(Nop)+".txt";
 	read_input_data(Nop, cond, eta_BC, file_name);
-	// if (debug) confirm_input_data(Nop, cond, eta_BC); // DO WE WANT TO PASS ", gK" AS AN ARGUMNET, EVER?
-	
-	// default parameters for the Convergence Accelerator
-	cond.maxStore = 5; // 4
-	cond.rel_p = 0.1;  // 0.1
-	cond.wait = 1;     // 2
-
-	// if you want to change the values ... should we put these back into the conditions file?
-	if (debug) {
-		cout << "The default parameters are:\n\tmaxStore = " << cond.maxStore << "\n\trel_p = " << cond.rel_p << "\n\twait = " << cond.wait << endl;
-		cout << "Do you want to change these values? (y/n): ";
-		string res;
-		cin >> res;
-		if (res == "y" || res == "Y") {
-			cout << "maxStore: ";
-			cin >> cond.maxStore;
-			cout << "rel_p: ";
-			cin >> cond.rel_p;
-			cout << "wait: ";
-			cin >> cond.wait;
-		}
-	}
+	// confirm_input_data(Nop, cond, eta_BC); // DO WE WANT TO PASS ", gK" AS AN ARGUMNET, EVER?
 
 	vector<int> no_update; // the vector of all the indeces of the OPvector that we don't want to change
 
 	int GridSize = cond.SIZEu * cond.SIZEv; // number of grid points 
-	int VectSize = cond.Nop * GridSize;     // number of elements in the overall OP vector 
+	int VectSize = cond.Nop * GridSize;     // number of elements in the overall OP vector
 
 	T_vector OPvector(VectSize);                 // the vector of all values of the OP on the mesh
 	T_vector rhsBC = T_vector::Zero(VectSize);   // the addition to the rhs for D-type BC's
@@ -85,34 +43,36 @@ int main(int argc, char** argv)
 
 	// ===============================================================================================================
 
-	cout << "initializing object...";
+	cout << "initializing object and guess..." << endl;
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
-	if (Nop == 3)
+	if (Nop == 3) {
 		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-	else if (Nop == 5 && *(argv[2]) == 'c')
-		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
-	else if (Nop == 5)
-		pSC = new FiveCompHe3 ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-	else if (Nop == 1)
-		pSC = new OneCompSC   ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-	else {cout << "Unknown OP size. Exiting..." << endl; return 0;}
-	cout << "done" << endl;
+		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+	} else if (Nop == 5 && argc == 3) {
+		if (*(argv[2]) == 'c') {
+			pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+			pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
+		}
+	} else if (Nop == 5) {
+		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
+		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+		// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
+		// pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
+	} else if (Nop == 1) {
+		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
+	} else {
+		cout << "Unknown OP size. Exiting..." << endl;
+		delete pSC;
+		return 1;
+	}
 
 	// ===============================================================================================================
 
-	cout << "initializing guess...";
-	// - - - - switch these here to initialize in other ways
-	// pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
-	// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update); // CONTINUE HERE! TESTING THIS ONE!
-	// pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
-	cout << "done" << endl;
-
-	if (debug) { // write the initial guess to file, for debugging
-		// pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
-		pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
-	}
+	// if (debug) { // write the initial guess to file, for debugging
+	// 	// pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
+	// 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
+	// }
 
 	// ===============================================================================================================
 
@@ -123,12 +83,12 @@ int main(int argc, char** argv)
 		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
 	cout << "done" << endl;
 
-	if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-		if (VectSize < 200)
-			cout << endl << "M =\n" << M << endl;
-		else
-			cout << "VectSize = " << VectSize << endl;
-	}
+	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
+	// 	if (VectSize < 200)
+	// 		cout << endl << "M =\n" << M << endl;
+	// 	else
+	// 		cout << "VectSize = " << VectSize << endl;
+	// }
 
 	// ===============================================================================================================
 
