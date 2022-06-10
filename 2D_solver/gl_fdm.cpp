@@ -46,12 +46,18 @@ int main(int argc, char** argv)
 	cout << "initializing object and guess..." << endl;
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
-	if (Nop == 3) {
-		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-	} else if (Nop == 5 && argc == 3 && *(argv[2]) == 'c') {
+	if (argc == 3 && *(argv[2]) == 'c') { // if it is for a cylindrical system
+		if (Nop == 5) {
 			pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 			pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
+		} else if (Nop == 3) {
+			// code this next!
+		}
+	}
+	// other wise we'll use the cartesian system
+	else if (Nop == 3) {
+		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
+		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 	} else if (Nop == 5) {
 		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
