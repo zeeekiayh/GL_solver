@@ -150,15 +150,12 @@ class Cylindrical : public SC_class {
 	public:
 		// the constructor should call the parent constructor and some other functions.
 		Cylindrical (int n, int nr, int nz, double h, Bound_Cond eta_BC[]) : SC_class(n,nr,nz,h) {
-			// std::cout << "In Cylynd constructor" << std::endl;
 			// call derivative-matrix-building functions here
 			Build_curvilinear_matrices(eta_BC);
-			// call K-matrix-building functions here? --No, we do that elsewhere
 		}
 		~Cylindrical(){}
 
 		void Build_curvilinear_matrices(Bound_Cond eta_BC[]);
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
 		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]);
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		void gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]);
