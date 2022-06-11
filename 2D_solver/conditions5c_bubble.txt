@@ -1,0 +1,19 @@
+5       # OP size 
+
+BOUNDARY CONDITIONS
+top             bottom          left            right     ( D/N : slip : value )
+D  1e-10  1     N  1e+06  1     N  1e+10  1     D  1e-10  1   # Arr
+D  1e-10  1     N  1e+06  1     N  1e+10  1     D  1e-10  1   # App
+D  1e-10  1     D  1e-10  0     N  1e+10  0     D  1e-10  1   # Azz
+D  1e-10  0     N  1e+10  0.5   N  1e+10  0.5   D  1e-10  0   # Azr
+D  1e-10  0     N  1e+10  0.5   N  1e+10  0.5   D  1e-10  0   # Arz
+
+65 65 # mesh size (r, z)
+0.3     # h (step size)
+0.5     # temperature
+0       # pressure
+1e-6    # accuracy
+300     # number loops
+5       # maxStore
+0.1     # relaxation parameter
+1       # wait

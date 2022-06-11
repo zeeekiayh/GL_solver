@@ -61,8 +61,10 @@ class SC_class{
 		// Needs to be virtual so that it can be accessed by "pSC" in 'gl_fdm.cpp', because it is defined as a 'SC_class' object;
 		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
 		//		classes, and thus will all need to be virtual as well.
-		virtual void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initGuessWithCircularDomain       (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_simple (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_bubble (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
 		void BuildSolverMatrix   ( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[] );
@@ -162,7 +164,9 @@ class Cylindrical : public SC_class {
 		double defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes
-		void initialOPguess_Cylindrical(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_bubble(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_simple (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
 #endif

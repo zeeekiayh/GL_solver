@@ -450,14 +450,18 @@ using namespace Eigen;
 	}
 
 	// initial guess functions
-	void Cylindrical::initialOPguess_Cylindrical(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+	void Cylindrical::initialOPguess_Cylindrical_bubble(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them!
 		double radius, r_wall = 0.5*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
 
 		// for (int n = 0; n < Nop; n++) {
 			// going through the entire grid
-			for (int u = 0; u < Nu; u++) { double r = h*u; 
-				for (int v = 0; v < Nv; v++) { double z = h*v;  
+			for (int u = 0; u < Nu; u++) {
+				double r = h*u; 
+
+				for (int v = 0; v < Nv; v++) {
+					double z = h*v;  
+
 					int id = ID(u,v,2);
 					radius = sqrt(r*r + z*z);
 					OPvector( id ) = tanh( (radius-r_wall)/2. );
@@ -487,7 +491,7 @@ using namespace Eigen;
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
-			 if ( n != 2 ) {
+			if ( n != 2 ) {
 				int id = ID(u,v,n);
 				int idU = ID(u,(v<Nv-1)?v+1:v,n);
 				int idL = ID((u>0)?u-1:u,v,n);
@@ -498,5 +502,13 @@ using namespace Eigen;
 		}
 
 		return;
+	}
+
+	void Cylindrical::initialOPguess_Cylindrical_simple(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		// TODO
+	}
+
+	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		// TODO
 	}
 // ===========================================================*/

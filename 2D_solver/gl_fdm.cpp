@@ -47,11 +47,13 @@ int main(int argc, char** argv)
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
 	if (argc == 3 && *(argv[2]) == 'c') { // if it is for a cylindrical system
+		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 		if (Nop == 5) {
-			pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
-			pSC->initialOPguess_Cylindrical(eta_BC, OPvector, no_update);
+			pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update); // use "<something>5c.txt"
+			// pSC->initialOPguess_Cylindrical_bubble(eta_BC, OPvector, no_update); // use "conditions5c_bubble.txt"
 		} else if (Nop == 3) {
 			// code this next!
+			pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update); // use "conditions3c.txt"
 		}
 	}
 	// other wise we'll use the cartesian system
