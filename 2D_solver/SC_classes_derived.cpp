@@ -366,21 +366,24 @@ using namespace Eigen;
 			// build eq.'s (55-56)
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
-					+ Place_subMatrix(1,n,Nop,Drp*r_inv)
-					+ Place_subMatrix(4,n,Nop,Drzp);
+					+ Place_subMatrix(1,n,Nop,Drp*r_inv);
+				if (Nop > 3)
+					DK23 += Place_subMatrix(4,n,Nop,Drzp);
 				
 				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
 			} else if (n == 1) {
 				DK23 += Place_subMatrix(0,n,Nop,-Drm)
-					+ Place_subMatrix(1,n,Nop,-r2_inv)
-					+ Place_subMatrix(4,n,Nop,-Dz_over_r);
+					+ Place_subMatrix(1,n,Nop,-r2_inv);
+				if (Nop > 3)
+					DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
 				
 				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
 			} else if (n == 2) {
-				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize)
-					+ Place_subMatrix(3,n,Nop,Drz_gsize);
+				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
+				if (Nop > 3)
+					DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
 			} else if (n == 3) {
@@ -398,9 +401,10 @@ using namespace Eigen;
 
 		}
 
-		// make M from these 2 matrices
-		M = 1.*DK1 + 2.*DK23; // TODO: FIX K-VALUES HERE!
 		// Should they be passed in as arguments?
+		double K1_const = 1.0, K23_const = 2.0; // WHAT TO DO WITH K-VALUES?!
+		// make M from the 2 matrices
+		M = K1_const*DK1 + K23_const*DK23;
 
 		return;
 	}
@@ -504,8 +508,35 @@ using namespace Eigen;
 		return;
 	}
 
-	void Cylindrical::initialOPguess_Cylindrical_simple(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-		// TODO
+	void Cylindrical::initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+			int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+			OPvector(id) = ( eta_BC[n].valueB * wB
+							+ eta_BC[n].valueT * wT
+							+ eta_BC[n].valueL * wL
+							+ eta_BC[n].valueR * wR )
+						/(Nu+Nv);
+		}
+	}
+
+	void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+			if (n < 3) {
+				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+				OPvector(id) = ( eta_BC[n].valueB * wB
+								+ eta_BC[n].valueT * wT
+								+ eta_BC[n].valueL * wL
+								+ eta_BC[n].valueR * wR )
+							/(Nu+Nv);
+			} else
+				OPvector(id) = 0.0;
+		}
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
