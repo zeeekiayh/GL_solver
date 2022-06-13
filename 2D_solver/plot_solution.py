@@ -3,81 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-# # returns "Nop, Nu, Nv, h, np_data_array, labels" from the solution file
-# def readSolutionFile(file_name):
-#     np_data_array = [] # to be converted to np.array() later
-#     labels = [] # to store the labels of all the columns
-
-#     u_0_count = 0
-#     v_0_count = 0
-
-#     line_count = 0
-#     for line in open(file_name,'r'):
-#         # the first line should give us all the labels of the columns
-#         if line_count == 0:
-#             labels = line.split()
-#         else:
-#             # start reading in the values into np_data_array
-#             np_data_array.append(list(map(float,line.split())))
-
-#             if (abs(np_data_array[-1][0]) < 1e-8):
-#                 u_0_count += 1
-#             if (abs(np_data_array[-1][1]) < 1e-8):
-#                 v_0_count += 1
-#         line_count += 1
-
-#     # convert the data array
-#     np_data_array = np.array(np_data_array)
-#     # this is now in the exact for that we had in the other python plotting file!
-
-#     # step size; we'll assume it will be the same in all directions
-#     h = np_data_array[1,0] - np_data_array[0,0]
-#     if abs(h) < 1e-8: h = np_data_array[1,1] - np_data_array[0,1] # in case position values are in a different order
-
-#     Nop = (len(labels)-2)//2 # take off the 2 cols for location; /2 b/c of complex cols
-
-#     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
-#     Nv = int(u_0_count)
-#     # print(f'{Nu = }; {Nv = }')
-        
-#     return Nop, Nu, Nv, h, np_data_array, labels
-
-# # returns "Ncols, Nu, Nv, h, FE_data_array, labels" from the FE file
-# def read_FE_File(file_name):
-#     FE_data_array = [] # to be converted to np.array() later
-#     labels = [] # to store the labels of all the columns
-#     u_0_count = 0
-#     v_0_count = 0
-#     line_count = 0
-#     for line in open(file_name,'r'):
-#         # the first line should give us all the labels of the columns
-#         if line_count == 0:
-#             labels = line.split()
-#         else:
-#             # start reading in the values into FE_data_array
-#             FE_data_array.append(list(map(float,line.split())))
-#             if (abs(FE_data_array[-1][0]) < 1e-8):
-#                 u_0_count += 1
-#             if (abs(FE_data_array[-1][1]) < 1e-8):
-#                 v_0_count += 1
-#         line_count += 1
-
-#     # convert the data array
-#     FE_data_array = np.array(FE_data_array)
-#     # this is now in the exact for that we had in the other python plotting file!
-
-#     # step size; we'll assume it will be the same in all directions
-#     h = FE_data_array[1,0] - FE_data_array[0,0]
-#     if abs(h) < 1e-8: h = FE_data_array[1,1] - FE_data_array[0,1] # in case position values are in a different order
-
-#     # the number of columns in the FE file
-#     Ncols = int(len(labels)-2) # take off the 2 cols for location
-
-#     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
-#     Nv = int(u_0_count)
-        
-#     return Ncols, Nu, Nv, h, FE_data_array, labels
-
 # to return "Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels"
 def read_file(file_name):
     # print("read_file")
@@ -132,14 +57,9 @@ def read_file(file_name):
     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
     Nv = int(u_0_count)
 
-    # print(labels[2:-N_FE_cols])
-    # print(labels[-N_FE_cols:])
-    # print(f'{Nu = }; {Nv = }; {Nop = }; {N_FE_cols = }')
-
     # convert the data array and reshape all components
     OP_data_array = np.array(OP_data_array)
     OP_data_array = np.array([ np.reshape(OP_data_array[:,2*i], (Nv,Nu)).transpose() for i in range(Nop) ])
-    # OP_data_array = np.reshape( np.array(OP_data_array), (Nop*2,Nv,Nu) )
 
     # step size; we'll assume it will be the same in all directions
     h = X[1]-X[0]
@@ -153,13 +73,11 @@ def read_file(file_name):
     # convert the data array
     FE_data_array = np.array(FE_data_array)
     FE_data_array = np.array([ np.reshape(FE_data_array[:,i], (Nv,Nu)).transpose() for i in range(N_FE_cols) ])
-    # FE_data_array = np.reshape( np.array(FE_data_array), (N_FE_cols,Nv,Nu) )
         
     return Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels
 
 # plot all the OP components in 2D and slices
 def plot_OP_comps_and_slices(file_name):
-    # print("plot_OP_comps_and_slices")
     Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels = read_file(file_name)
     custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
 
@@ -276,67 +194,6 @@ def main(argv):
         exit()
 
     plot_OP_comps_and_slices(argv[0])
-
-    # # read values from conditions file
-    # Nop, Nu, Nv, h, OP_array, labels = readSolutionFile(argv[0])
-
-    # # sort the OP_array for ease of plotting
-    # A = np.array([ np.reshape(OP_array[:,2*i+2], (Nv,Nu)).transpose() for i in range(Nop) ])
-    # X, Z = np.reshape(OP_array[:,0], (Nv,Nu)), np.reshape(OP_array[:,1], (Nv,Nu))
-    # X = X.transpose() # make sure they are good for display!
-    # Z = Z.transpose()
-
-    # # the domain extents for the imshow calls
-    # ext = [0*h, Nv*h, 0*h, Nu*h]
-
-    ## I don't have this working with the 'read_file()' function yet...
-    # # debugging: visualize the initial guess
-    # if debug:
-    #     # Initial guess -- for debugging
-    #     plt.title("initial guess")
-    #     # get the guess from the saved file from the C++ code in gl_fdm.cpp
-    #     Nop, Nu, Nv, h, op, labels = readSolutionFile(f'initGuess{Nop}.txt')
-    #     initOP = np.array([ np.reshape(op[:,2*i+2], (Nv,Nu)) for i in range(Nop) ])
-
-    #     if Nu > 1:
-    #         plot_OP_comps_and_slices( Nop, initOP, X, Z, ext, list(map(lambda l: l+"_guess", labels[2::2])), None )
-    #     elif Nu == 1: # basically for the 1D case
-    #         # plot only the slices, since the 2D view is not useful here
-    #         plt.title("Slices top to bottom")
-    #         for i in range(Nop):
-    #             slc = initOP[i][0]
-    #             plt.plot( np.linspace(0,h*Nv,len(slc)), slc, label=f"initOP[{i}]" )
-    #         plt.legend()
-    #         plt.show()
-
-    # if Nu > 1:
-        # plot_OP_comps_and_slices(Nop, A, X, Z, ext, labels[2::2], f'totalFE{Nop}.txt' )
-
-        # if debug:
-        #     # Plot the bulk free energy
-        #     N_FE_cols, Nu, Nv, h, FE_bulk, labels = read_FE_File(f'bulkRHS_FE{Nop}.txt')
-
-        #     plt.title(f'Bulk Free Energy for OP-{Nop}')
-        #     im = plt.imshow( np.reshape(FE_bulk[:,2], (Nv,Nu)), extent=ext, cmap='gist_heat' )
-        #     plt.colorbar(im)
-        #     plt.show()
-            
-        #     # Plot the grad free energy
-        #     N_FE_cols, Nu, Nv, h, FE_grad, labels = read_FE_File(f'FEgrad{Nop}.txt')
-
-        #     plt.title(f'Grad Free Energy for OP-{Nop}')
-        #     im = plt.imshow( np.reshape(FE_grad[:,2], (Nv,Nu)), cmap='gist_heat' )
-        #     plt.colorbar(im)
-        #     plt.show()
-
-    # elif Nu == 1: # basically for the 1D case
-    #     # plot only the slices, since the 2D view is not useful here
-    #     plt.title("Slices top to bottom")
-    #     for i in range(Nop):
-    #         slc = A[i][0]
-    #         plt.plot( np.linspace(0,h*Nv,len(slc)), slc, label=f"A[{i}]" )
-    #     plt.legend()
-    #     plt.show()
 
 # how the python interpreter will know
 #   to run our function called 'main()'
