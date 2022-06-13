@@ -330,14 +330,34 @@ using namespace Eigen;
 		// the matrices -- 2 parts of the solver matrix
 		SpMat_cd DK23(vect_size,vect_size), DK1(vect_size,vect_size);
 
+		// a temporary rhsBC to add to the actual
+		T_vector rhsBC_r2_gsize = T_vector::Zero(vect_size);
+		T_vector rhsBC_z2_gsize = T_vector::Zero(vect_size);
+		T_vector rhsBC_rz_gsize = T_vector::Zero(vect_size);
+		T_vector rhsBC_r_gsize = T_vector::Zero(vect_size);
+		T_vector rhsBC_z_gsize = T_vector::Zero(vect_size);
+
+		// Should they be passed in as arguments?
+		double K1_const = 1.0, K23_const = 2.0; // WHAT TO DO WITH K-VALUES?!
+
 		for (int n = 0; n < Nop; n++) {
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these take a LONG time to build!
-			Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC);
-			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC);
-			if (n == 0 || n == 2 || n == 3 || n == 4) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC);
-			if (n == 0 || n == 1) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
-			if (n == 0) Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC);
+			Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
+			// rhsBC += K_factor * rhsBC_r2_gsize;
+
+			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
+			// rhsBC += K_factor * rhsBC_z2_gsize;
+
+			if (n == 0 || n == 2 || n == 3 || n == 4) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
+			// rhsBC += K_factor * rhsBC_rz_gsize;
+
+			if (n == 0 || n == 1) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
+			// rhsBC += K_factor * rhsBC_r_gsize;
+
+			if (n == 0) Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
+			// rhsBC += K_factor * rhsBC_z_gsize;
+
 			Dr_over_r = Dr_gsize*r_inv;
 			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = Dz_gsize*r_inv;
 
@@ -355,42 +375,64 @@ using namespace Eigen;
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
 					+ Place_subMatrix(1,n,Nop,Drp*r_inv);
-				if (Nop > 3)
+				rhsBC += K23_const*rhsBC_r2_gsize;
+				rhsBC += K23_const*rhsBC_r_gsize;
+
+				if (Nop > 3) {
 					DK23 += Place_subMatrix(4,n,Nop,Drzp);
+					rhsBC += K23_const*rhsBC_rz_gsize;
+				}
 				
 				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
+				rhsBC += K1_const*rhsBC_z2_gsize;
+				rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 1) {
 				DK23 += Place_subMatrix(0,n,Nop,-Drm)
 					+ Place_subMatrix(1,n,Nop,-r2_inv);
+				rhsBC += K23_const*rhsBC_r_gsize;
+
 				if (Nop > 3)
 					DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
 				
 				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
+				rhsBC += K1_const*rhsBC_z2_gsize;
+				rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 2) {
 				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
-				if (Nop > 3)
+				rhsBC += K23_const*rhsBC_z2_gsize;
+				if (Nop > 3) {
 					DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
+					rhsBC += K23_const*rhsBC_rz_gsize;
+				}
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
+				rhsBC += K1_const*rhsBC_z2_gsize;
+				rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 3) {
 				DK23 += Place_subMatrix(2,n,Nop,Drzp)
 					+ Place_subMatrix(3,n,Nop,Dr2t);
+				rhsBC += K23_const*rhsBC_rz_gsize;
+				rhsBC += K23_const*rhsBC_r2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
+				rhsBC += K1_const*rhsBC_z2_gsize;
+				rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 4) {
 				DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
 					+ Place_subMatrix(1,n,Nop,Dz_over_r)
 					+ Place_subMatrix(4,n,Nop,Dz2_gsize);
+				rhsBC += K23_const*rhsBC_rz_gsize;
+				rhsBC += K23_const*rhsBC_z2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
+				rhsBC += K1_const*rhsBC_z2_gsize;
+				rhsBC += K1_const*rhsBC_r2_gsize;
 			}
 
 		}
 
-		// Should they be passed in as arguments?
-		double K1_const = 1.0, K23_const = 2.0; // WHAT TO DO WITH K-VALUES?!
 		// make M from the 2 matrices
 		M = K1_const*DK1 + K23_const*DK23;
 
