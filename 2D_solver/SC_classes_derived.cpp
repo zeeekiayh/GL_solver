@@ -267,32 +267,24 @@ using namespace Eigen;
 		Ident.resize(vect_size,vect_size); // set the identity matrix to the right size
 		Ident.setIdentity();
 		
-		// cout << "\there 0" << endl;
-
 		Dr.resize(vect_size,vect_size);
 		Dz.resize(vect_size,vect_size);
 		Dphi.resize(vect_size,vect_size);
 		r_inv.resize(grid_size,grid_size);
-
-		// cout << "\there 1" << endl;
 
 		T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
 		T_vector rhsBC; // ? should it actually be passed in as an argument?
 		// neither of these are actually used below...we just have them as arguments in
 		// 	the D*_BD() functions below, but those functions don't use them either!
 		
-		// cout << "\there 2" << endl;
-
 		// SpMat_cd R(grid_size,grid_size); // there is no need for the vect_size x vect_size r_inv?
 		for (int u = 0; u < Nu; u++) {
 			for (int v = 0; v < Nv; v++) {
 				int id = ID(u,v,0);
-				r_inv.coeffRef(id,id) = (u == 0) ? 1e10 : 1./(u*h);
+				r_inv.coeffRef(id,id) = (u == 0) ? 1e05 : 1./(u*h);
 			}
 		}
 		
-		// cout << "\there 3" << endl;
-
 		for (int n = 0; n < Nop; n++) {
 			// cout << "\t\tn=" << n << endl;
 			Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
@@ -300,8 +292,6 @@ using namespace Eigen;
 			// r_inv += Place_subMatrix(n,n,Nop,R);
 		}
 		
-		// cout << "\there 4" << endl;
-
 		MatrixXd temp(9,9);
 		temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
 				0, 0, 0, 0, 0, 1, 1, 0, 0,
@@ -316,8 +306,6 @@ using namespace Eigen;
 		small_I.setIdentity();
 		Dphi = kroneckerProduct(temp,small_I);
 		
-		// cout << "\there 5" << endl;
-
 		return;
 	}
 
@@ -405,6 +393,9 @@ using namespace Eigen;
 		double K1_const = 1.0, K23_const = 2.0; // WHAT TO DO WITH K-VALUES?!
 		// make M from the 2 matrices
 		M = K1_const*DK1 + K23_const*DK23;
+
+		// add the rhsBC vectors with these K-factors too!
+		// 
 
 		return;
 	}
@@ -508,17 +499,25 @@ using namespace Eigen;
 		return;
 	}
 
+	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
-			int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-			OPvector(id) = ( eta_BC[n].valueB * wB
-							+ eta_BC[n].valueT * wT
-							+ eta_BC[n].valueL * wL
-							+ eta_BC[n].valueR * wR )
-						/(Nu+Nv);
+			if (n < 2) {
+				OPvector(id) = 1.0;
+			} else { // n == 2
+				double z = h*v; // so that z = 0 is the surface
+				OPvector(id) = tanh(z/2.0);
+			}
+			// build a smooth guess based on BC's
+			// int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+			// OPvector(id) = ( eta_BC[n].valueB * wB
+			// 				+ eta_BC[n].valueT * wT
+			// 				+ eta_BC[n].valueL * wL
+			// 				+ eta_BC[n].valueR * wR )
+			// 			/(Nu+Nv);
 		}
 	}
 
@@ -528,6 +527,7 @@ using namespace Eigen;
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 			if (n < 3) {
+				// build a smooth guess based on BC's
 				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
 								+ eta_BC[n].valueT * wT
