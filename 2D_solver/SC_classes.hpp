@@ -62,7 +62,8 @@ class SC_class{
 		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
 		//		classes, and thus will all need to be virtual as well.
 		virtual void initGuessWithCircularDomain       (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical_simple (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 		virtual void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 		virtual void initialOPguess_Cylindrical_bubble (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
 
@@ -165,7 +166,8 @@ class Cylindrical : public SC_class {
 
 		// initial guess function prototypes
 		void initialOPguess_Cylindrical_bubble(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguess_Cylindrical_simple (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
 };
 
