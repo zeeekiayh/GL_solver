@@ -15,7 +15,7 @@ using namespace Eigen;
 
 int main(int argc, char** argv)
 {
-	int Nop;// = *(argv[1]) - '0'; // read in the int from the terminal call
+	int Nop;
 	if (argc < 2 || argc > 3) {
 		cout << "ERROR: need an argument for 'file_name'; do so like: '$ ./gl_fdm <file_name> [c]'." << endl;
 		return 1;
@@ -49,23 +49,26 @@ int main(int argc, char** argv)
 	if (argc == 3 && *(argv[2]) == 'c') { // if it is for a cylindrical system
 		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 		if (Nop == 5) {
-			pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update); // use "<something>5c.txt"
-			// pSC->initialOPguess_Cylindrical_bubble(eta_BC, OPvector, no_update); // use "conditions5c_bubble.txt"
+			if (file_name == string("conditions5c.txt"))         pSC->initialOPguess_Cylindrical_simple5(eta_BC, OPvector, no_update);
+			if (file_name == string("conditions5c_AzzFlip.txt")) pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update); // TODO: make file, "conditions5c_AzzFlip.txt"
+			if (file_name == string("conditions5c_bubble.txt"))  pSC->initialOPguess_Cylindrical_bubble (eta_BC, OPvector, no_update);
 		} else if (Nop == 3) {
 			// code this next!
-			pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update); // use "conditions3c.txt"
+			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple3(eta_BC, OPvector, no_update);
+			else {cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl; return 1;}
 		}
 	}
 	// other wise we'll use the cartesian system
 	else if (Nop == 3) {
 		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-		pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+		if (file_name == string("conditions3.txt")) pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+		else {cout << "WARNING: you probably forgot the optional argument '[c]'." << endl; return 1;}
 	} else if (Nop == 5) {
 		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		// ---- set the OP vector to a good guess based on BC's ----
-		// pSC->initialOPguess(eta_BC, OPvector, no_update);
-		// pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
-		pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version // use the conditions5_wall.txt file
+		if (file_name == string("conditions5.txt"))         pSC->initialOPguess             (eta_BC, OPvector, no_update);
+		if (file_name == string("conditions5_AyyFlip.txt")) pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
+		if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
 	} else if (Nop == 1) {
 		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	} else {
@@ -96,6 +99,31 @@ int main(int argc, char** argv)
 	// 	else
 	// 		cout << "VectSize = " << VectSize << endl;
 	// }
+	// SparseMatrix<double> M(rows,cols);
+	
+	// cout << "Matrix:" << endl;
+	// for (int k=0; k<M.outerSize(); ++k)
+	// for (SpMat_cd::InnerIterator it(M,k); it; ++it) {
+	// 	if (real(it.value()) > 5e3) {
+	// 		cout << endl << "\tvalue: " << it.value() << endl;
+	// 		cout << "\tposition: (" << it.row() << "," << it.col() << ")" << endl;
+	// 	}
+	// }
+	// cout << "==============================" << endl << endl;
+
+	// cout << "OPvector:" << endl;
+	// cout << OPvector << endl;
+	// // for (int i=0; i<OPvector.size(); i++)
+	// // 	if (real(OPvector(i)) > 5e3)
+	// // 		cout << "\tOPvector(" << i << ") = " << OPvector(i) << endl << endl;
+	// cout << "==============================" << endl << endl;
+
+	// cout << "rhsBC:" << endl;
+	// cout << rhsBC << endl;
+	// // for (int i=0; i<rhsBC.size(); i++)
+	// // 	if (real(rhsBC(i)) > 5e3)
+	// // 		cout << "\tOPvector(" << i << ") = " << rhsBC(i) << endl << endl;
+	// cout << "==============================" << endl << endl;
 
 	// ===============================================================================================================
 
