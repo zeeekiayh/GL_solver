@@ -103,7 +103,7 @@ def plot_OP_comps_and_slices(file_name):
         axs[1].axes.xaxis.set_ticks([])
         axs[0].axes.yaxis.set_ticks([])
         axs[1].axes.yaxis.set_ticks([])
-        axs[2].set_xlabel(rf'$z/\xi_0$ (right)')
+        axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
     elif Nop == 5:
         fig, axes = plt.subplots(3,3)
         # then unpack the axes tuple
