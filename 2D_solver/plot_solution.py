@@ -127,7 +127,7 @@ def plot_OP_comps_and_slices(file_name):
     # plot the 2D solution
     for i in range(Nop):
         axs[i].set_title(f'{custom_labels[i]}')
-        im = axs[i].imshow(OP_data_array[i][::-1,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='bwr')
+        im = axs[i].imshow(OP_data_array[i][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='bwr')
         plt.colorbar(im,ax=axs[i])
     
     if empty_ax != None:
