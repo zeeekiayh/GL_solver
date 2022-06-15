@@ -78,12 +78,11 @@ def read_file(file_name):
 # plot all the OP components in 2D and slices
 def plot_OP_comps_and_slices(file_name):
     Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels = read_file(file_name)
-    Q_cylindrical = (input("Is this for a cylindrical system? (y/n): ") == 'y')
-    if Q_cylindrical: custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
+    if input("Is this for a cylindrical system? (y/n): ") == 'y': custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
     else: custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
 
     # the domain extents for the imshow calls
-    ext = [0*h, Nv*h, 0*h, Nu*h]
+    ext = [0*h, Nu*h, 0*h, Nv*h]
 
     # initialize all axes
     axs = []
@@ -100,11 +99,16 @@ def plot_OP_comps_and_slices(file_name):
          (FE_ax,      axs[1]),
          (FE_prof_ax, axs[2])) = axes
 
-        axs[0].axes.xaxis.set_ticks([])
-        axs[1].axes.xaxis.set_ticks([])
-        axs[0].axes.yaxis.set_ticks([])
-        axs[1].axes.yaxis.set_ticks([])
-        axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+        if Nu > 1:
+            axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+            axs[0].axes.xaxis.set_ticks([])
+            axs[1].axes.xaxis.set_ticks([])
+            axs[0].axes.yaxis.set_ticks([])
+            axs[1].axes.yaxis.set_ticks([])
+        else:
+            axs[0].set_xlabel(rf'$z/\xi_0$')
+            axs[1].set_xlabel(rf'$z/\xi_0$')
+            axs[2].set_xlabel(rf'$z/\xi_0$')
     elif Nop == 5:
         fig, axes = plt.subplots(3,3)
         # then unpack the axes tuple
@@ -119,8 +123,12 @@ def plot_OP_comps_and_slices(file_name):
         axs[1].axes.yaxis.set_ticks([])
         axs[3].axes.yaxis.set_ticks([])
         axs[4].axes.yaxis.set_ticks([])
-        axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
-        axs[4].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+        if Nu > 1:
+            axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+            axs[4].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+        else:
+            axs[2].set_xlabel(rf'$z/\xi_0$')
+            axs[4].set_xlabel(rf'$z/\xi_0$')
     else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
 
     fig.suptitle(f'OP-{Nop}')
@@ -128,31 +136,47 @@ def plot_OP_comps_and_slices(file_name):
     # plot the 2D solution
     for i in range(Nop):
         axs[i].set_title(f'{custom_labels[i]}')
-        im = axs[i].imshow(OP_data_array[i][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='bwr')
-        plt.colorbar(im,ax=axs[i])
+        if Nu > 1:
+            im = axs[i].imshow(OP_data_array[i][:,::-1].transpose(), extent=ext, cmap='bwr')
+            plt.colorbar(im,ax=axs[i])
+        else:
+            axs[i].plot(np.linspace(ext[2],ext[3],Nv), OP_data_array[i][0])
+            axs[i].set_ylim( [ min([0, OP_data_array.min()])-0.1, 0.1+max([0, OP_data_array.max()]) ] )
     
     if empty_ax != None:
         empty_ax.axis('off')
 
     # plot the FE profile
-    FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
     FE_prof_ax.set_ylabel('FE')
     FE_prof_ax.set_title('Total FE profile')
-    FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nu), list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,:])))
+    if Nu > 1:
+        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1]) # list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1])
+        FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
+    else:
+        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])
+        FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
 
     # plot the 2D heatmap of the FE
     FE_ax.set_title('Total FE')
     FE_ax.axes.xaxis.set_ticks([])
-    FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
-    im = FE_ax.imshow(FE_data_array[0][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
-    fig.colorbar(im,ax=FE_ax)
+    if Nu > 1:
+        FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
+        im = FE_ax.imshow(FE_data_array[0][:,::-1].transpose(), extent=ext, cmap='gist_heat')
+        fig.colorbar(im,ax=FE_ax)
+    else:
+        FE_ax.set_ylabel('amplitude')
+        FE_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])
 
     # plot the defect energy
     grad_FE_ax.set_title('Grad free energy')
     grad_FE_ax.axes.xaxis.set_ticks([])
-    grad_FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
-    im = grad_FE_ax.imshow(FE_data_array[2][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
-    fig.colorbar(im,ax=grad_FE_ax)
+    if Nu > 1:
+        grad_FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
+        im = grad_FE_ax.imshow(FE_data_array[2][:,::-1].transpose(), extent=ext, cmap='gist_heat')
+        fig.colorbar(im,ax=grad_FE_ax)
+    else:
+        grad_FE_ax.set_ylabel('amplitude')
+        grad_FE_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[2][0])
 
     # display all plots plotted above
     plt.show()
