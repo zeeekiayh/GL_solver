@@ -65,12 +65,12 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		for (auto it = no_update.begin(); it != no_update.end(); it++) df(*it) = 0.0;
 
 		// for the method of "acceleration"
-		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
+		// Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
 		//cout << "next guess for f = " << f.transpose() << endl; 
 
 		// for normal method of "relaxation"
-		// f += 0.05*df;
-		// err = df.norm()/f.norm();
+		f += cond.rel_p*df;
+		err = df.norm()/f.norm();
 
 		cts++; // increment counter
 		// output approx. percent completed
