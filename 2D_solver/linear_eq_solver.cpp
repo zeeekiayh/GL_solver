@@ -29,12 +29,10 @@ T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	return rhs_local;
 }
 
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC)
-{
+void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC) {
 	int grid_size=cond.SIZEu * cond.SIZEv; 
 	int vect_size=cond.Nop * grid_size; 
 	double h2 = cond.STEP*cond.STEP;
-	// FILE *out; out=fopen("iterations.dat","w");
 
 	if (no_update.size()) cout << "using no_update" << endl;
 
@@ -47,9 +45,6 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	if (solver.info() == Eigen::Success) cout << "\tSolver: successfully built" << endl;
 	else if (solver.info() == Eigen::NumericalIssue) { // for debugging non-invertable matrices
 		cout << "Solver: numerical issues" << endl;
-		// for (int k=0; k < SolverMatrix.outerSize(); ++k)
-		// 	for (SparseMatrix<Scalar_type>::InnerIterator it(SolverMatrix,k); it; ++it)
-		// 		cout << "(" << it.row() << "," << it.col() << ")\t";
 		return;
 	}
 
@@ -63,28 +58,23 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
 		   
  	// loop until f converges or until it's gone too long
-	do { 
-		/*
-		for(int i=0; i<cond.SIZEv; i++) 
-			fprintf(out, "%f  %f  %f  %f\n", i*cond.STEP, real(f[i+cond.SIZEv*0]), real(f[i+cond.SIZEv*1]), real(f[i+cond.SIZEv*2]));
-		fprintf(out, "\n"); 
-		*/
-
+	do {
 		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
+		for (auto it = no_update.begin(); it != no_update.end(); it++) df(*it) = 0.0;
 
-		// if (method == string("acceleration"))
+		// for the method of "acceleration"
 		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
 		//cout << "next guess for f = " << f.transpose() << endl; 
-		// else if (method == string("relaxation"))
+
+		// for normal method of "relaxation"
 		// f += 0.05*df;
 		// err = df.norm()/f.norm();
 
-		cts++;         // increment counter
+		cts++; // increment counter
 		// output approx. percent completed
-		//cout << endl;
-		//cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
+		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 	} while(err > cond.ACCUR && cts < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;

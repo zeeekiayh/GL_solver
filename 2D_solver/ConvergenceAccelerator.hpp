@@ -135,7 +135,7 @@ converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vect
 	std::cout   << "\tStarting Converg.Acceler with MaxStored = " << MaxStored 
 			<< "\n\t\t\t initial relax attempts = " << waitXiter 
 			<< "\n\t\t\t relax.param = " << relax_param 
-			<< std::endl; 
+			<< std::endl << std::endl;
 	// we also create a seed here for the rand() function
 	srand (time(NULL)); 
 	if(details) record=fopen("accelereator_errors_record.dat", "w");
