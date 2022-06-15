@@ -289,7 +289,8 @@ using namespace Eigen;
 		
 		for (int n = 0; n < Nop; n++) {
 			// cout << "\t\tn=" << n << endl;
-			Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
+			if (Nu > 1)
+				Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
 			Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
 			// r_inv += Place_subMatrix(n,n,Nop,R);
 		}
@@ -312,6 +313,7 @@ using namespace Eigen;
 	}
 
 	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]) {
+		// cout << "BuildSolverMatrixCyl" << endl;
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -329,6 +331,10 @@ using namespace Eigen;
 				Dz_gsize(grid_size,grid_size);
 		SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
 
+		//test
+		// Dr_gsize.setIdentity();
+		Dr_gsize *= 0.0;
+
 		// the matrices -- 2 parts of the solver matrix
 		SpMat_cd DK23(vect_size,vect_size), DK1(vect_size,vect_size);
 
@@ -345,12 +351,14 @@ using namespace Eigen;
 		for (int n = 0; n < Nop; n++) {
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these take a LONG time to build!
-			Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
+			if (Nu > 1) Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
+			// Dr2_gsize.setIdentity();
+			Dr2_gsize *= 0.0;
 			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
-			if (n == 0 || n == 2 || n == 3 || n == 4) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
-			if (n == 0 || n == 1) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
-			if (n == 0) Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
-			Dr_over_r = Dr_gsize*r_inv;
+			if (Nu > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
+			if (Nu > 1 && (n == 0 || n == 1)) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
+			if (n == 0) Dz_gsize  = Dv_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
+			if (Nu > 1) Dr_over_r = Dr_gsize*r_inv;
 			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = Dz_gsize*r_inv;
 
 			// build each complicated D matrix
@@ -554,13 +562,13 @@ using namespace Eigen;
 		pSC->initialOPguess(BC3,OPvector3,no_update3);
 		pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
 		Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
-		OPvector = OPvector3;
+		// OPvector = OPvector3;
 
 		// Using BC's to make a smooth guess
-		// for (int n = 0; n < Nop; n++)
-		// for (int u = 0; u < Nu; u++)
-		// for (int v = 0; v < Nv; v++) {
-		// 	int id = ID(u,v,n);
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
 		// 	if (n < 2) {
 		// 		// OPvector(id) = 1.0;
 		// 		// build a smooth guess based on BC's
@@ -575,15 +583,25 @@ using namespace Eigen;
 		// 		OPvector(id) = tanh(z/5.0);
 		// 	}
 
-		// 	if (u == 0 && eta_BC[n].typeL == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (v == 0 && eta_BC[n].typeB == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
-		// 		no_update.push_back(id);	
-		// }
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
+				OPvector(id) = eta_BC[n].valueL;
+				no_update.push_back(id);
+			}
+			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
+				OPvector(id) = eta_BC[n].valueR;
+				no_update.push_back(id);
+			}
+			else if (v == 0 && eta_BC[n].typeB == string("D")) {
+				OPvector(id) = eta_BC[n].valueB;
+				no_update.push_back(id);
+			}
+			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
+				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
+			} else {
+				OPvector(id) = OPvector3(id);
+			}
+		}
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
@@ -641,39 +659,6 @@ using namespace Eigen;
 		// 		no_update.push_back(id);
 		// }
 	}
-
-	// void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-		// for (int n = 0; n < Nop; n++)
-		// for (int u = 0; u < Nu; u++)
-		// for (int v = 0; v < Nv; v++) {
-		// 	int id = ID(u,v,n);
-		// 	if (n < 2) {
-		// 		// build a smooth guess based on BC's
-		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-		// 		OPvector(id) = ( eta_BC[n].valueB * wB
-		// 						+ eta_BC[n].valueT * wT
-		// 						+ eta_BC[n].valueL * wL
-		// 						+ eta_BC[n].valueR * wR )
-		// 					/(Nu+Nv);
-		// 	} else if (n == 2) {
-		// 		double z = h*v; // so that z = 0 is the surface
-		// 		OPvector(id) = tanh(z/5.0);
-		// 	} else {
-		// 		OPvector(id) = 1e-5;
-		// 		no_update.push_back(id);
-		// 	}
-		// 	if (n < 3) {
-		// 		if (u == 0 && eta_BC[n].typeL == string("D"))
-		// 			no_update.push_back(id);
-		// 		else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
-		// 			no_update.push_back(id);
-		// 		else if (v == 0 && eta_BC[n].typeB == string("D"))
-		// 			no_update.push_back(id);
-		// 		else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
-		// 			no_update.push_back(id);
-		// 	}
-		// }
-	// }
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		// TODO
