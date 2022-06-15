@@ -79,7 +79,9 @@ def read_file(file_name):
 # plot all the OP components in 2D and slices
 def plot_OP_comps_and_slices(file_name):
     Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels = read_file(file_name)
-    custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
+    Q_cylindrical = (input("Is this for a cylindrical system? (y/n): ") == 'y')
+    if Q_cylindrical: custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
+    else: custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
 
     # the domain extents for the imshow calls
     ext = [0*h, Nv*h, 0*h, Nu*h]
@@ -143,14 +145,14 @@ def plot_OP_comps_and_slices(file_name):
     FE_ax.set_title('Total FE')
     FE_ax.axes.xaxis.set_ticks([])
     FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
-    im = FE_ax.imshow(FE_data_array[0][::-1,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
+    im = FE_ax.imshow(FE_data_array[0][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
     fig.colorbar(im,ax=FE_ax)
 
     # plot the defect energy
     grad_FE_ax.set_title('Grad free energy')
     grad_FE_ax.axes.xaxis.set_ticks([])
     grad_FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
-    im = grad_FE_ax.imshow(FE_data_array[2][::-1,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
+    im = grad_FE_ax.imshow(FE_data_array[2][:,::-1].transpose(), extent=[0,ext[3],0,ext[1]], cmap='gist_heat')
     fig.colorbar(im,ax=grad_FE_ax)
 
     # display all plots plotted above
