@@ -16,6 +16,8 @@ using namespace Eigen;
 	void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, Eigen::Matrix<T_scalar,3,3> & dFdA, double & FE);
 
 	SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm);
+
+	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
 
@@ -281,7 +283,7 @@ using namespace Eigen;
 		for (int u = 0; u < Nu; u++) {
 			for (int v = 0; v < Nv; v++) {
 				int id = ID(u,v,0);
-				r_inv.coeffRef(id,id) = (u == 0) ? 1e05 : 1./(u*h);
+				r_inv.coeffRef(id,id) = 1./((u+0.5)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
 			}
 		}
 		
@@ -344,20 +346,10 @@ using namespace Eigen;
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these take a LONG time to build!
 			Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
-			// rhsBC += K_factor * rhsBC_r2_gsize;
-
 			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
-			// rhsBC += K_factor * rhsBC_z2_gsize;
-
 			if (n == 0 || n == 2 || n == 3 || n == 4) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
-			// rhsBC += K_factor * rhsBC_rz_gsize;
-
 			if (n == 0 || n == 1) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
-			// rhsBC += K_factor * rhsBC_r_gsize;
-
 			if (n == 0) Dz_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
-			// rhsBC += K_factor * rhsBC_z_gsize;
-
 			Dr_over_r = Dr_gsize*r_inv;
 			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = Dz_gsize*r_inv;
 
@@ -436,9 +428,6 @@ using namespace Eigen;
 		// make M from the 2 matrices
 		M = K1_const*DK1 + K23_const*DK23;
 
-		// add the rhsBC vectors with these K-factors too!
-		// 
-
 		return;
 	}
 
@@ -494,7 +483,7 @@ using namespace Eigen;
 		// for (int n = 0; n < Nop; n++) {
 			// going through the entire grid
 			for (int u = 0; u < Nu; u++) {
-				double r = h*u; 
+				double r = h*(u+0.5);  // shift u-points to half-grid points // old: double r = h*u;
 
 				for (int v = 0; v < Nv; v++) {
 					double z = h*v;  
@@ -543,43 +532,148 @@ using namespace Eigen;
 
 	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-		for (int n = 0; n < Nop; n++)
-		for (int u = 0; u < Nu; u++)
-		for (int v = 0; v < Nv; v++) {
-			int id = ID(u,v,n);
-			if (n < 2) {
-				OPvector(id) = 1.0;
-			} else { // n == 2
-				double z = h*v; // so that z = 0 is the surface
-				OPvector(id) = tanh(z/2.0);
-			}
-			// build a smooth guess based on BC's
-			// int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-			// OPvector(id) = ( eta_BC[n].valueB * wB
-			// 				+ eta_BC[n].valueT * wT
-			// 				+ eta_BC[n].valueL * wL
-			// 				+ eta_BC[n].valueR * wR )
-			// 			/(Nu+Nv);
-		}
+		// start with the simple 3-comp. system in cartesian
+		SC_class *pSC;
+		int Nop3 = 3;
+		pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
+
+		in_conditions cond3;
+		Bound_Cond *BC3;
+		read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
+		vector<int> no_update3;
+		int GridSize = Nu * Nv;
+		int VectSize = Nop3 * GridSize;
+		T_vector OPvector3(VectSize);
+		T_vector rhsBC = T_vector::Zero(VectSize);
+		SpMat_cd M(VectSize,VectSize);
+
+		cond3.SIZEu = Nu;
+		cond3.SIZEv = Nv;
+		cond3.STEP = h;
+
+		pSC->initialOPguess(BC3,OPvector3,no_update3);
+		pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
+		Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
+		OPvector = OPvector3;
+
+		// Using BC's to make a smooth guess
+		// for (int n = 0; n < Nop; n++)
+		// for (int u = 0; u < Nu; u++)
+		// for (int v = 0; v < Nv; v++) {
+		// 	int id = ID(u,v,n);
+		// 	if (n < 2) {
+		// 		// OPvector(id) = 1.0;
+		// 		// build a smooth guess based on BC's
+		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+		// 		OPvector(id) = ( eta_BC[n].valueB * wB
+		// 						+ eta_BC[n].valueT * wT
+		// 						+ eta_BC[n].valueL * wL
+		// 						+ eta_BC[n].valueR * wR )
+		// 					/(Nu+Nv);
+		// 	} else { // n == 2
+		// 		double z = h*v; // so that z = 0 is the surface
+		// 		OPvector(id) = tanh(z/5.0);
+		// 	}
+
+		// 	if (u == 0 && eta_BC[n].typeL == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (v == 0 && eta_BC[n].typeB == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
+		// 		no_update.push_back(id);	
+		// }
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
-		for (int n = 0; n < Nop; n++)
-		for (int u = 0; u < Nu; u++)
-		for (int v = 0; v < Nv; v++) {
-			int id = ID(u,v,n);
-			if (n < 3) {
-				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-				OPvector(id) = ( eta_BC[n].valueB * wB
-								+ eta_BC[n].valueT * wT
-								+ eta_BC[n].valueL * wL
-								+ eta_BC[n].valueR * wR )
-							/(Nu+Nv);
-			} else
-				OPvector(id) = 0.0;
-		}
+		// start with the simple 3-comp. system in cartesian
+		SC_class *pSC;
+		int Nop3 = 3;
+		pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
+
+		in_conditions cond3;
+		Bound_Cond *BC3;
+		read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
+		vector<int> no_update3;
+		int GridSize = Nu * Nv;
+		int VectSize = Nop3 * GridSize;
+		T_vector OPvector3(VectSize);
+		T_vector rhsBC = T_vector::Zero(VectSize);
+		SpMat_cd M(VectSize,VectSize);
+
+		cond3.SIZEu = Nu;
+		cond3.SIZEv = Nv;
+		cond3.STEP = h;
+
+		pSC->initialOPguess(BC3,OPvector3,no_update3);
+		pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
+		Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
+		
+		OPvector = T_vector::Zero(vect_size); // size for the 5 comp
+		for (int id = 0; id < VectSize; id++) OPvector(id) = OPvector3(id);
+
+		// for (int n = 0; n < Nop; n++)
+		// for (int u = 0; u < Nu; u++)
+		// for (int v = 0; v < Nv; v++) {
+		// 	int id = ID(u,v,n);
+		// 	if (n < 2) {
+		// 		// build a smooth guess based on BC's
+		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+		// 		OPvector(id) = ( eta_BC[n].valueB * wB
+		// 						+ eta_BC[n].valueT * wT
+		// 						+ eta_BC[n].valueL * wL
+		// 						+ eta_BC[n].valueR * wR )
+		// 					/(Nu+Nv);
+		// 	} else if (n == 2) {
+		// 		double z = h*v; // so that z = 0 is the surface
+		// 		OPvector(id) = tanh(z/5.0);
+		// 	} else
+		// 		OPvector(id) = 0.0;
+
+		// 	if (u == 0 && eta_BC[n].typeL == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (v == 0 && eta_BC[n].typeB == string("D"))
+		// 		no_update.push_back(id);
+		// 	else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
+		// 		no_update.push_back(id);
+		// }
 	}
+
+	// void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		// for (int n = 0; n < Nop; n++)
+		// for (int u = 0; u < Nu; u++)
+		// for (int v = 0; v < Nv; v++) {
+		// 	int id = ID(u,v,n);
+		// 	if (n < 2) {
+		// 		// build a smooth guess based on BC's
+		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+		// 		OPvector(id) = ( eta_BC[n].valueB * wB
+		// 						+ eta_BC[n].valueT * wT
+		// 						+ eta_BC[n].valueL * wL
+		// 						+ eta_BC[n].valueR * wR )
+		// 					/(Nu+Nv);
+		// 	} else if (n == 2) {
+		// 		double z = h*v; // so that z = 0 is the surface
+		// 		OPvector(id) = tanh(z/5.0);
+		// 	} else {
+		// 		OPvector(id) = 1e-5;
+		// 		no_update.push_back(id);
+		// 	}
+		// 	if (n < 3) {
+		// 		if (u == 0 && eta_BC[n].typeL == string("D"))
+		// 			no_update.push_back(id);
+		// 		else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
+		// 			no_update.push_back(id);
+		// 		else if (v == 0 && eta_BC[n].typeB == string("D"))
+		// 			no_update.push_back(id);
+		// 		else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
+		// 			no_update.push_back(id);
+		// 	}
+		// }
+	// }
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		// TODO
