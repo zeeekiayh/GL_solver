@@ -2,11 +2,11 @@
 
 BOUNDARY CONDITIONS
 top             bottom          left            right     ( D/N : slip : value )
-D  1e-10  1     N  1e+06  1     N  1e+10  1     D  1e-10  1   # Arr
-D  1e-10  1     N  1e+06  1     N  1e+10  1     D  1e-10  1   # App
-D  1e-10  1     D  1e-10  0     N  1e+10  0     D  1e-10  1   # Azz
-D  1e-10  0     N  1e+10  0.5   N  1e+10  0.5   D  1e-10  0   # Azr
-D  1e-10  0     N  1e+10  0.5   N  1e+10  0.5   D  1e-10  0   # Arz
+D  1e-10  1     N  1e+06  1.11  N  1e+10  1     N  1e+07  1   # Arr
+D  1e-10  1     N  1e+06  1.11  N  1e+10  1     N  1e+07  1   # App
+D  1e-10  1     D  1e-10  0     N  1e+10  1     N  1e+07  1   # Azz
+D  1e-10  0     N  1e+06  0     D  1e-10  0     N  1e+07  0   # Azr
+D  1e-10  0     N  1e+06  0     D  1e-10  0     N  1e+07  0   # Arz
 
 65 65 # mesh size (r, z)
 0.3     # h (step size)
@@ -15,5 +15,5 @@ D  1e-10  0     N  1e+10  0.5   N  1e+10  0.5   D  1e-10  0   # Arz
 1e-6    # accuracy
 300     # number loops
 5       # maxStore
-0.01    # relaxation parameter
-1       # wait
+0.01   # relaxation parameter
+4     # wait

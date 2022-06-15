@@ -1,13 +1,13 @@
-3       # OP size (make sure that this is consistent with the K matrix below)
+3       # OP size
 
 BOUNDARY CONDITIONS
 top            bottom         left           right     ( D/N : slip : value )
 N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Axx
 N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Ayy
-N  1e+10  1    D  1e-10  0    N  1e+07  1    N  1e+10  1  # Azz
+D  1e-10  0    D  1e-10  0    N  1e+07  1    N  1e+10  1  # Azz
 
-91 91 # mesh size (x, z)
-0.22    # h (step size)
+201 201 # mesh size (x, z)
+0.1    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
 1e-6    # accuracy
