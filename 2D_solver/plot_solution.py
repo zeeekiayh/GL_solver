@@ -1,7 +1,6 @@
 import sys # for arguments in terminal call
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 # to return "Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels"
 def read_file(file_name):
@@ -67,8 +66,8 @@ def read_file(file_name):
     if abs(h) < 1e-8: h = Z[1]-Z[0]
 
     # reshape the X and Z arrays
-    X = np.reshape(np.array(X), (Nv,Nu))#.transpose()
-    Z = np.reshape(np.array(Z), (Nv,Nu))#.transpose()
+    X = np.reshape(np.array(X), (Nv,Nu))
+    Z = np.reshape(np.array(Z), (Nv,Nu))
 
     # convert the data array
     FE_data_array = np.array(FE_data_array)
@@ -158,47 +157,11 @@ def plot_OP_comps_and_slices(file_name):
     # display all plots plotted above
     plt.show()
 
-    # # FOR SOME REASON THIS 3D PLOT IS NOT WORKING ANY MORE...
-    # # plot 3D, all components
-    # plt.title(f'OP-{Nop}')
-    # ax = plt.subplot(111, projection='3d')
-    # ax.set_xlabel(r'$x/\xi_0$')
-    # ax.set_ylabel(r'$z/\xi_0$')
-    # ax.set_zlabel(r'$|A_{\alpha i}|$')
-    # for i in range(Nop):
-    #     # ax.scatter(X,Z,OP_data_array[i],label=f'OP comp {labels[i]}')
-    #     # If the 3D plot is too crowded, use thinned out arrays!
-    #     ax.scatter(X[::2,::2],Z[::2,::2],OP_data_array[i][::2,::2],label=f'OP comp #{labels[i]}')
-    # plt.legend()
-    # plt.show()
-
-    # plt.clf()
-    # # plot slices for 1D view
-    # plt.clf()
-    # plt.title("Slices top to bottom")
-    # for i in range(Nop):
-    #     print(f'{np.shape(organized_array) = }')
-    #     slc = organized_array[i][:,len(organized_array[i][0])//2]
-    #     plt.plot( np.linspace(0, h*size, len(slc)), slc, label=f"comp {i}" )
-    # plt.legend()
-    # plt.show()
-
 # the main code to run
 def main(argv):
-    # argv should be like:
-    #   [ Nop, [debug=false] ]
-    debug=False
-    if (len(argv)==2):
-        print("Using debugging in python code...")
-        debug=True
-    elif (len(argv)!=1):
-        print("Incorrect number of arguments in python call!")
-        exit()
+    # argv should be like: [ file_name ]
+    plot_OP_comps_and_slices(argv[0]) # pass file_name to function
 
-    plot_OP_comps_and_slices(argv[0])
-
-# how the python interpreter will know
-#   to run our function called 'main()'
+# how the python interpreter will know to run our function called 'main()'
 if __name__ == "__main__":
-    # call the main function with the arguments given in the terminal call
-    main(sys.argv[1:])
+    main(sys.argv[1:]) # call the main function with the arguments given in the terminal call
