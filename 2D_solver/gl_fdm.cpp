@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 	}
 	string file_name = string(argv[1]);
 
-	// get all the information from the "conditions.txt"
+	// get all the information from the conditions<...>.txt
 	in_conditions cond;
 	Bound_Cond *eta_BC; // boundary conditions for OP components
 
@@ -98,12 +98,7 @@ int main(int argc, char** argv)
 		delete[] eta_BC;
 		return 1;
 	}
-
-	// ===============================================================================================================
-	// if (debug) { // write the initial guess to file, for debugging
-	// 	// pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
-	// 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
-	// }
+	
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
@@ -120,7 +115,7 @@ int main(int argc, char** argv)
 	cout << "solved!" << endl;
 
 	cout << "calculating Free energy ...";
-	double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg); 
+	double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg);
 	cout << "done" << endl;
 	cout << "the total energy loss in DW is " << totalFE << "\n";
 

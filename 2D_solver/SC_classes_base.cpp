@@ -114,19 +114,19 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       //   and adjust the RHS vector depending on what kind of BC we have there
       Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipL;
       Du2_copy.coeffRef(id0,id0_connect) = 2.;
-      // if (BC.typeL == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
-      // {
-      //    int id=ID(0,v,op_component);
-      //    rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
-      // }
+      if (BC.typeL == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
+      {
+         int id=ID(0,v,op_component);
+         rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
+      }
 
       Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
       Du2_copy.coeffRef(idN,idN_connect) = 2.;
-      // if (BC.typeR == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
-      // {
-      //    int id=ID(Nu-1,v,op_component);
-      //    rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
-      // }
+      if (BC.typeR == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
+      {
+         int id=ID(Nu-1,v,op_component);
+         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
+      }
    }
    return Du2_copy;
 }
@@ -150,29 +150,23 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
 
       Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipB;
       Dv2_copy.coeffRef(id0,id0_connect) = 2.;
-      // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
-      // Dv2_copy.coeffRef(id0,id0_connect) = (BC.typeB == std::string("N")) ? 2. : 0.;
 
       // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
-      // if (BC.typeB == std::string("D")) // Dirichlet
-      // {
-      //    int id=ID(u,0,op_component);
-		//    rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
-      //    //rhsBC(id) = initOPvector(id);
-      // }
+      if (BC.typeB == std::string("D")) // Dirichlet
+      {
+         int id=ID(u,0,op_component);
+		   rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+      }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
-      // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
-      // Dv2_copy.coeffRef(idN,idN_connect)= (BC.typeT == std::string("N")) ? 2. : 0;
 
       // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
-      // if (BC.typeT == std::string("D")) // Dirichlet
-      // {
-      //    int id=ID(u,Nv-1,op_component);
-		//    rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
-      //    //	rhsBC(id) = initOPvector(id);
-      // }
+      if (BC.typeT == std::string("D")) // Dirichlet
+      {
+         int id=ID(u,Nv-1,op_component);
+		   rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+      }
    }
    return Dv2_copy;
 }
@@ -410,9 +404,6 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
    	   }
 
          M += Place_subMatrix( m, n, Nop, toInsertM );
-	//std::cout << "\n gK["<<m<<"]["<<n<<"]=\n" << gK[m][n];
-
-	  //if(m==n) cout << "\nInserting M("<<m<<","<<n<<")= \n" << toInsertM;
       }
    }
 
@@ -450,7 +441,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 
 	for (int n = 0; n < Nop; n++) {
 		// from boundary conditions determine which profile function to use 
-		if ( real( eta_BC[n].valueL * eta_BC[n].valueR) < -0.1 ) {
+		if ( real( eta_BC[n].valueL * eta_BC[n].valueR) < -0.1 && Nu>1) {
 			x0 = (Nu/2)*h; 
 			profileX = profile_dom_wall; 
 		}else{
@@ -458,7 +449,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 			profileX = profile_dbl_tanh; 
 		}
 
-		if ( real( eta_BC[n].valueT * eta_BC[n].valueB) < -0.1 ) {
+		if ( real( eta_BC[n].valueT * eta_BC[n].valueB) < -0.1 && Nv>1 ) {
 			z0 = (Nv/2)*h; 
 			profileZ = profile_dom_wall; 
 		}else{
@@ -474,7 +465,7 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 			for (int v = 0; v < Nv; v++) { double z = h*v;  
 				int id = ID(u,v,n);
 
-				OPvector( id ) = profileX(x, x0, eta_BC[n].valueL, eta_BC[n].valueR ) 
+				OPvector( id ) = C * profileX(x, x0, eta_BC[n].valueL, eta_BC[n].valueR ) 
 						   * profileZ(z, z0, eta_BC[n].valueB, eta_BC[n].valueT );
 
 				// CHANGE HERE added 4 lines 
@@ -486,15 +477,12 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 		}
 	}
 
-   // if (debug) cout << "initial guess:\n" << OPvector << endl;
-
 	return;
 }
 
 // a method of initializing a guess based on a previous solution
 // Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
-void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update)
-{
+void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
    vector<int> no_update_init;
    in_conditions cond_init=cond; // copy the conditions, 
    // but change them appropriately to fit this guess 
@@ -523,9 +511,7 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
 
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
    pSC_init->bulkRHS_FE(cond, OPvector_init, dummy, freeEb_init); 
-   // pSC_init->gradFE(freeEg_init, OPvector_init, eta_BC_init); // ??
-   // pSC_init->FreeEn(OPvector, cond_init, dummyE, freeEb_init, freeEg_init); // we don't really need this since it's for the initial guess...
-   
+   pSC_init->FreeEn(OPvector_init, cond_init, dummyE, freeEb_init, freeEg_init); // we don't really need this since it's for the initial guess...
    pSC_init->WriteAllToFile(OPvector_init, freeEb_init, freeEg_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt");
 
    for (int n = 0; n < Nop; n++) {
@@ -539,7 +525,7 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
                OPvector(id) = OPvector_init(id_init) * ( (n==2) ? -tanh(x/2) : 1. );
             else 	if(n==3) 
                	OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
-			else OPvector(id) = 0.0;
+         else OPvector(id) = 0.0;
 
 		// CHANGE HERE added 4 lines 
 		if(u==0  && eta_BC[n].typeL=="D" && Nv>1) no_update.push_back( id );
@@ -567,7 +553,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
          data << "\t#Re(OP" << n << ") \t#Im(OP" << n << ")  ";
 
       // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
-      data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";//   \tFE_tot-FE_b";
+      data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";
       data << std::endl; // end the line
 
       // loop through the whole mesh...
