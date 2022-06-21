@@ -35,6 +35,8 @@ clean_this:
 clean:
 	rm *.o;
 
+plot9:
+	python3 plot_solution.py output_OP9.txt
 plot5:
 	python3 plot_solution.py output_OP5.txt
 plot3:
