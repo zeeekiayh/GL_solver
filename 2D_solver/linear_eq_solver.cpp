@@ -52,27 +52,19 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	double err;  // to store current error
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
 	T_vector df(vect_size), rhs(vect_size); 
-	//T_vector rhs_th(vect_size); 
 
 	// the acceleration object
 	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update); 
 		   
  	// loop until f converges or until it's gone too long
 	do {
-		//theoretical3comp_rhs(cond, f, rhs_th, dummy);
-		SC->bulkRHS_FE(cond, f, rhs, dummy);
-		df = solver.solve( get_rhs(h2*rhs, rhsBC) ) - f; // find the change in OP
-		for (auto it = no_update.begin(); it != no_update.end(); it++) df(*it) = 0.0;
-
-		// for the method of "acceleration"
-		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart guess
-		//cout << "next guess for f = " << f.transpose() << endl; 
-
-		// for normal method of "relaxation"
-		// f += cond.rel_p*df;
-		// err = df.norm()/f.norm();
-
 		cts++; // increment counter
+
+		SC->bulkRHS_FE(cond, f, rhs, dummy);
+		df = (M*f - get_rhs(h2*rhs, rhsBC) ); // the best, works with both relaxation and acceleration methods 
+		for(auto id : no_update) df(id) = 0.0; // no update for Dirichlet bc and other fixed points
+		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart next guess
+
 		// output approx. percent completed
 		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 	} while(err > cond.ACCUR && cts < cond.N_loop);
@@ -82,30 +74,6 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	cout << "\t\titerations = " << cts << endl;
 	cout << "\t\trelative error = " << err << endl;
 
+	cout << endl;
 	return;
 }
-
-/*
-  // --------------- some test functions ------------------------------------------
-void theoretical3comp_rhs(in_conditions cond, T_vector & OPvector, T_vector & RHSvector, Eigen::VectorXd & FEb);
-
-void theoretical3comp_rhs(in_conditions cond, T_vector & OPvector, T_vector & RHSvector, Eigen::VectorXd & FEb)
-{
-	complex<double> Axx, Ayy, Azz;
-	complex<double> Rxx, Ryy, Rzz;
-
-	for(int i=0; i<cond.SIZEv; i++){
-			Axx= OPvector[i+cond.SIZEv*0]; 
-			Ayy= OPvector[i+cond.SIZEv*1]; 
-			Azz= OPvector[i+cond.SIZEv*2]; 
-			Rxx= -Axx + pow(Axx,3) - 1.0/5.0 * (Axx*Axx - Azz*Azz)*Axx;
-			Ryy=Rxx;
-			Rzz= -Azz + pow(Azz,3) + 2.0/5.0 * (Axx*Axx - Azz*Azz)*Azz;
-			RHSvector[i+cond.SIZEv*0]=Rxx;
-			RHSvector[i+cond.SIZEv*1]=Ryy;
-			RHSvector[i+cond.SIZEv*2]=Rzz;
-	}
-
-	return;
-}
-*/

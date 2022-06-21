@@ -135,10 +135,13 @@ converg_acceler<T>::converg_acceler (int mxstr, int wtX, double rlxp, const vect
 	std::cout   << "\tStarting Converg.Acceler with MaxStored = " << MaxStored 
 			<< "\n\t\t\t initial relax attempts = " << waitXiter 
 			<< "\n\t\t\t relax.param = " << relax_param 
-			<< std::endl << std::endl;
+			<< std::endl << std::endl; // add an extra "endl" so that the solver's output doesn't overwrite this
 	// we also create a seed here for the rand() function
 	srand (time(NULL)); 
-	if(details) record=fopen("accelereator_errors_record.dat", "w");
+	if(details){ 
+		record=fopen("accelerator_errors_record.dat", "w");
+		fprintf(record, "# waitcount  dev_min.norm()   dvz.norm()  avrgnorm     relative_error  det(Mstored_matrix)\n");
+	}
 	return;
 }
 
@@ -175,7 +178,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 {
 	int i, go_random=0;
 	int dimension = (int) v.size();
-	//double norm_dev_min_prev=dev_min.norm();
+	double norm_dev_min_prev=dev_min.norm();
 	double guess_coupl, fix_coupl, coupl_param; 
 	T devi(dimension);
 
@@ -195,19 +198,25 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 			// new vector is a really good guess, so get rid of last half 
 			i=(int) MaxStored/2.0;
 			stored.erase( stored.end()-i, stored.end() );
+			stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
 		} else if( norm_new > stored[MaxStored-1].norm){ 
 			// we went the wrong way completely on the Jump, so remove some bad last vectors 
 			i=(int) MaxStored/2.0;
 			stored.erase( stored.end()-i, stored.end() );
+			//stored.erase( stored.begin()+2, stored.end() );
+			// we don't add the bad one and do random relaxation from min norm value
+			// go_random=1;
 		} else{
 			// if nothing unusual, just get rid of the last element with the largest norm 
 			// (sorting will be done at the end of the subroutine)
 			stored.pop_back(); 
+			stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
 		}
 	}
-
-	// add the currently supplied (v,dvz,norm_new) to the end of the storage vector if everything is OK
-	stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
+	else{
+		// add the currently supplied (v,dvz,norm_new) to the end of the storage vector if everything is OK
+		stored.push_back( (keep_in_memory<T>(v,dvz,norm_new)) );
+	}
 
 	Nstored=stored.size(); 
 
@@ -216,33 +225,36 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 	if(details){ printf("Nstored=%d (filled when %d)   waitcount=%d (waitXiter=%d) \n", Nstored, MaxStored, waitcount, waitXiter); } 
 
 	// Now we determine the mapping coefficients by minimizing the distance from dev=zero to the dev-hypersurface 
-	if( Nstored>1 &&  waitcount > waitXiter ){
+	if( Nstored>1 &&  waitcount > waitXiter && ( waitcount < 90 || waitcount > 200) ){
 		// T and U are the Vector and Matrix classes, should match! 
 		// eg. T=VectorXd, U=MatrixXd; or T=Vector4cd, U=Matrix4cd; etc
 		T c(Nstored-1), r(Nstored-1); 
 		U M(Nstored-1,Nstored-1);
 
-		// the reference vector does not play role for linear equations, we take the one that we just added 
-		int ref_v=Nstored-1;
+		// the reference vector does not play role for linear equations... usually ... 
+		int ref_v= Nstored-1;
 
-		if(details) cout << " Building Acceleration system... ";
+		//if(details) cout << " Building Acceleration system... ";
+		int row=-1; 
 		for ( i=0; i < Nstored; i++ ){ 
-			if(i==ref_v) continue;
+			if(i==ref_v) continue; else row++;
 			devi = stored[i].dev -stored[ref_v].dev;
+			int col=-1;
 			for(int j=0; j < Nstored; j++){
-				if(j==ref_v) continue;
-				M(i,j) = devi.dot( stored[j].dev-stored[ref_v].dev );
+				if(j==ref_v) continue; else col++;
+				M(row,col) = devi.dot( stored[j].dev-stored[ref_v].dev );
 			}
-			r(i) = - devi.dot( stored[ref_v].dev );
+			r(row) = - devi.dot( stored[ref_v].dev );
 		}
-		if(details) {cout << " done \n "; }
+		//if(details) cout << "aceler. Matrix, normalized = \n" << M.normalized() << "\n";
+		//if(details) {cout << " done \n "; }
 
-		if(details) {cout << " Solving for Acceleration coeffs c ... "; fflush(NULL);}
+		//if(details) {cout << " Solving for Acceleration coeffs c ... "; fflush(NULL);}
 		// find the coefficients that will minimize the norm 
 		c = M.colPivHouseholderQr().solve(r); 
 		// find the relative error to estimate if the matrix is singular (this should be real small if M is invertible)
 		double relative_error = (M*c - r).norm() / r.norm();
-		if(details){ cout << " done \n ";  fflush(NULL);}
+		//if(details){ cout << " done \n ";  fflush(NULL);}
 
 		if( relative_error > 1e-6 ){ 
 			if(details) cout << " Andrs Accel. has singular matrix. Det(M) = " << M.determinant() << endl; 
@@ -254,7 +266,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 		}
 		else{ 
 			if(details){ 
-				cout << "c = \n" << c.transpose() << endl;
+				cout << "Aceller. coeffic. c = \n" << c.transpose() << endl;
 				double avrgnorm=0; for ( i=0; i<Nstored; i++ ) avrgnorm += stored[i].norm/Nstored;
 				fprintf(record, "%d \t%e \t%e \t%e \t%e \t%e \n", waitcount, dev_min.norm(), dvz.norm(), avrgnorm, relative_error, abs(M.determinant()) );
 				//fprintf(record, "%d \t%e \t%e \t%e \t%e \t%e \n", waitcount, dev_min.norm(), dvz.norm(), avrgnorm, avrgElmM, log10(detM));
@@ -262,22 +274,24 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 
 			vec_min=stored[ref_v].vec;
 			dev_min=stored[ref_v].dev;
+			int row=-1;
 			for(i=0; i < Nstored; i++){
-				if(i==ref_v) continue;
-				vec_min += c(i) * (stored[i].vec - stored[ref_v].vec); 
-				dev_min += c(i) * (stored[i].dev - stored[ref_v].dev); 
+				if(i==ref_v) continue; else row++;
+				vec_min += c(row) * (stored[i].vec - stored[ref_v].vec); 
+				dev_min += c(row) * (stored[i].dev - stored[ref_v].dev); 
 			}
 
-			devi = vec_min - v;
-			guess_coupl = devi.norm()/dvz.norm();
+			devi = vec_min - stored[ref_v].vec;
+			guess_coupl = devi.norm()/stored[ref_v].norm; 
+			guess_coupl = 0.5;
 
-			fix_coupl = 1.0; //norm_dev_min_prev/norm_new ; // correction if we did overshoot the last time
+			fix_coupl = norm_dev_min_prev/norm_new ; // correction if we did overshoot the last time
 			if (fix_coupl>1) fix_coupl=1;
 			
-			coupl_param=guess_coupl*fix_coupl;
+			coupl_param= guess_coupl*fix_coupl;
 			coupl_param_prev = coupl_param; 
 
-			if(details) printf("projected min_dev is =%.4f  Jump with = %.4f=(%.4f x %.4f)\n", dev_min.norm(), coupl_param, guess_coupl, fix_coupl);
+			if(details) printf("projected min_dev is =%.4f  Jump with = %.1e=(%.4f x %.4f)\n", dev_min.norm(), coupl_param, guess_coupl, fix_coupl);
 			v=vec_min; 
 			dvz=dev_min; 
 		}
@@ -285,7 +299,7 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 	else{
 		// we do simple relaxation 
 		// the v and dvz are the ones we got on input
-		coupl_param_prev= 0.0;
+		coupl_param_prev= relax_param;
 		coupl_param = relax_param;
 		if(details) {printf("Relaxation =%.4f\n",coupl_param);}
 
@@ -303,8 +317,11 @@ void converg_acceler<T>::next_vector (T & v, T & dvz, double & error)
 
 		// ... and take a random relaxation step with coupl_param between  (1...6) * relax_param 
 		coupl_param = relax_param*(1.0+5.0*rand()/(RAND_MAX));
-		coupl_param_prev= 0.0;
+		coupl_param_prev= relax_param;
 		if(details) printf("Random step with = %.4f  \n", coupl_param);
+
+		// dvz = stored[0].vec - stored[1].vec; 
+		// coupl_param = 0.1; 
 	}
 
 	// next vector to try

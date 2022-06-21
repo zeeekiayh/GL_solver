@@ -1,6 +1,3 @@
-#include <cmath>
-#include <eigen/Eigen/Dense>
-
 #include "structures.hpp" 
 
 using namespace Eigen;
@@ -37,7 +34,8 @@ void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, 
 	FElocal 	+= 1.0/9.0 * beta[3] * (A * At * Ac * Adag ).trace();
 	FElocal 	+= 1.0/9.0 * beta[4] * (A * Adag * A * Adag).trace();
 	FElocal 	+= 1.0/9.0 * beta[5] * (A * Adag * Ac * At ).trace();
-	FE = real( FElocal );
+	// FE = real( FElocal ); // for complex-valued solvers
+	FE = ( FElocal );        // for real-valued solvers
 
 	return;
 }

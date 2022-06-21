@@ -34,11 +34,11 @@ int main(int argc, char** argv)
 	int GridSize = cond.SIZEu * cond.SIZEv; // number of grid points 
 	int VectSize = cond.Nop * GridSize;     // number of elements in the overall OP vector
 
-	T_vector OPvector(VectSize);                 // the vector of all values of the OP on the mesh
-	T_vector rhsBC = T_vector::Zero(VectSize);   // the addition to the rhs for D-type BC's
-	T_vector dummy(VectSize);                    // a dummy vector, ...for free energy?
-	SpMat_cd M(VectSize,VectSize);               // the matrix we will use to solve
-	VectorXd freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
+	T_vector OPvector(VectSize);               // the vector of all values of the OP on the mesh
+	T_vector rhsBC = T_vector::Zero(VectSize); // the addition to the rhs for D-type BC's
+	T_vector dummy(VectSize);                  // a dummy vector, ...for free energy?
+	SpMat_cd M(VectSize,VectSize);             // the matrix we will use to solve
+	VectorXd FEdens(GridSize), freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
 	// add other observables here as desired...
 
 	// ===============================================================================================================
@@ -55,44 +55,55 @@ int main(int argc, char** argv)
 			else {
 				cout << "Unknown file_name. Exiting..." << endl;
 				delete pSC;
+				delete[] eta_BC;
 				return 1;
 			}
 		} else if (Nop == 3) {
 			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple3(eta_BC, OPvector, no_update);
-			else {cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl; return 1;}
+			else {
+				cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
+				delete pSC;
+				delete[] eta_BC;
+				return 1;
+			}
 		}
 	}
 	// other wise we'll use the cartesian system
 	else if (Nop == 3) {
 		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		if (file_name == string("conditions3.txt")) pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
-		else {cout << "WARNING: you probably forgot the optional argument '[c]'." << endl; return 1;}
+		else {
+			cout << "WARNING: you probably forgot the optional argument '[c]'." << endl;
+			delete pSC;
+			delete[] eta_BC;
+			return 1;
+		}
 	} else if (Nop == 5) {
 		pSC = new FiveCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 		// ---- set the OP vector to a good guess based on BC's ----
 		if (file_name == string("conditions5.txt"))              pSC->initialOPguess             (eta_BC, OPvector, no_update);
 		else if (file_name == string("conditions5_AyyFlip.txt")) pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
-		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
+		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version // SOMETHING IS NOT WORKING HERE RIGHT NOW!?
 		else {
 			cout << "Unknown file_name. Exiting..." << endl;
 			delete pSC;
+			delete[] eta_BC;
 			return 1;
 		}
 	} else if (Nop == 1) {
 		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	} else {
 		cout << "Unknown OP size. Exiting..." << endl;
-		delete pSC;
+		delete pSC; // IS THIS ACTUALLY OK IF pSC HAS NOT BEEN SET?
+		delete[] eta_BC;
 		return 1;
 	}
 
 	// ===============================================================================================================
-
 	// if (debug) { // write the initial guess to file, for debugging
 	// 	// pSC->WriteToFile(OPvector, "initGuess"+to_string(Nop)+".txt", 1);
-		pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
+	// 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "initGuess_output_OP"+to_string(Nop)+".txt");
 	// }
-
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
@@ -102,65 +113,27 @@ int main(int argc, char** argv)
 		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
 	cout << "done" << endl;
 
-	// if (debug) { // For debugging only...shouldn't print if gsize > ~10^2
-	// 	if (VectSize < 200)
-	// 		cout << endl << "M =\n" << M << endl;
-	// 	else
-	// 		cout << "VectSize = " << VectSize << endl;
-	// }
-	// SparseMatrix<double> M(rows,cols);
-	
-	// cout << "Matrix:" << endl;
-	// for (int k=0; k<M.outerSize(); ++k)
-	// for (SpMat_cd::InnerIterator it(M,k); it; ++it) {
-	// 	if (real(it.value()) > 5e3) {
-	// 		cout << endl << "\tvalue: " << it.value() << endl;
-	// 		cout << "\tposition: (" << it.row() << "," << it.col() << ")" << endl;
-	// 	}
-	// }
-	// cout << "==============================" << endl << endl;
-
-	// cout << "OPvector:" << endl;
-	// cout << OPvector << endl;
-	// // for (int i=0; i<OPvector.size(); i++)
-	// // 	if (real(OPvector(i)) > 5e3)
-	// // 		cout << "\tOPvector(" << i << ") = " << OPvector(i) << endl << endl;
-	// cout << "==============================" << endl << endl;
-
-	// cout << "rhsBC:" << endl;
-	// cout << rhsBC << endl;
-	// // for (int i=0; i<rhsBC.size(); i++)
-	// // 	if (real(rhsBC(i)) > 5e3)
-	// // 		cout << "\tOPvector(" << i << ") = " << rhsBC(i) << endl << endl;
-	// cout << "==============================" << endl << endl;
-
 	// ===============================================================================================================
 
 	cout << "solving system..." << endl;
-	// rhsBC = T_vector::Zero(VectSize);
 	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
 	cout << "solved!" << endl;
 
-	cout << "calculating bulkRHS_FE...";
-	pSC->bulkRHS_FE(cond, OPvector, dummy, freeEb); // get the bulk contribution to free energy
+	cout << "calculating Free energy ...";
+	double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg); 
 	cout << "done" << endl;
-
-	cout << "calculating gradFE...";
-	pSC->gradFE(freeEg, OPvector, eta_BC); // MAY NEED TO PASS IN ", gK" AS ANOTHER ARGUMENT? // get the gradient contribution to free energy
-	cout << "done" << endl;
+	cout << "the total energy loss in DW is " << totalFE << "\n";
 
 	// ===============================================================================================================
 
 	// write everything to file
 	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+".txt");
 
-	// calculate the defect energy
-	// cout << "Energy defect: " << pSC->defectEnergy(freeEb, freeEg) << endl;
-
 	// ===============================================================================================================
 
 	// de-allocating memory
 	delete pSC;
+	delete[] eta_BC;
 
 	return 0;
 }

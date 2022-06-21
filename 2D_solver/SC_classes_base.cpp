@@ -114,19 +114,19 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       //   and adjust the RHS vector depending on what kind of BC we have there
       Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipL;
       Du2_copy.coeffRef(id0,id0_connect) = 2.;
-      if (BC.typeL == std::string("D"))
-      {
-         int id=ID(0,v,op_component);
-         rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
-      }
+      // if (BC.typeL == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
+      // {
+      //    int id=ID(0,v,op_component);
+      //    rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
+      // }
 
       Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
       Du2_copy.coeffRef(idN,idN_connect) = 2.;
-      if (BC.typeR == std::string("D"))
-      {
-         int id=ID(Nu-1,v,op_component);
-         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
-      }
+      // if (BC.typeR == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
+      // {
+      //    int id=ID(Nu-1,v,op_component);
+      //    rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
+      // }
    }
    return Du2_copy;
 }
@@ -153,24 +153,26 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       // Dv2_copy.coeffRef(id0,id0) = (BC.typeB == std::string("N")) ? -2. -2.*h/BC.slipB : 1.;
       // Dv2_copy.coeffRef(id0,id0_connect) = (BC.typeB == std::string("N")) ? 2. : 0.;
 
-      if (BC.typeB == std::string("D")) // Dirichlet
-      {
-         int id=ID(u,0,op_component);
-		   rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
-         //rhsBC(id) = initOPvector(id);
-      }
+      // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
+      // if (BC.typeB == std::string("D")) // Dirichlet
+      // {
+      //    int id=ID(u,0,op_component);
+		//    rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+      //    //rhsBC(id) = initOPvector(id);
+      // }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
       // Dv2_copy.coeffRef(idN,idN)= (BC.typeT == std::string("N")) ? -2. -2.*h/BC.slipT : 1;
       // Dv2_copy.coeffRef(idN,idN_connect)= (BC.typeT == std::string("N")) ? 2. : 0;
 
-      if (BC.typeT == std::string("D")) // Dirichlet
-      {
-         int id=ID(u,Nv-1,op_component);
-		   rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
-         //	rhsBC(id) = initOPvector(id);
-      }
+      // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
+      // if (BC.typeT == std::string("D")) // Dirichlet
+      // {
+      //    int id=ID(u,Nv-1,op_component);
+		//    rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+      //    //	rhsBC(id) = initOPvector(id);
+      // }
    }
    return Dv2_copy;
 }
@@ -463,6 +465,9 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 			z0 = (Nv-1)*h; 
 			profileZ = profile_dbl_tanh; 
 		}
+		// we set overall amplitude to zero if OP[n]=0 on all boundaries  
+		double C = abs(eta_BC[n].valueL)+abs(eta_BC[n].valueB)+abs(eta_BC[n].valueR)+abs(eta_BC[n].valueT); 
+		if (C>0.01) C=1; else C=0;
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++) { double x = h*u; 
@@ -470,7 +475,13 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 				int id = ID(u,v,n);
 
 				OPvector( id ) = profileX(x, x0, eta_BC[n].valueL, eta_BC[n].valueR ) 
-						   * profileZ(z, z0, eta_BC[n].valueB, eta_BC[n].valueT ); 
+						   * profileZ(z, z0, eta_BC[n].valueB, eta_BC[n].valueT );
+
+				// CHANGE HERE added 4 lines 
+				if(u==0  && eta_BC[n].typeL=="D" && Nu>1) no_update.push_back( id );
+				if(u==Nu-1 && eta_BC[n].typeR=="D" && Nu>1) no_update.push_back( id );
+				if(v==0  && eta_BC[n].typeB=="D" && Nv>1) no_update.push_back( id );
+				if(v==Nv-1 && eta_BC[n].typeT=="D" && Nv>1) no_update.push_back( id );
 			}
 		}
 	}
@@ -493,7 +504,7 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
    	eta_BC_init[0]=eta_BC[0]; 
    	eta_BC_init[1]=eta_BC[1]; 
    	eta_BC_init[2]=eta_BC[2]; 
-	// if Azz > 0 we want semi-infinite system along z, and we improve convergence of initial solution by setting D on top
+	// if Azz > 0 on top we want semi-infinite system along z, and we improve convergence of initial solution by setting D on top
 	if(abs(eta_BC[2].valueT)>0.1) { 
 		eta_BC_init[0].typeT="D"; eta_BC_init[0].slipT=1e-10; 
 		eta_BC_init[1].typeT="D"; eta_BC_init[1].slipT=1e-10;
@@ -501,74 +512,45 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
 	}
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
-   T_vector OPvector_init(VectSize_init);
+   T_vector OPvector_init(VectSize_init), dummy(VectSize_init), dummyE(GridSize_init);
    SpMat_cd M_init(VectSize_init,VectSize_init);
    T_vector rhsBC_init = T_vector::Zero(VectSize_init);
+   VectorXd freeEb_init(GridSize_init), freeEg_init(GridSize_init); // free energy on the grid points
+
    SC_class *pSC_init = new ThreeCompHe3( cond_init.Nop, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
    pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
-   pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init );
+   pSC_init->BuildSolverMatrix(M_init, rhsBC_init, OPvector_init, eta_BC_init);
+
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-   pSC_init->WriteToFile(OPvector_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt",1);
+   pSC_init->bulkRHS_FE(cond, OPvector_init, dummy, freeEb_init); 
+   // pSC_init->gradFE(freeEg_init, OPvector_init, eta_BC_init); // ??
+   // pSC_init->FreeEn(OPvector, cond_init, dummyE, freeEb_init, freeEg_init); // we don't really need this since it's for the initial guess...
+   
+   pSC_init->WriteAllToFile(OPvector_init, freeEb_init, freeEg_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt");
 
    for (int n = 0; n < Nop; n++) {
       for (int v = 0; v < Nv; v++) {
+		double z=h*v;
          for (int u = 0; u < Nu; u++) {
             double x = h*(u-Nu/2);
             int id = ID(u,v,n);
             int id_init = v + GridSize_init*n;
             if (n < 3)
-               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? tanh(x/2) : 1. );
-            else OPvector(id) = 0.;
+               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? -tanh(x/2) : 1. );
+            else 	if(n==3) 
+               	OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
+			else OPvector(id) = 0.0;
+
+		// CHANGE HERE added 4 lines 
+		if(u==0  && eta_BC[n].typeL=="D" && Nv>1) no_update.push_back( id );
+		if(u==Nu-1 && eta_BC[n].typeR=="D" && Nv>1) no_update.push_back( id );
+		if(v==0  && eta_BC[n].typeB=="D" && Nu>1) no_update.push_back( id );
+		if(v==Nv-1 && eta_BC[n].typeT=="D" && Nu>1) no_update.push_back( id );
          }
       }
    }
 	delete pSC_init;
 	return;
-}
-
-// Write out the vector to a file (this is written for a 2D system,
-//    but can write 1D vectors just fine if Nv or Nu = 1).
-// We can write out different kinds of vectors:
-//    OPvector solution:   flag = 1; we'll use Nop from the class
-//    FEvector:            flag = 0;
-void SC_class :: WriteToFile(const T_vector& vector, std::string file_name, int flag) {
-	std::ofstream data (file_name); // open the file for writing
-	if (data.is_open()) {           // if opening was successful...
-      // set precision here
-      data << std::setprecision(8) << std::fixed;
-
-      // label the columns in the output file
-      data << "#h*u     \th*v     ";
-      if (flag == 1) { // OP vector
-         // loop through all OP components...
-         for (int n = 0; n < Nop; n++)
-            data << "\t#" << n << ".real     #" << n << ".imag   ";
-      }
-      else if (flag == 0) // FE vector
-         data << "\tFE";  // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
-      data << std::endl;  // end the line
-
-      // loop through the whole mesh...
-      for (int v = 0; v < Nv; v++) {
-         for (int u = 0; u < Nu; u++) {
-            data << h*u << "\t" << h*v; // write the position
-
-            if (flag == 1) { // OP vector
-               // loop through all OP components...
-               for (int n = 0; n < Nop; n++) {
-                  int id = ID(u, v, n); // get the id
-                  data << "\t" << vector(id).real() << "  " << vector(id).imag();
-               }
-               data << std::endl; // end the line
-            } else if (flag == 0) {  // FE vector
-               int id = ID(u, v, 0); // get the id
-               // TODO: add more here! more columns like said above
-               data << "\t" << vector(id).real() << endl; // because it should already pure real!
-            }
-         }
-      }
-	}
-	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
 }
 
 void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name) {
@@ -582,28 +564,30 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
 
       // loop through all OP components...
       for (int n = 0; n < Nop; n++)
-         data << "\t#" << n << ".real     #" << n << ".imag   ";
+         data << "\t#Re(OP" << n << ") \t#Im(OP" << n << ")  ";
 
       // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
       data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";//   \tFE_tot-FE_b";
       data << std::endl; // end the line
 
       // loop through the whole mesh...
+      double x_shift=(Nu/2)*h;
+      double z_shift=0.0;//(Nv/2)*h; // the z-shift doesn't make a difference, does it?
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
-            data << h*(u-Nu/2) << "\t" << h*v; // write the position
+            data << h*u-x_shift << "\t" << h*v-z_shift; // write the position
 
             // loop through all OP components...
             for (int n = 0; n < Nop; n++) {
                int id = ID(u, v, n); // get the id
-               data << "\t" << solution(id).real() << "  " << solution(id).imag();
+               data << "\t" << real(solution(id)) << "  " << imag(solution(id));
             }
 
             int id = ID(u, v, 0); // get the id
             // TODO: add more here! more columns like said above
-            data << "\t" << FE_bulk(id).real()+FE_grad(id).real(); // because it should already pure real!
-            data << "\t" << FE_bulk(id).real();
-            data << "\t" << FE_grad(id).real();
+            data << "\t" << real(FE_bulk(id))+real(FE_grad(id)); // because it should already pure real!
+            data << "\t" << real(FE_bulk(id));
+            data << "\t" << real(FE_grad(id));
             // data << "\t" << ... FE_total - FE_bulk = FE_grad ... ?
 
             data << endl; // finish the line

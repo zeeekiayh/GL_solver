@@ -59,38 +59,47 @@ using namespace Eigen;
 		return;
 	}
 
-	void ThreeCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) 
+	double ThreeCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
 	{
-		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
+		T_vector dummy(vect_size); 
+		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
+		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 		if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
 		if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
 
-		T_vector Du_eta_dag=Du_eta.adjoint(), 
-				Dv_eta_dag=Dv_eta.adjoint(); 
+		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		int x = 0, z = 1; // indeces for the K-matrix
-
+		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		int x = 0, z = 1; // indices for the K-matrix
+		double wx, wz; // weights for the integral free energy (trapezoidal rule)
 		for (int u = 0; u < Nu; u++) {
+			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
-				int FE_id = ID(u,v,0);
-				freeEg( FE_id ) = 0;
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+
+				int id = ID(u,v,0);
+				FEg( id ) = 0;
 
 				for (int m = 0; m < Nop; m++) {
 					for (int n = 0; n < Nop; n++) {
 						int id_m = ID(u,v,m);
 						int id_n = ID(u,v,n);
 
-						freeEg( FE_id ) += gK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						FEg( id ) += gK[m][n](x,x) * real(Du_eta_dag(id_m) * Du_eta(id_n)); 
+						FEg( id ) += gK[m][n](z,z) * real(Dv_eta_dag(id_m) * Dv_eta(id_n)); 
+						FEg( id ) += gK[m][n](z,x) * real(Dv_eta_dag(id_m) * Du_eta(id_n)); 
+						FEg( id ) += gK[m][n](x,z) * real(Du_eta_dag(id_m) * Dv_eta(id_n)); 
 					}
 				}
+				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
 			}
 		}
-		freeEg *= 2.0/3.0/(h*h);
-		return; 
+		FEg *= 2.0/3.0/(h*h);
+		FEdens = FEb + FEg; 
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+
+		return FE_minus_uniform;
 	}
 // ===========================================================
 
@@ -131,49 +140,47 @@ using namespace Eigen;
 		return;
 	}
 
-	void FiveCompHe3::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) 
+	double FiveCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
 	{
-		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
+		T_vector dummy(vect_size); 
+		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
+		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
 		if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
 		if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
 
-		T_vector Du_eta_dag=Du_eta.adjoint(), 
-				Dv_eta_dag=Dv_eta.adjoint(); 
+		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		int x = 0, z = 1; // indeces for the K-matrix
-
+		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		int x = 0, z = 1; // indices for the K-matrix
+		double wx, wz; // weights for the integral free energy (trapezoidal rule)
 		for (int u = 0; u < Nu; u++) {
+			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
-				int FE_id = ID(u,v,0);
-				freeEg( FE_id ) = 0;
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+
+				int id = ID(u,v,0);
+				FEg( id ) = 0;
 
 				for (int m = 0; m < Nop; m++) {
 					for (int n = 0; n < Nop; n++) {
 						int id_m = ID(u,v,m);
 						int id_n = ID(u,v,n);
 
-						freeEg( FE_id ) += gK[m][n](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-						freeEg( FE_id ) += gK[m][n](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+						FEg( id ) += gK[m][n](x,x) * real(Du_eta_dag(id_m) * Du_eta(id_n)); 
+						FEg( id ) += gK[m][n](z,z) * real(Dv_eta_dag(id_m) * Dv_eta(id_n)); 
+						FEg( id ) += gK[m][n](z,x) * real(Dv_eta_dag(id_m) * Du_eta(id_n)); 
+						FEg( id ) += gK[m][n](x,z) * real(Du_eta_dag(id_m) * Dv_eta(id_n)); 
 					}
 				}
+				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
 			}
 		}
-		freeEg *= 2.0/3.0/(h*h);
-		return; 
-	}
+		FEg *= 2.0/3.0/(h*h);
+		FEdens = FEb + FEg; 
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
 
-	double FiveCompHe3 :: defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
-		double DefectEnergy = 0.;
-		for (int u = 0; u < Nu; u++) {
-			for (int v = 0; v < Nv; v++) {
-				int FE_id = ID(u,v,0);
-				DefectEnergy += freeEg(FE_id);
-			}
-		}
-		return DefectEnergy * (h*h);
+		return FE_minus_uniform;
 	}
 
 	void FiveCompHe3 :: initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
@@ -203,6 +210,16 @@ using namespace Eigen;
 				OPvector(ID(u,v,2))=1;
 				OPvector(ID(u,v,3))=0;
 				OPvector(ID(u,v,4))=0;
+
+				// no update for the Dirichlet boundaries and OP1 at the radius of the circle domain
+				for(int n=0; n<5; n++){ 
+					int id = ID(u,v,n);
+					if(u==0  && eta_BC[n].typeL=="D" && Nu>1) no_update.push_back( id );
+					if(u==Nu-1 && eta_BC[n].typeR=="D" && Nu>1) no_update.push_back( id );
+					if(v==0  && eta_BC[n].typeB=="D" && Nv>1) no_update.push_back( id );
+					if(v==Nv-1 && eta_BC[n].typeT=="D" && Nv>1) no_update.push_back( id );
+					if( n==1 &&  abs(rho-r) < 0.4*h) no_update.push_back( id );
+				}
 			}
 		}
 		return;
@@ -230,34 +247,41 @@ using namespace Eigen;
 		return;
 	}
 
-	void OneCompSC::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) {
+	double OneCompSC::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
+	{
+		T_vector dummy(vect_size); 
+		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
 		T_vector Du_eta(vect_size), Dv_eta(vect_size); 
-
 		if( Nu > 1 ) Du_eta = Du_FE * OPvector; else Du_eta = T_vector::Zero(vect_size);
 		if( Nv > 1 ) Dv_eta = Dv_FE * OPvector; else Dv_eta = T_vector::Zero(vect_size);
 
-		T_vector Du_eta_dag=Du_eta.adjoint(), 
-				Dv_eta_dag=Dv_eta.adjoint(); 
+		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		int x = 0, z = 1; // indeces for the K-matrix
-
+		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		int x = 0, z = 1; // indices for the K-matrix
+		double wx, wz; // weights for the integral free energy (trapezoidal rule)
 		for (int u = 0; u < Nu; u++) {
+			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
-				int FE_id = ID(u,v,0);
-				freeEg( FE_id ) = 0;
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
 
-					int id_m = ID(u,v,0);
-					int id_n = ID(u,v,0);
+				int id = ID(u,v,0);
+				FEg( id ) = 0;
 
-					freeEg( FE_id ) += gK[0][0](x,x) * (Du_eta_dag(id_m) * Du_eta(id_n)).real(); 
-					freeEg( FE_id ) += gK[0][0](z,z) * (Dv_eta_dag(id_m) * Dv_eta(id_n)).real(); 
-					freeEg( FE_id ) += gK[0][0](z,x) * (Dv_eta_dag(id_m) * Du_eta(id_n)).real(); 
-					freeEg( FE_id ) += gK[0][0](x,z) * (Du_eta_dag(id_m) * Dv_eta(id_n)).real(); 
+				FEg( id ) += gK[0][0](x,x) * real(Du_eta_dag(id) * Du_eta(id)); 
+				FEg( id ) += gK[0][0](z,z) * real(Dv_eta_dag(id) * Dv_eta(id)); 
+				FEg( id ) += gK[0][0](z,x) * real(Dv_eta_dag(id) * Du_eta(id)); 
+				FEg( id ) += gK[0][0](x,z) * real(Du_eta_dag(id) * Dv_eta(id)); 
+
+				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0*FEg( id )); 
 			}
 		}
-		freeEg *= 2/(h*h);
-		return; 
+		FEg *= 2.0/(h*h);
+		FEdens = FEb + FEg; 
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+
+		return FE_minus_uniform;
 	}
 // ===========================================================
 
@@ -292,7 +316,7 @@ using namespace Eigen;
 			if (Nu > 1)
 				Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
 			Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
-			// r_inv += Place_subMatrix(n,n,Nop,R);
+			// r_inv += Place_subMatrix(n,n,Nop,R); // there is no need for the vect_size x vect_size r_inv?
 		}
 		
 		MatrixXd temp(9,9);
@@ -331,9 +355,8 @@ using namespace Eigen;
 				Dz_gsize(grid_size,grid_size);
 		SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
 
-		//test
-		// Dr_gsize.setIdentity();
-		Dr_gsize *= 0.0;
+		// test
+		// Dr_gsize *= 0.0;
 
 		// the matrices -- 2 parts of the solver matrix
 		SpMat_cd DK23(vect_size,vect_size), DK1(vect_size,vect_size);
@@ -352,14 +375,13 @@ using namespace Eigen;
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these take a LONG time to build!
 			if (Nu > 1) Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
-			// Dr2_gsize.setIdentity();
-			Dr2_gsize *= 0.0;
+			// Dr2_gsize *= 0.0;
 			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
 			if (Nu > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
 			if (Nu > 1 && (n == 0 || n == 1)) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
 			if (n == 0) Dz_gsize  = Dv_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
-			if (Nu > 1) Dr_over_r = Dr_gsize*r_inv;
-			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = Dz_gsize*r_inv;
+			if (Nu > 1) Dr_over_r = r_inv*Dr_gsize;
+			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = r_inv*Dz_gsize;
 
 			// build each complicated D matrix
 			if (n == 0 || n == 3) Dr2t = Dr2_gsize + Dr_over_r - r2_inv;
@@ -374,7 +396,7 @@ using namespace Eigen;
 			// build eq.'s (55-56)
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
-					+ Place_subMatrix(1,n,Nop,Drp*r_inv);
+					+ Place_subMatrix(1,n,Nop,r_inv*Drp);
 				rhsBC += K23_const*rhsBC_r2_gsize;
 				rhsBC += K23_const*rhsBC_r_gsize;
 
@@ -474,13 +496,8 @@ using namespace Eigen;
 		return;
 	}
 
-	void Cylindrical::gradFE(Eigen::VectorXd & freeEg, const T_vector & OPvector, Bound_Cond eta_BC[]) {
-		// we only need this for the energy inspection...not for the solution
-	}
-
-	double Cylindrical::defectEnergy(const Eigen::VectorXd & freeEb, const Eigen::VectorXd & freeEg) {
-		//
-		return 0.;
+	double Cylindrical::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
+		return 0.0;
 	}
 
 	// initial guess functions
@@ -541,27 +558,27 @@ using namespace Eigen;
 	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		// start with the simple 3-comp. system in cartesian
-		SC_class *pSC;
-		int Nop3 = 3;
-		pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
+		// SC_class *pSC;
+		// int Nop3 = 3;
+		// pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
 
-		in_conditions cond3;
-		Bound_Cond *BC3;
-		read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
-		vector<int> no_update3;
-		int GridSize = Nu * Nv;
-		int VectSize = Nop3 * GridSize;
-		T_vector OPvector3(VectSize);
-		T_vector rhsBC = T_vector::Zero(VectSize);
-		SpMat_cd M(VectSize,VectSize);
+		// in_conditions cond3;
+		// Bound_Cond *BC3;
+		// read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
+		// vector<int> no_update3;
+		// int GridSize = Nu * Nv;
+		// int VectSize = Nop3 * GridSize;
+		// T_vector OPvector3(VectSize);
+		// T_vector rhsBC = T_vector::Zero(VectSize);
+		// SpMat_cd M(VectSize,VectSize);
 
-		cond3.SIZEu = Nu;
-		cond3.SIZEv = Nv;
-		cond3.STEP = h;
+		// cond3.SIZEu = Nu;
+		// cond3.SIZEv = Nv;
+		// cond3.STEP = h;
 
-		pSC->initialOPguess(BC3,OPvector3,no_update3);
-		pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
-		Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
+		// pSC->initialOPguess(BC3,OPvector3,no_update3);
+		// pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
+		// Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
 		// OPvector = OPvector3;
 
 		// Using BC's to make a smooth guess
@@ -569,38 +586,38 @@ using namespace Eigen;
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
-		// 	if (n < 2) {
-		// 		// OPvector(id) = 1.0;
-		// 		// build a smooth guess based on BC's
-		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-		// 		OPvector(id) = ( eta_BC[n].valueB * wB
-		// 						+ eta_BC[n].valueT * wT
-		// 						+ eta_BC[n].valueL * wL
-		// 						+ eta_BC[n].valueR * wR )
-		// 					/(Nu+Nv);
-		// 	} else { // n == 2
-		// 		double z = h*v; // so that z = 0 is the surface
-		// 		OPvector(id) = tanh(z/5.0);
-		// 	}
+			if (n < 2) {
+				// OPvector(id) = 1.0;
+				// build a smooth guess based on BC's
+				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+				OPvector(id) = ( eta_BC[n].valueB * wB
+								+ eta_BC[n].valueT * wT
+								+ eta_BC[n].valueL * wL
+								+ eta_BC[n].valueR * wR )
+							/(Nu+Nv);
+			} else { // n == 2
+				double z = h*v; // so that z = 0 is the surface
+				OPvector(id) = tanh(z/5.0);
+			}
 
 			if (u == 0 && eta_BC[n].typeL == string("D")) {
-				OPvector(id) = eta_BC[n].valueL;
+				// OPvector(id) = eta_BC[n].valueL;
 				no_update.push_back(id);
 			}
 			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
-				OPvector(id) = eta_BC[n].valueR;
+				// OPvector(id) = eta_BC[n].valueR;
 				no_update.push_back(id);
 			}
 			else if (v == 0 && eta_BC[n].typeB == string("D")) {
-				OPvector(id) = eta_BC[n].valueB;
+				// OPvector(id) = eta_BC[n].valueB;
 				no_update.push_back(id);
 			}
 			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
-				OPvector(id) = eta_BC[n].valueT;
+				// OPvector(id) = eta_BC[n].valueT;
 				no_update.push_back(id);	
-			} else {
-				OPvector(id) = OPvector3(id);
-			}
+			} //else {
+				//OPvector(id) = OPvector3(id);
+			//}
 		}
 	}
 
