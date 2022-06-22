@@ -296,37 +296,51 @@ using namespace Eigen;
 // ===========================================================
 // Cylindrical :: function definitions
 	void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
-		// cout << "\tin Build_curvilinear_matrices" << endl;
-		Ident.resize(vect_size,vect_size); // set the identity matrix to the right size
-		Ident.setIdentity();
-		
+		cout << "in Build_curvilinear_matrices" << endl;
 		Dr.resize(vect_size,vect_size);
 		Dz.resize(vect_size,vect_size);
 		Dphi.resize(vect_size,vect_size);
+		cout << "here 1" << endl;
+
+		// make sure to only pre-multiply by r_inv!
+		cout << "here 2" << endl;
+
+		cout << "here 2.5" << endl;
 		r_inv.resize(grid_size,grid_size);
+		cout << "here 3" << endl;
+		
+		cout << "r_inv_full: (" << vect_size << "," << vect_size << ")" << endl;
+		// BOTH OF THESE BELOW GIVE A SEG FAULT! Eigen says that it can happen
+		//		when the matrix is too big, and there's nothing that they can
+		//		do about it!
+		// r_inv_full = SpMat_cd(vect_size,vect_size);
+		// r_inv_full.resize(vect_size,vect_size);
+		// r_inv_full.resize(1,1); // AND THIS DOESN'T WORK EITHER!
 
 		T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
 		T_vector rhsBC; // ? should it actually be passed in as an argument?
 		// neither of these are actually used below...we just have them as arguments in
 		// 	the D*_BD() functions below, but those functions don't use them either!
-		
-		// SpMat_cd R(grid_size,grid_size); // there is no need for the vect_size x vect_size r_inv?
-		for (int u = 0; u < Nu; u++) {
-			for (int v = 0; v < Nv; v++) {
-				int id = ID(u,v,0);
-				r_inv.coeffRef(id,id) = 1./((u+0.5)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
-			}
+		cout << "here 4" << endl;
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,0);
+			r_inv.coeffRef(id,id) = 1./((u+0.5)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
 		}
+		cout << "here 5" << endl;
+		cout << "r_inv_full: (" << r_inv_full.rows() << "," << r_inv_full.cols() << ")" << endl;
 		
 		for (int n = 0; n < Nop; n++) {
-			// cout << "\t\tn=" << n << endl;
-			if (Nu > 1)
-				Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
-			Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
-			// r_inv += Place_subMatrix(n,n,Nop,R); // there is no need for the vect_size x vect_size r_inv?
+			            Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
+			if (Nu > 1) Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
+			// WE NEED THIS MATRIX HERE, BUT WE CAN'T RESIZE IT PROPERLY!
+			cout << "\tn=" << n << endl;
+			r_inv_full += Place_subMatrix(n,n,Nop,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
 		}
+		cout << "here 6" << endl;
 		
 		MatrixXd temp(9,9);
+		cout << "here 7" << endl;
 		temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
 				0, 0, 0, 0, 0, 1, 1, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -336,15 +350,19 @@ using namespace Eigen;
 				1,-1, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 1, 0, 0, 0, 0,
 				0, 0, 0, 1, 0, 0, 0, 0, 0;
+				cout << "here 8" << endl;
 		SpMat_cd small_I(grid_size,grid_size);
+		cout << "here 9" << endl;
 		small_I.setIdentity();
+		cout << "here 10" << endl;
 		Dphi = kroneckerProduct(temp,small_I);
+		cout << "here 11" << endl;
 		
 		return;
 	}
 
 	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]) {
-		// cout << "BuildSolverMatrixCyl" << endl;
+		cout << "BuildSolverMatrixCyl" << endl;
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -404,60 +422,60 @@ using namespace Eigen;
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
 					+ Place_subMatrix(1,n,Nop,r_inv*Drp);
-				rhsBC += K23_const*rhsBC_r2_gsize;
-				rhsBC += K23_const*rhsBC_r_gsize;
+				// rhsBC += K23_const*rhsBC_r2_gsize;
+				// rhsBC += K23_const*rhsBC_r_gsize;
 
 				if (Nop > 3) {
 					DK23 += Place_subMatrix(4,n,Nop,Drzp);
-					rhsBC += K23_const*rhsBC_rz_gsize;
+					// rhsBC += K23_const*rhsBC_rz_gsize;
 				}
 				
 				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
-				rhsBC += K1_const*rhsBC_z2_gsize;
-				rhsBC += K1_const*rhsBC_r2_gsize;
+				// rhsBC += K1_const*rhsBC_z2_gsize;
+				// rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 1) {
-				DK23 += Place_subMatrix(0,n,Nop,-Drm)
+				DK23 += Place_subMatrix(0,n,Nop,-r_inv*Drm)
 					+ Place_subMatrix(1,n,Nop,-r2_inv);
-				rhsBC += K23_const*rhsBC_r_gsize;
+				// rhsBC += K23_const*rhsBC_r_gsize;
 
 				if (Nop > 3)
 					DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
 				
 				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
-				rhsBC += K1_const*rhsBC_z2_gsize;
-				rhsBC += K1_const*rhsBC_r2_gsize;
+				// rhsBC += K1_const*rhsBC_z2_gsize;
+				// rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 2) {
 				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
-				rhsBC += K23_const*rhsBC_z2_gsize;
+				// rhsBC += K23_const*rhsBC_z2_gsize;
 				if (Nop > 3) {
 					DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
-					rhsBC += K23_const*rhsBC_rz_gsize;
+					// rhsBC += K23_const*rhsBC_rz_gsize;
 				}
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
-				rhsBC += K1_const*rhsBC_z2_gsize;
-				rhsBC += K1_const*rhsBC_r2_gsize;
+				// rhsBC += K1_const*rhsBC_z2_gsize;
+				// rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 3) {
 				DK23 += Place_subMatrix(2,n,Nop,Drzp)
 					+ Place_subMatrix(3,n,Nop,Dr2t);
-				rhsBC += K23_const*rhsBC_rz_gsize;
-				rhsBC += K23_const*rhsBC_r2_gsize;
+				// rhsBC += K23_const*rhsBC_rz_gsize;
+				// rhsBC += K23_const*rhsBC_r2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
-				rhsBC += K1_const*rhsBC_z2_gsize;
-				rhsBC += K1_const*rhsBC_r2_gsize;
+				// rhsBC += K1_const*rhsBC_z2_gsize;
+				// rhsBC += K1_const*rhsBC_r2_gsize;
 			} else if (n == 4) {
 				DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
 					+ Place_subMatrix(1,n,Nop,Dz_over_r)
 					+ Place_subMatrix(4,n,Nop,Dz2_gsize);
-				rhsBC += K23_const*rhsBC_rz_gsize;
-				rhsBC += K23_const*rhsBC_z2_gsize;
+				// rhsBC += K23_const*rhsBC_rz_gsize;
+				// rhsBC += K23_const*rhsBC_z2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
-				rhsBC += K1_const*rhsBC_z2_gsize;
-				rhsBC += K1_const*rhsBC_r2_gsize;
+				// rhsBC += K1_const*rhsBC_z2_gsize;
+				// rhsBC += K1_const*rhsBC_r2_gsize;
 			}
 
 		}
@@ -504,6 +522,7 @@ using namespace Eigen;
 	}
 
 	double Cylindrical::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
+		// TODO
 		return 0.0;
 	}
 
@@ -564,6 +583,7 @@ using namespace Eigen;
 
 	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+		cout << "initialOPguess_Cylindrical_simple3" << endl;
 		// start with the simple 3-comp. system in cartesian
 		// SC_class *pSC;
 		// int Nop3 = 3;
@@ -608,24 +628,27 @@ using namespace Eigen;
 			}
 
 			if (u == 0 && eta_BC[n].typeL == string("D")) {
-				// OPvector(id) = eta_BC[n].valueL;
+				OPvector(id) = eta_BC[n].valueL;
 				no_update.push_back(id);
 			}
 			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
-				// OPvector(id) = eta_BC[n].valueR;
+				OPvector(id) = eta_BC[n].valueR;
 				no_update.push_back(id);
 			}
 			else if (v == 0 && eta_BC[n].typeB == string("D")) {
-				// OPvector(id) = eta_BC[n].valueB;
+				OPvector(id) = eta_BC[n].valueB;
 				no_update.push_back(id);
 			}
 			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
-				// OPvector(id) = eta_BC[n].valueT;
+				OPvector(id) = eta_BC[n].valueT;
 				no_update.push_back(id);	
 			} //else {
 				//OPvector(id) = OPvector3(id);
 			//}
 		}
+
+		VectorXd freeEb(grid_size), freeEg(grid_size);
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3.txt");
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {

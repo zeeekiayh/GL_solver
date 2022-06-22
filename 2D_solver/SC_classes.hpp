@@ -142,10 +142,14 @@ class Cylindrical : public SC_class {
 	protected:
 		// inherits all the basic D matrices
 		// define covariant matrices ::: I can be used for imaginary unit sometimes 
-		SpMat_cd Dr, Dz, Dphi, Ident, r_inv;
+		SpMat_cd Dr, Dz, Dphi, Ident, r_inv, r_inv_full;
 	public:
 		// the constructor should call the parent constructor and some other functions.
 		Cylindrical (int n, int nr, int nz, double h, Bound_Cond eta_BC[]) : SC_class(n,nr,nz,h) {
+			// std::cout << "before" << std::endl;
+			// this->r_inv_full.resize(this->vect_size,this->vect_size);
+			// std::cout << "after" << std::endl;
+
 			// call derivative-matrix-building functions here
 			Build_curvilinear_matrices(eta_BC);
 		}
