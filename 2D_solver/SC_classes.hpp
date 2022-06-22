@@ -53,21 +53,21 @@ class SC_class{
 		SpMat_cd  Dv_BD(Bound_Cond BC, int op_component, const T_vector & initOPvector, T_vector & rhsBC);
 
 		// the general method of making the initial guess based on the given BC's
-		void initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		// a method of initializing a guess based on a previous solution
-		void initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		// Needs to be virtual so that it can be accessed by "pSC" in 'gl_fdm.cpp', because it is defined as a 'SC_class' object;
 		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
 		//		classes, and thus will all need to be virtual as well.
-		virtual void initGuessWithCircularDomain       (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
-		virtual void initialOPguess_Cylindrical_bubble (Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initGuessWithCircularDomain       (std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update){};
+		virtual void initialOPguess_Cylindrical_bubble (std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update){};
 
 		// the general method of building the solver matrix
-		void BuildSolverMatrix   ( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[] );
-		virtual void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]){};
+		void BuildSolverMatrix   ( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, std::vector<Bound_Cond> eta_BC );
+		virtual void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC){};
 		
 		// write all components and free energy to a file
 		void WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name);
@@ -91,7 +91,7 @@ class OneCompSC : public SC_class {
 		//destructor : automatically calls virtual ~SC_class()
 		~OneCompSC () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 };
@@ -109,12 +109,12 @@ class ThreeCompHe3 : public SC_class {
 		} 
 		~ThreeCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 
 		// iniital guess function prototypes
-		void initOPguess_1DNarrowChannel(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_1DNarrowChannel(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class FiveCompHe3 : public SC_class {
@@ -130,12 +130,12 @@ class FiveCompHe3 : public SC_class {
 		}
 		~FiveCompHe3 () {} 
 
-		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]); 
+		// void BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC); 
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes
-		void initGuessWithCircularDomain(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initGuessWithCircularDomain(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 };
 
 class Cylindrical : public SC_class {
@@ -145,7 +145,7 @@ class Cylindrical : public SC_class {
 		SpMat_cd Dr, Dz, Dphi, Ident, r_inv, r_inv_full;
 	public:
 		// the constructor should call the parent constructor and some other functions.
-		Cylindrical (int n, int nr, int nz, double h, Bound_Cond eta_BC[]) : SC_class(n,nr,nz,h) {
+		Cylindrical (int n, int nr, int nz, double h, std::vector<Bound_Cond> eta_BC) : SC_class(n,nr,nz,h) {
 			// std::cout << "before" << std::endl;
 			// this->r_inv_full.resize(this->vect_size,this->vect_size);
 			// std::cout << "after" << std::endl;
@@ -155,18 +155,18 @@ class Cylindrical : public SC_class {
 		}
 		~Cylindrical(){}
 
-		void Build_curvilinear_matrices(Bound_Cond eta_BC[]);
-		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, Bound_Cond eta_BC[]);
+		void Build_curvilinear_matrices(std::vector<Bound_Cond> eta_BC);
+		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC);
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
 		
 		// TODO:
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 
 		// initial guess function prototypes
-		void initialOPguess_Cylindrical_bubble(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguess_Cylindrical_simple3(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguess_Cylindrical_simple5(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
-		void initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+		void initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 };
 
 #endif

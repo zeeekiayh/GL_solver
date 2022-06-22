@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 
 	// get all the information from the conditions<...>.txt
 	in_conditions cond;
-	Bound_Cond *eta_BC; // boundary conditions for OP components
+	vector<Bound_Cond> eta_BC; // boundary conditions for OP components
 
 	read_input_data(Nop, cond, eta_BC, file_name);
 	// confirm_input_data(Nop, cond, eta_BC); // confirm the input by printing it out
@@ -55,7 +55,6 @@ int main(int argc, char** argv)
 			else {
 				cout << "Unknown file_name. Exiting..." << endl;
 				delete pSC;
-				delete[] eta_BC;
 				return 1;
 			}
 		} else if (Nop == 3) {
@@ -63,7 +62,6 @@ int main(int argc, char** argv)
 			else {
 				cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
 				delete pSC;
-				delete[] eta_BC;
 				return 1;
 			}
 		}
@@ -75,7 +73,6 @@ int main(int argc, char** argv)
 		else {
 			cout << "WARNING: you probably forgot the optional argument '[c]'." << endl;
 			delete pSC;
-			delete[] eta_BC;
 			return 1;
 		}
 	} else if (Nop == 5) {
@@ -87,7 +84,6 @@ int main(int argc, char** argv)
 		else {
 			cout << "Unknown file_name. Exiting..." << endl;
 			delete pSC;
-			delete[] eta_BC;
 			return 1;
 		}
 	} else if (Nop == 1) {
@@ -95,7 +91,6 @@ int main(int argc, char** argv)
 	} else {
 		cout << "Unknown OP size. Exiting..." << endl;
 		delete pSC; // IS THIS ACTUALLY OK IF pSC HAS NOT BEEN SET?
-		delete[] eta_BC;
 		return 1;
 	}
 	
@@ -128,7 +123,6 @@ int main(int argc, char** argv)
 
 	// de-allocating memory
 	delete pSC;
-	delete[] eta_BC;
 
 	return 0;
 }

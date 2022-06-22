@@ -6,7 +6,7 @@
 #include <sstream>
 
 // read in the conditions from the file
-inline void read_input_data(int& Nop, in_conditions & cond, Bound_Cond*& eta_BC, std::string conditions_file) {
+inline void read_input_data(int& Nop, in_conditions & cond, std::vector<Bound_Cond> & eta_BC, std::string conditions_file) {
 	std::string line;
 	std::ifstream conditions(conditions_file);
 
@@ -14,15 +14,16 @@ inline void read_input_data(int& Nop, in_conditions & cond, Bound_Cond*& eta_BC,
 	if (conditions.is_open()) {
 		conditions >> Nop; conditions.ignore(256,'\n');
 		cond.Nop=Nop;
-		eta_BC = new Bound_Cond[Nop];
 
 		// find the line where the BOUNDARY CONDITIONS start
 		while (line != "BOUNDARY CONDITIONS") {getline(conditions,line);}
 		getline(conditions,line); // one extra line without data
 
+		Bound_Cond tempBC;
 		// Boundary conditions: >> operator for BC structure is in structures.hpp
 		for(int i=0; i<Nop; i++) {
-			conditions >> eta_BC[i]; conditions.ignore(256,'\n');
+			conditions >> tempBC; conditions.ignore(256,'\n');
+			eta_BC.push_back(tempBC);
 		}
 
 		getline(conditions,line); // empty line
@@ -46,7 +47,7 @@ inline void read_input_data(int& Nop, in_conditions & cond, Bound_Cond*& eta_BC,
 }
 
 // output the things read in so we can visually confirm the input from the conditions*.txt
-inline void confirm_input_data(const int Nop, in_conditions cond, Bound_Cond eta_BC[]) {
+inline void confirm_input_data(const int Nop, in_conditions cond, std::vector<Bound_Cond> eta_BC) {
 	std::cout << "Grid is " << cond.SIZEu << " x " << cond.SIZEv << std::endl;
 	std::cout << "with step size h = " << cond.STEP << std::endl << std::endl;
 

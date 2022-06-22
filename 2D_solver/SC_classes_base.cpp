@@ -376,7 +376,7 @@ SpMat_cd    SC_class::Dv_BD 	 (Bound_Cond BC, int op_component, const T_vector &
 }
 
 // The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
-void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, Bound_Cond eta_BC[]) {
+void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, std::vector<Bound_Cond> eta_BC) {
    auto rhsBClocal=rhsBC;
    int x = 0, z = 1; // indexes for the K-matrix
    // Use equ. (15) in the Latex file:
@@ -426,7 +426,7 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
 T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
 T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return 0.5*(v2+v1) + 0.5*(v2-v1)*tanh((x-x0)/2.0); };
 
-void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector<int> & no_update) {
+void SC_class :: initialOPguess(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, vector<int> & no_update) {
 	// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them! 
 	T_scalar (* profileX)(double, double, T_scalar, T_scalar); 
 	T_scalar (* profileZ)(double, double, T_scalar, T_scalar); 
@@ -475,13 +475,13 @@ void SC_class :: initialOPguess(Bound_Cond eta_BC[], T_vector & OPvector, vector
 
 // a method of initializing a guess based on a previous solution
 // Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
-void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
+void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
    vector<int> no_update_init;
    in_conditions cond_init=cond; // copy the conditions, 
    // but change them appropriately to fit this guess 
       cond_init.Nop=3;
       cond_init.SIZEu = 1; // make it vertical, effectively setting u=0 
-   Bound_Cond eta_BC_init[cond_init.Nop]; // change the Top boundary conditons 
+   vector<Bound_Cond> eta_BC_init(Nop); // change the Top boundary conditons 
    	eta_BC_init[0]=eta_BC[0]; 
    	eta_BC_init[1]=eta_BC[1]; 
    	eta_BC_init[2]=eta_BC[2]; 
