@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	// write everything to file
-	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+".txt");
+	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+( (argc == 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
 
 	// ===============================================================================================================
 
