@@ -1,7 +1,6 @@
 #include "SC_classes.hpp"
 #include "readwrite.hpp"
 #include "structures.hpp"
-#include <vector>
 #include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Place_subMatrix
 
 using namespace Eigen;

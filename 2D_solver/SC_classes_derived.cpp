@@ -1,7 +1,6 @@
 #include "SC_classes.hpp"
 #include "readwrite.hpp"
 #include "structures.hpp"
-#include <vector>
 #include <eigen/unsupported/Eigen/KroneckerProduct> // for the Kronecker product in Build_curvilinear_matrices
 
 using namespace std;

@@ -2,7 +2,6 @@
 #include <fstream> // for file in/out
 #include <string>
 #include <complex>
-#include <vector>
 #include <chrono> // for timing
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>

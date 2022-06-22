@@ -7,6 +7,7 @@
 #include <math.h>
 #include <complex> 
 #include <typeinfo>
+#include <vector>
 
 #include <eigen/Eigen/Dense>
 #include <eigen/Eigen/Sparse>
