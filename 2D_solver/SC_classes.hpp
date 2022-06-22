@@ -146,10 +146,6 @@ class Cylindrical : public SC_class {
 	public:
 		// the constructor should call the parent constructor and some other functions.
 		Cylindrical (int n, int nr, int nz, double h, std::vector<Bound_Cond> eta_BC) : SC_class(n,nr,nz,h) {
-			// std::cout << "before" << std::endl;
-			// this->r_inv_full.resize(this->vect_size,this->vect_size);
-			// std::cout << "after" << std::endl;
-
 			// call derivative-matrix-building functions here
 			Build_curvilinear_matrices(eta_BC);
 		}
@@ -162,6 +158,7 @@ class Cylindrical : public SC_class {
 		// TODO:
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 
+		// TODO: any way to combine these??
 		// initial guess function prototypes
 		void initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
