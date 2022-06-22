@@ -15,7 +15,7 @@ void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, 
 	auto Ac = A.conjugate(); // complex conjugate
 
 	betas(t,p, beta);
-	// beta_B  = beta12 + beta345/3
+	// beta_B  = beta12 + beta345/3 // ? DO WE NEED THIS ANYMORE ?
 	betaB = beta[1]+beta[2] + (beta[3]+beta[4]+beta[5])/3.0;
 
 	// derivative of FE w.r.to A^* -components 
@@ -34,8 +34,8 @@ void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, 
 	FElocal 	+= 1.0/9.0 * beta[3] * (A * At * Ac * Adag ).trace();
 	FElocal 	+= 1.0/9.0 * beta[4] * (A * Adag * A * Adag).trace();
 	FElocal 	+= 1.0/9.0 * beta[5] * (A * Adag * Ac * At ).trace();
-	// FE = real( FElocal ); // for complex-valued solvers
-	FE = ( FElocal );        // for real-valued solvers
+	// FE = real( FElocal ); // for complex-valued solvers // TODO: is there a better way to do this?
+	FE = ( FElocal );        // for real-valued solvers    //       it depends on the typedefs in "structures.hpp"
 
 	return;
 }

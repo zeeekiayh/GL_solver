@@ -114,19 +114,19 @@ SpMat_cd    SC_class::Du2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       //   and adjust the RHS vector depending on what kind of BC we have there
       Du2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipL;
       Du2_copy.coeffRef(id0,id0_connect) = 2.;
-      if (BC.typeL == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
-      {
-         int id=ID(0,v,op_component);
-         rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
-      }
+      // if (BC.typeL == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE?!
+      // {
+      //    int id=ID(0,v,op_component);
+      //    rhsBC(id) = -2.*h/BC.slipL*initOPvector(id);
+      // }
 
       Du2_copy.coeffRef(idN,idN) = -2. -2.*h/BC.slipR;
       Du2_copy.coeffRef(idN,idN_connect) = 2.;
-      if (BC.typeR == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE!
-      {
-         int id=ID(Nu-1,v,op_component);
-         rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
-      }
+      // if (BC.typeR == std::string("D")) // WE DON'T NEED TO DO ANY OF THIS ANYMORE?!
+      // {
+      //    int id=ID(Nu-1,v,op_component);
+      //    rhsBC(id) = -2.*h/BC.slipR*initOPvector(id);
+      // }
    }
    return Du2_copy;
 }
@@ -151,22 +151,20 @@ SpMat_cd    SC_class::Dv2_BD 	 (Bound_Cond BC, int op_component, const T_vector 
       Dv2_copy.coeffRef(id0,id0) = -2. -2.*h/BC.slipB;
       Dv2_copy.coeffRef(id0,id0_connect) = 2.;
 
-      // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
-      if (BC.typeB == std::string("D")) // Dirichlet
-      {
-         int id=ID(u,0,op_component);
-		   rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
-      }
+      // if (BC.typeB == std::string("D")) // Dirichlet // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
+      // {
+      //    int id=ID(u,0,op_component);
+		//    rhsBC(id) = -2.*h/BC.slipB*initOPvector(id); 
+      // }
 
       Dv2_copy.coeffRef(idN,idN)= -2. -2.*h/BC.slipT;
       Dv2_copy.coeffRef(idN,idN_connect)= 2.;
 
-      // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
-      if (BC.typeT == std::string("D")) // Dirichlet
-      {
-         int id=ID(u,Nv-1,op_component);
-		   rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
-      }
+      // if (BC.typeT == std::string("D")) // Dirichlet // WE DON'T NEED TO DO ANYTHING WITH THIS ANYMORE!
+      // {
+      //    int id=ID(u,Nv-1,op_component);
+		//    rhsBC(id) = -2.*h/BC.slipT*initOPvector(id);
+      // }
    }
    return Dv2_copy;
 }
@@ -424,10 +422,6 @@ void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vect
          	Dv_FE += Place_subMatrix( n, n, Nop, toInsertD );
    	 }
    }
-
-   //cout << "M=\n" << M << endl;
-   //cout << "FEgrad=\n" << FEgrad << endl;
-   //cout << "rhsBC=\n" << rhsBC << endl;
 }
 
 T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
@@ -527,7 +521,7 @@ void SC_class :: initOPguess_special(in_conditions cond, Bound_Cond eta_BC[], T_
                	OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
          else OPvector(id) = 0.0;
 
-		// CHANGE HERE added 4 lines 
+      // Don't need to update values that we already know from the BC's
 		if(u==0  && eta_BC[n].typeL=="D" && Nv>1) no_update.push_back( id );
 		if(u==Nu-1 && eta_BC[n].typeR=="D" && Nv>1) no_update.push_back( id );
 		if(v==0  && eta_BC[n].typeB=="D" && Nu>1) no_update.push_back( id );
@@ -558,7 +552,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
 
       // loop through the whole mesh...
       double x_shift=(Nu/2)*h;
-      double z_shift=0.0;//(Nv/2)*h; // the z-shift doesn't make a difference, does it?
+      double z_shift=0.0;//(Nv/2)*h; // the z-shift doesn't really make a difference, does it?
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
             data << h*u-x_shift << "\t" << h*v-z_shift; // write the position
@@ -574,7 +568,6 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
             data << "\t" << real(FE_bulk(id))+real(FE_grad(id)); // because it should already pure real!
             data << "\t" << real(FE_bulk(id));
             data << "\t" << real(FE_grad(id));
-            // data << "\t" << ... FE_total - FE_bulk = FE_grad ... ?
 
             data << endl; // finish the line
          }

@@ -4,11 +4,10 @@ import matplotlib.pyplot as plt
 
 # to return "Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels"
 def read_file(file_name):
-    # print("read_file")
     OP_data_array = [] # hold all OP components; to be converted to np.array() later
     FE_data_array = [] # holds all FE data
-    X, Z = [], [] # the positions arrays
-    labels = [] # to store the labels of all the columns
+    X, Z = [], []      # the positions arrays
+    labels = []        # to store the labels of all the columns
 
     # counters for grid size
     u_0_count = 0
@@ -29,8 +28,7 @@ def read_file(file_name):
                     Nop += 1
             Nop //= 2 # to account for complex columns
 
-            # number of columns excluding position
-            #   and OP component columns
+            # number of columns excluding position and OP component columns
             N_FE_cols = len(labels) - 2 - 2*Nop
         else:
             # get all the values from the line
@@ -150,7 +148,8 @@ def plot_OP_comps_and_slices(file_name):
     FE_prof_ax.set_ylabel('FE')
     FE_prof_ax.set_title('Total FE profile')
     if Nu > 1:
-        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1]) # list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1])
+        #                                                  list(reversed(FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1])
+        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0].transpose()[len(FE_data_array[0][0])//2,::-1])
         FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
     else:
         FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])

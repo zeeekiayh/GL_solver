@@ -24,7 +24,7 @@ using namespace std;
 
 T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	auto rhs_local=rhsBC;
-	// for(int i=0; i< rhs_local.size(); i++) if(abs(rhs_local[i])==0) rhs_local[i]=h2_times_rhs_bulk[i];
+	// for(int i=0; i< rhs_local.size(); i++) if(abs(rhs_local[i])==0) rhs_local[i]=h2_times_rhs_bulk[i]; // ? DO WE NEED THIS ANYMORE ?
 	rhs_local = h2_times_rhs_bulk + rhsBC;
 	return rhs_local;
 }

@@ -102,9 +102,11 @@
       int SIZEv;    // ""                         v-direction 
       int SIZEw;    // "" in orthogonal third directions
       double STEP;  // step size
+
       // physical parameters: temperature and pressure 
       double T; 
       double P; 
+      
       // self-consistency convergence parameters
       int N_loop;   // count limit for iterations
       int maxStore; // max num vectors kept in accerleration

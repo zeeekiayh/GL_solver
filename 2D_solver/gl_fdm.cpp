@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	Bound_Cond *eta_BC; // boundary conditions for OP components
 
 	read_input_data(Nop, cond, eta_BC, file_name);
-	// confirm_input_data(Nop, cond, eta_BC); // DO WE WANT TO PASS ", gK" AS AN ARGUMNET, EVER?
+	// confirm_input_data(Nop, cond, eta_BC); // confirm the input by printing it out
 
 	vector<int> no_update; // the vector of all the indeces of the OPvector that we don't want to change
 
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	if (argc == 3 && *(argv[2]) == 'c')
+	if (argc == 3 && *(argv[2]) == 'c') // TODO: combine these functions into one?
 		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC );
 	else
 		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
