@@ -302,20 +302,21 @@ using namespace Eigen;
 		// make sure to only pre-multiply by r_inv!
 		r_inv.resize(grid_size,grid_size);
 		r_inv_full.resize(vect_size,vect_size);
-
-		T_vector initOPvector; // ? should it actually be passed in as an argument in this function?
-		T_vector rhsBC; // ? should it actually be passed in as an argument?
-		// neither of these are actually used below...we just have them as arguments in
-		// 	the D*_BD() functions below, but those functions don't use them either!
+		
+		// u-shift
+		double u_shift = 0.5; // this can be any value != 0 for the basic system (no r-variation)
+		
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,0);
-			r_inv.coeffRef(id,id) = 1./((u+0.5)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
+			r_inv.coeffRef(id,id) = 1./((u+u_shift)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
 		}
+
+		T_vector dummy; // just a dummy variable for arguments below
 		
 		for (int n = 0; n < Nop; n++) {
-			            Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
-			if (Nu > 1) Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
+			            Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,dummy,dummy));
+			if (Nu > 1) Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,dummy,dummy));
 			r_inv_full += Place_subMatrix(n,n,Nop,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
 		}
 		
@@ -337,7 +338,6 @@ using namespace Eigen;
 	}
 
 	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC) {
-		cout << "BuildSolverMatrixCyl" << endl;
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -354,9 +354,6 @@ using namespace Eigen;
 				Dz2_gsize(grid_size,grid_size),
 				Dz_gsize(grid_size,grid_size);
 		SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
-
-		// test
-		// Dr_gsize *= 0.0;
 
 		// the matrices -- 2 parts of the solver matrix
 		SpMat_cd DK23(vect_size,vect_size), DK1(vect_size,vect_size);
@@ -375,7 +372,6 @@ using namespace Eigen;
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these take a LONG time to build!
 			if (Nu > 1) Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
-			// Dr2_gsize *= 0.0;
 			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
 			if (Nu > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
 			if (Nu > 1 && (n == 0 || n == 1)) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
@@ -397,62 +393,38 @@ using namespace Eigen;
 			if (n == 0) {
 				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
 					+ Place_subMatrix(1,n,Nop,r_inv*Drp);
-				// rhsBC += K23_const*rhsBC_r2_gsize;
-				// rhsBC += K23_const*rhsBC_r_gsize;
-
-				if (Nop > 3) {
-					DK23 += Place_subMatrix(4,n,Nop,Drzp);
-					// rhsBC += K23_const*rhsBC_rz_gsize;
-				}
+				if (Nop > 3) DK23 += Place_subMatrix(4,n,Nop,Drzp);
 				
 				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
-				// rhsBC += K1_const*rhsBC_z2_gsize;
-				// rhsBC += K1_const*rhsBC_r2_gsize;
+				
 			} else if (n == 1) {
 				DK23 += Place_subMatrix(0,n,Nop,-r_inv*Drm)
 					+ Place_subMatrix(1,n,Nop,-r2_inv);
-				// rhsBC += K23_const*rhsBC_r_gsize;
-
-				if (Nop > 3)
-					DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
+				if (Nop > 3) DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
 				
 				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
 					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
-				// rhsBC += K1_const*rhsBC_z2_gsize;
-				// rhsBC += K1_const*rhsBC_r2_gsize;
+
 			} else if (n == 2) {
 				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
-				// rhsBC += K23_const*rhsBC_z2_gsize;
-				if (Nop > 3) {
-					DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
-					// rhsBC += K23_const*rhsBC_rz_gsize;
-				}
+				if (Nop > 3) DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
-				// rhsBC += K1_const*rhsBC_z2_gsize;
-				// rhsBC += K1_const*rhsBC_r2_gsize;
+
 			} else if (n == 3) {
 				DK23 += Place_subMatrix(2,n,Nop,Drzp)
 					+ Place_subMatrix(3,n,Nop,Dr2t);
-				// rhsBC += K23_const*rhsBC_rz_gsize;
-				// rhsBC += K23_const*rhsBC_r2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
-				// rhsBC += K1_const*rhsBC_z2_gsize;
-				// rhsBC += K1_const*rhsBC_r2_gsize;
+
 			} else if (n == 4) {
 				DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
 					+ Place_subMatrix(1,n,Nop,Dz_over_r)
 					+ Place_subMatrix(4,n,Nop,Dz2_gsize);
-				// rhsBC += K23_const*rhsBC_rz_gsize;
-				// rhsBC += K23_const*rhsBC_z2_gsize;
 				
 				DK1 += Place_subMatrix(n,n,Nop,D2t);
-				// rhsBC += K1_const*rhsBC_z2_gsize;
-				// rhsBC += K1_const*rhsBC_r2_gsize;
 			}
-
 		}
 
 		// make M from the 2 matrices
@@ -505,11 +477,12 @@ using namespace Eigen;
 	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
 		// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them!
 		double radius, r_wall = 0.5*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
+		double u_shift = 0.5;
 
 		// for (int n = 0; n < Nop; n++) {
 			// going through the entire grid
 			for (int u = 0; u < Nu; u++) {
-				double r = h*(u+0.5);  // shift u-points to half-grid points // old: double r = h*u;
+				double r = h*(u+u_shift);  // shift u-points to half-grid points // old: double r = h*u;
 
 				for (int v = 0; v < Nv; v++) {
 					double z = h*v;  
@@ -558,30 +531,6 @@ using namespace Eigen;
 
 	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		cout << "initialOPguess_Cylindrical_simple3" << endl;
-		// start with the simple 3-comp. system in cartesian
-		// SC_class *pSC;
-		// int Nop3 = 3;
-		// pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
-
-		// in_conditions cond3;
-		// Bound_Cond *BC3;
-		// read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
-		// vector<int> no_update3;
-		// int GridSize = Nu * Nv;
-		// int VectSize = Nop3 * GridSize;
-		// T_vector OPvector3(VectSize);
-		// T_vector rhsBC = T_vector::Zero(VectSize);
-		// SpMat_cd M(VectSize,VectSize);
-
-		// cond3.SIZEu = Nu;
-		// cond3.SIZEv = Nv;
-		// cond3.STEP = h;
-
-		// pSC->initialOPguess(BC3,OPvector3,no_update3);
-		// pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
-		// Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
-		// OPvector = OPvector3;
 
 		// Using BC's to make a smooth guess
 		for (int n = 0; n < Nop; n++)
@@ -589,7 +538,6 @@ using namespace Eigen;
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 			if (n < 2) {
-				// OPvector(id) = 1.0;
 				// build a smooth guess based on BC's
 				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
@@ -617,9 +565,7 @@ using namespace Eigen;
 			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
 				OPvector(id) = eta_BC[n].valueT;
 				no_update.push_back(id);	
-			} //else {
-				//OPvector(id) = OPvector3(id);
-			//}
+			}
 		}
 
 		VectorXd freeEb(grid_size), freeEg(grid_size);
