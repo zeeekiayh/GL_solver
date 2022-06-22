@@ -87,6 +87,9 @@ def plot_OP_comps_and_slices_compare(file_name1, file_name2):
     # just assume that these are all the same
     Nop, N_FE_cols, Nu, Nv, h, X, Z = Nop1, N_FE_cols1, Nu1, Nv1, h1, X1, Z1
 
+    # But check to see if the h's are the same! That would be a difficult one to see in the plots!
+    if (abs(h1-h2) > 1e-8): print(f'WARNING: Your step sizes are noticeably different: {h1 - h2 = }; this could cause larger differences than expected!')
+
     try:
         # calculate the difference between the arrays (assuming that everything else is the same)
         OP_data_array, FE_data_array = OP_data_array1-OP_data_array2, FE_data_array1-FE_data_array2
