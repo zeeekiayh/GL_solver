@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 		// ---- set the OP vector to a good guess based on BC's ----
 		if (file_name == string("conditions5.txt"))              pSC->initialOPguess             (eta_BC, OPvector, no_update);
 		else if (file_name == string("conditions5_AyyFlip.txt")) pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
-		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version // SOMETHING IS NOT WORKING HERE RIGHT NOW!?
+		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
 		else {
 			cout << "Unknown file_name. Exiting..." << endl;
 			delete pSC;

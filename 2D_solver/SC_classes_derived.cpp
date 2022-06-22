@@ -334,8 +334,8 @@ using namespace Eigen;
 			            Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,initOPvector,rhsBC));
 			if (Nu > 1) Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,initOPvector,rhsBC));
 			// WE NEED THIS MATRIX HERE, BUT WE CAN'T RESIZE IT PROPERLY!
-			cout << "\tn=" << n << endl;
-			r_inv_full += Place_subMatrix(n,n,Nop,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
+			// cout << "\tn=" << n << endl;
+			// r_inv_full += Place_subMatrix(n,n,Nop,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
 		}
 		cout << "here 6" << endl;
 		
