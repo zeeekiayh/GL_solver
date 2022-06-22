@@ -87,8 +87,14 @@ def plot_OP_comps_and_slices_compare(file_name1, file_name2):
     # just assume that these are all the same
     Nop, N_FE_cols, Nu, Nv, h, X, Z = Nop1, N_FE_cols1, Nu1, Nv1, h1, X1, Z1
 
-    # calculate the difference between the arrays (assuming that everything else is the same)
-    OP_data_array, FE_data_array = OP_data_array1-OP_data_array2, FE_data_array1-FE_data_array2
+    try:
+        # calculate the difference between the arrays (assuming that everything else is the same)
+        OP_data_array, FE_data_array = OP_data_array1-OP_data_array2, FE_data_array1-FE_data_array2
+    except ValueError:
+        print("ERROR: you probably gave files with differently shaped domains. Check your conditions files.")
+        print(f'\tShape from {file_name1}: {np.shape(OP_data_array1)}')
+        print(f'\tShape from {file_name2}: {np.shape(OP_data_array2)}')
+        exit()
 
     # the domain extents for the imshow calls
     ext = [0*h, Nu*h, 0*h, Nv*h]
