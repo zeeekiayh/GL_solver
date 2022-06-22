@@ -15,8 +15,12 @@ using namespace Eigen;
 	// output: betaB parameter that gives the bulk free energy of B-phase; derivative matrix dFdA, bulk free energy FE
 	void he3bulk(double t, double p, double & betaB, Eigen::Matrix<T_scalar,3,3> A, Eigen::Matrix<T_scalar,3,3> & dFdA, double & FE);
 
+	// For building the solver matrices
+	// ------  coded in SC_classes_base.cpp ---------
 	SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm);
 
+	// For solving some systems as an inital guess for others
+	// ------  coded in linear_eq_solver.cpp ---------
 	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
@@ -59,8 +63,7 @@ using namespace Eigen;
 		return;
 	}
 
-	double ThreeCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
-	{
+	double ThreeCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg) {
 		T_vector dummy(vect_size); 
 		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
@@ -71,8 +74,9 @@ using namespace Eigen;
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
-		int x = 0, z = 1; // indices for the K-matrix
-		double wx, wz; // weights for the integral free energy (trapezoidal rule)
+		int x = 0, z = 1;            // indices for the K-matrix
+		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
+
 		for (int u = 0; u < Nu; u++) {
 			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
@@ -95,6 +99,7 @@ using namespace Eigen;
 				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
 			}
 		}
+
 		FEg *= 2.0/3.0/(h*h);
 		FEdens = FEb + FEg; 
 		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
@@ -140,8 +145,7 @@ using namespace Eigen;
 		return;
 	}
 
-	double FiveCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
-	{
+	double FiveCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg) {
 		T_vector dummy(vect_size); 
 		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
@@ -152,8 +156,9 @@ using namespace Eigen;
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
-		int x = 0, z = 1; // indices for the K-matrix
-		double wx, wz; // weights for the integral free energy (trapezoidal rule)
+		int x = 0, z = 1;            // indices for the K-matrix
+		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
+
 		for (int u = 0; u < Nu; u++) {
 			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
@@ -176,6 +181,7 @@ using namespace Eigen;
 				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
 			}
 		}
+
 		FEg *= 2.0/3.0/(h*h);
 		FEdens = FEb + FEg; 
 		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
@@ -247,8 +253,7 @@ using namespace Eigen;
 		return;
 	}
 
-	double OneCompSC::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg)
-	{
+	double OneCompSC::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg) {
 		T_vector dummy(vect_size); 
 		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
 
@@ -259,8 +264,9 @@ using namespace Eigen;
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
-		int x = 0, z = 1; // indices for the K-matrix
-		double wx, wz; // weights for the integral free energy (trapezoidal rule)
+		int x = 0, z = 1;            // indices for the K-matrix
+		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
+
 		for (int u = 0; u < Nu; u++) {
 			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 			for (int v = 0; v < Nv; v++) {
@@ -277,6 +283,7 @@ using namespace Eigen;
 				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0*FEg( id )); 
 			}
 		}
+
 		FEg *= 2.0/(h*h);
 		FEdens = FEb + FEg; 
 		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
@@ -286,7 +293,7 @@ using namespace Eigen;
 // ===========================================================
 
 
-//* ===========================================================
+// ===========================================================
 // Cylindrical :: function definitions
 	void Cylindrical::Build_curvilinear_matrices(Bound_Cond eta_BC[]) {
 		// cout << "\tin Build_curvilinear_matrices" << endl;
@@ -680,4 +687,4 @@ using namespace Eigen;
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(Bound_Cond eta_BC[], T_vector & OPvector, std::vector<int> & no_update) {
 		// TODO
 	}
-// ===========================================================*/
+// ===========================================================
