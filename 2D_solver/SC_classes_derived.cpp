@@ -474,19 +474,18 @@ using namespace Eigen;
 	double Cylindrical::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
 		T_vector dummy(vect_size);
 		this->bulkRHS_FE(parameters, OPvector, dummy, freeEb);
-		cout << "calculating: FreeEn" << endl;
 
 		T_vector eta = OPvector;
 		T_vector eta_dag=eta.adjoint();
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
-		double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
+		// double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
 		double DtKD = 0.0;			 // for D^T_i K^ij D_j, in eq. (47)
 
 		for (int u = 0; u < Nu; u++) {
 			if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
-			double r = (u+u_shift)*h;
+			// double r = (u+u_shift)*h;
 			for (int v = 0; v < Nv; v++) {
 				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
 				int id = ID(u,v,0);
@@ -510,7 +509,7 @@ using namespace Eigen;
 						DtKD += Kij(i,j,m,n) * D[i].col(m).dot(D[j].col(n));
 					freeEg( id ) += eta_dag_m * DtKD * eta_n;
 				}
-				FE_minus_uniform += (2.0*3.1415926*r) * wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id ));
+				FE_minus_uniform += wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id )); // * (2.0*3.1415926*r) // 2 pi r factor from eq. 46?
 			}
 		}
 
