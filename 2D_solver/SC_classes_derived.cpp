@@ -599,7 +599,7 @@ using namespace Eigen;
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
+				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
 								+ eta_BC[n].valueT * wT
 								+ eta_BC[n].valueL * wL
@@ -639,7 +639,7 @@ using namespace Eigen;
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
+				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
 								+ eta_BC[n].valueT * wT
 								+ eta_BC[n].valueL * wL
@@ -671,7 +671,7 @@ using namespace Eigen;
 		}
 
 		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3c.txt");
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
