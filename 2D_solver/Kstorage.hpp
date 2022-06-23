@@ -19,7 +19,7 @@
 //       (Axx, Ayy, Azz, Azx, Axz, Axy, Ayx, Ayz, Azy)
 //       ( 0 ,  1 ,  2  , 3  , 4  , 5  , 6  , 7  , 8  )
 
-const double Kuu[9][9] ={
+const std::vector<std::vector<double>> Kuu = {
 	{K123, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , K1  , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K1  , 0   , 0   , 0   , 0   , 0   , 0   },
@@ -30,7 +30,7 @@ const double Kuu[9][9] ={
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K1  , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , K1  }};
 
-const double Kww[9][9] ={ 
+const std::vector<std::vector<double>> Kww = { 
 	{K1  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , K123, 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K1  , 0   , 0   , 0   , 0   , 0   , 0   },
@@ -41,7 +41,7 @@ const double Kww[9][9] ={
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K1  , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , K123}};
 
-const double Kvv[9][9] ={ 
+const std::vector<std::vector<double>> Kvv = { 
 	{K1  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , K1  , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K123, 0   , 0   , 0   , 0   , 0   , 0   },
@@ -52,7 +52,7 @@ const double Kvv[9][9] ={
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K123, 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , K1  }};
 
-const double Kuw[9][9] ={ 
+const std::vector<std::vector<double>> Kuw = { 
 	{0   , 0   , 0   , 0   , 0   , K2  , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , K3  , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
@@ -63,7 +63,7 @@ const double Kuw[9][9] ={
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , K3  , 0   , 0   , 0   , 0   , 0   }};
 
-const double Kwu[9][9] ={ 
+const std::vector<std::vector<double>> Kwu = { 
 	{0   , 0   , 0   , 0   , 0   , K3  , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , K2  , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
@@ -74,29 +74,29 @@ const double Kwu[9][9] ={
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , K2  , 0   , 0   , 0   , 0   , 0   }};
 
-const double Kuv[9][9] ={ 
+const std::vector<std::vector<double>> Kuv = { 
 	{0   , 0   , 0   , 0   , K2  , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , K3  , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K2  , 0   , 0   , 0   , 0   , 0   , 0   },
 	{K3  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
-	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
-	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
+	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K2  , 0   },
+	{0   , 0   , 0   , 0   , 0   , 0   , K3  , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   }};
 
-const double Kvu[9][9] ={ 
+const std::vector<std::vector<double>> Kvu = { 
 	{0   , 0   , 0   , 0   , K3  , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , K2  , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K3  , 0   , 0   , 0   , 0   , 0   , 0   },
 	{K2  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
-	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
-	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
+	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K3  , 0   },
+	{0   , 0   , 0   , 0   , 0   , 0   , K2  , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   }};
 
-const double Kvw[9][9] ={ 
+const std::vector<std::vector<double>> Kvw = { 
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K3  , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , K2  },
@@ -107,7 +107,7 @@ const double Kvw[9][9] ={
 	{0   , K2  , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , K3  , 0   , 0   , 0   , 0   , 0   , 0   }};
 
-const double Kwv[9][9] ={ 
+const std::vector<std::vector<double>> Kwv = { 
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , K2  , 0   },
 	{0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , K3  },
@@ -123,5 +123,21 @@ const double Kwv[9][9] ={
 // we  fill gradK[m][n](i,j) matrix [i=x,z][j=x,z] for this SC class 
 // using Kuu, Kvv, Kuv, Kvu matrices' entries corresponding to these OP components 
 // for example (Ayz is component 2 in this example) so gradK[2][2](x,z) = Kuu[7][7];
+
+inline std::vector<std::vector<double>> Kij(int i, int j) {
+	if (i == 0) {
+		     if (j == 0) return Kuu;
+		else if (j == 1) return Kuw;
+		else if (j == 2) return Kuv;
+	} else if (i == 1) {
+		     if (j == 0) return Kwu;
+		else if (j == 1) return Kww;
+		else if (j == 2) return Kwv;
+	} else if (i == 2) {
+		     if (j == 0) return Kvu;
+		else if (j == 1) return Kvw;
+		else if (j == 2) return Kvv;
+	}
+}
 
 #endif
