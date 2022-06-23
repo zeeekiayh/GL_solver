@@ -667,12 +667,13 @@ using namespace Eigen;
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
-				OPvector(id) = ( eta_BC[n].valueB * wB
-								+ eta_BC[n].valueT * wT
-								+ eta_BC[n].valueL * wL
-								+ eta_BC[n].valueR * wR )
-							/(Nu+Nv);
+				// int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
+				OPvector(id) = 1.0;
+							// 	( eta_BC[n].valueB * wB
+							// 	+ eta_BC[n].valueT * wT
+							// 	+ eta_BC[n].valueL * wL
+							// 	+ eta_BC[n].valueR * wR )
+							// /(Nu+Nv);
 			} else if (n == 2) {
 				double r = h*(u+0.5);
 				double r_center = h*Nu/2;
