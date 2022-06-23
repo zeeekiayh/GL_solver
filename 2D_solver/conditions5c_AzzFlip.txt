@@ -4,16 +4,16 @@ BOUNDARY CONDITIONS
 top            bottom         left           right     ( D/N : slip : value )
 N 1e+07 1      N 1e+10 1      N 1e+07 1      N 1e+10 1     # Axx
 N 1e+07 1      N 1e+10 1      N 1e+07 1      N 1e+10 1     # Ayy
-D 1e-10 1      D 1e-10 1      N 1e+07 -1     N 1e+10 1     # Azz
+N 1e+10 1      N 1e+10 1      N 1e+07 -1     N 1e+10 1     # Azz
 N 1e+10 1e-10  D 1e-10 1e-10  N 1e+10 1e-10  N 1e-10 1e-10 # Azx
 D 1e-10 1e-10  N 1e+10 1e-10  N 1e-10 1e-10  N 1e+10 1e-10 # Axz
 
-80 80   # mesh size
-0.5     # h (step size)
+40 20   # mesh size
+1     # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
-1e-6    # accuracy
+1e-5    # accuracy
 50000   # number loops
 5       # maxStore
-0.1     # relaxation parameter
-1       # wait
+0.0001  # relaxation parameter
+2   # wait

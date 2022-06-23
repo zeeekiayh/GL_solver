@@ -578,7 +578,6 @@ using namespace Eigen;
 
 	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
 	void Cylindrical::initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-
 		// Using BC's to make a smooth guess
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
@@ -619,9 +618,7 @@ using namespace Eigen;
 		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3c.txt");
 	}
 
-	// incomplete/not working
 	void Cylindrical::initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		// Using BC's to make a smooth guess
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
@@ -664,23 +661,24 @@ using namespace Eigen;
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		// TODO
-		// Using BC's to make a smooth guess
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
 								+ eta_BC[n].valueT * wT
 								+ eta_BC[n].valueL * wL
 								+ eta_BC[n].valueR * wR )
 							/(Nu+Nv);
-			} else { // n == 2
-				double z = h*v; // so that z = 0 is the surface
-				OPvector(id) = tanh(z/5.0);
+			} else if (n == 2) {
+				double r = h*(u+0.5);
+				double r_center = h*Nu/2;
+				OPvector(id) = tanh((r-r_center)/5.0);
+			} else { // n == 3, 4
+				OPvector(id) = 0.0;
 			}
 
 			if (u == 0 && eta_BC[n].typeL == string("D")) {

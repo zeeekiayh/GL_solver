@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 		if (Nop == 5) {
 			if (file_name == string("conditions5c.txt"))              pSC->initialOPguess_Cylindrical_simple5(eta_BC, OPvector, no_update);
-			else if (file_name == string("conditions5c_AzzFlip.txt")) pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update); // TODO: make file, "conditions5c_AzzFlip.txt"
+			else if (file_name == string("conditions5c_AzzFlip.txt")) pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update);
 			else if (file_name == string("conditions5c_bubble.txt"))  pSC->initialOPguess_Cylindrical_bubble (eta_BC, OPvector, no_update);
 			else {
 				cout << "Unknown file_name. Exiting..." << endl;
