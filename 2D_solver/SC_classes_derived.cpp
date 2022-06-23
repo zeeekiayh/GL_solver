@@ -526,20 +526,15 @@ using namespace Eigen;
 		double radius, r_wall = 0.5*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
 		double u_shift = 0.5;
 
-		// for (int n = 0; n < Nop; n++) {
-			// going through the entire grid
-			for (int u = 0; u < Nu; u++) {
-				double r = h*(u+u_shift);  // shift u-points to half-grid points // old: double r = h*u;
-
-				for (int v = 0; v < Nv; v++) {
-					double z = h*v;  
-
-					int id = ID(u,v,2);
-					radius = sqrt(r*r + z*z);
-					OPvector( id ) = tanh( (radius-r_wall)/2. );
-				}
-			}
-		// }
+		// going through the entire grid
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			double r = h*(u+u_shift);  // shift u-points to half-grid points // old: double r = h*u;
+			double z = h*v;  
+			int id = ID(u,v,2);
+			radius = sqrt(r*r + z*z);
+			OPvector( id ) = tanh( (radius-r_wall)/2. );
+		}
 
 		// set some boundary values based on conditions file
 		for (int n = 0; n < Nop; n++)
@@ -548,30 +543,49 @@ using namespace Eigen;
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 
-			if (u == 0) {
+			
+
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
 				OPvector(id) = eta_BC[n].valueL;
-			} else if (u == Nu-1) {
+				no_update.push_back(id);
+			} else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
 				OPvector(id) = eta_BC[n].valueR;
-			} else if (v == 0) {
+				no_update.push_back(id);
+			} else if (v == 0 && eta_BC[n].typeB == string("D")) {
 				OPvector(id) = eta_BC[n].valueB;
-			} else if (v == Nv-1) {
+				no_update.push_back(id);
+			} else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
 				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
 			}
-		}
-		// smooth off the initial guess a little
-		for (int i = 0; i < 10; i++)
-		for (int n = 0; n < Nop; n++)
-		for (int u = 0; u < Nu; u++)
-		for (int v = 0; v < Nv; v++) {
-			if ( n != 2 ) {
-				int id = ID(u,v,n);
-				int idU = ID(u,(v<Nv-1)?v+1:v,n);
-				int idL = ID((u>0)?u-1:u,v,n);
-				int idD = ID(u,(v>0)?v-1:v,n);
-				int idR = ID((u<Nu-1)?u+1:u,v,n);
-				OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
+			else {//if (n < 2)
+				// build a smooth guess based on BC's
+				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+				OPvector(id) = ( eta_BC[n].valueB * wB
+								+ eta_BC[n].valueT * wT
+								+ eta_BC[n].valueL * wL
+								+ eta_BC[n].valueR * wR )
+							/(Nu+Nv);
 			}
+			// else OPvector(id) = 0.0;
 		}
+		// // smooth off the initial guess a little to avoid discontinouities
+		// for (int i = 0; i < 10; i++)
+		// for (int n = 0; n < Nop; n++)
+		// for (int u = 0; u < Nu; u++)
+		// for (int v = 0; v < Nv; v++) {
+		// 	if ( n != 2 ) {
+		// 		int id = ID(u,v,n);
+		// 		int idU = ID(u,(v<Nv-1)?v+1:v,n);
+		// 		int idL = ID((u>0)?u-1:u,v,n);
+		// 		int idD = ID(u,(v>0)?v-1:v,n);
+		// 		int idR = ID((u<Nu-1)?u+1:u,v,n);
+		// 		OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
+		// 	}
+		// }
+
+		VectorXd freeEb(grid_size), freeEg(grid_size);
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
 
 		return;
 	}
@@ -661,6 +675,7 @@ using namespace Eigen;
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+		double u_shift = 0.5;
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
@@ -675,7 +690,7 @@ using namespace Eigen;
 							// 	+ eta_BC[n].valueR * wR )
 							// /(Nu+Nv);
 			} else if (n == 2) {
-				double r = h*(u+0.5);
+				double r = h*(u+u_shift);
 				double r_center = h*Nu/2;
 				OPvector(id) = tanh((r-r_center)/5.0);
 			} else { // n == 3, 4
