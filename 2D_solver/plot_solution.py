@@ -76,8 +76,12 @@ def read_file(file_name):
 # plot all the OP components in 2D and slices
 def plot_OP_comps_and_slices(file_name):
     Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels = read_file(file_name)
-    if input("Is this for a cylindrical system? (y/n): ") == 'y': custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
-    else: custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
+    if input("Is this for a cylindrical system? (y/n): ") == 'y':
+        custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
+        x_axis_labels = rf'$r/\xi_0$ (bottom)'
+    else:
+        custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
+        x_axis_labels = rf'$x/\xi_0$ (bottom)'
 
     # the domain extents for the imshow calls
     ext = [0*h, Nu*h, 0*h, Nv*h]
@@ -98,7 +102,7 @@ def plot_OP_comps_and_slices(file_name):
          (FE_prof_ax, axs[2])) = axes
 
         if Nu > 1:
-            axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+            axs[2].set_xlabel(x_axis_labels)
             axs[0].axes.xaxis.set_ticks([])
             axs[1].axes.xaxis.set_ticks([])
             axs[0].axes.yaxis.set_ticks([])
@@ -122,8 +126,8 @@ def plot_OP_comps_and_slices(file_name):
         axs[3].axes.yaxis.set_ticks([])
         axs[4].axes.yaxis.set_ticks([])
         if Nu > 1:
-            axs[2].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
-            axs[4].set_xlabel(rf'$x/\xi_0$ (bottom/surface)')
+            axs[2].set_xlabel(x_axis_labels)
+            axs[4].set_xlabel(x_axis_labels)
         else:
             axs[2].set_xlabel(rf'$z/\xi_0$')
             axs[4].set_xlabel(rf'$z/\xi_0$')
