@@ -6,11 +6,11 @@ N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Axx
 N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Ayy
 N  1e+10  1    D  1e-10  0    N  1e+07  1    N  1e+10  1  # Azz
 
-51 51 # mesh size (x, z)
-0.4    # h (step size)
+100 100 # mesh size (x, z)
+0.16    # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
-1e-7    # accuracy
+1e-6    # accuracy
 4000     # number loops
 5       # maxStore
 0.1     # relaxation parameter
