@@ -586,6 +586,92 @@ using namespace Eigen;
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
+				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
+				OPvector(id) = ( eta_BC[n].valueB * wB
+								+ eta_BC[n].valueT * wT
+								+ eta_BC[n].valueL * wL
+								+ eta_BC[n].valueR * wR )
+							/(Nu+Nv);
+			} else { // n == 2
+				double z = h*v; // so that z = 0 is the surface
+				OPvector(id) = tanh(z/5.0);
+			}
+
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
+				OPvector(id) = eta_BC[n].valueL;
+				no_update.push_back(id);
+			}
+			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
+				OPvector(id) = eta_BC[n].valueR;
+				no_update.push_back(id);
+			}
+			else if (v == 0 && eta_BC[n].typeB == string("D")) {
+				OPvector(id) = eta_BC[n].valueB;
+				no_update.push_back(id);
+			}
+			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
+				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
+			}
+		}
+
+		VectorXd freeEb(grid_size), freeEg(grid_size);
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3c.txt");
+	}
+
+	// incomplete/not working
+	void Cylindrical::initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+		// Using BC's to make a smooth guess
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+			if (n < 2) {
+				// build a smooth guess based on BC's
+				int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
+				OPvector(id) = ( eta_BC[n].valueB * wB
+								+ eta_BC[n].valueT * wT
+								+ eta_BC[n].valueL * wL
+								+ eta_BC[n].valueR * wR )
+							/(Nu+Nv);
+			} else if (n == 2) {
+				double z = h*v; // so that z = 0 is the surface
+				OPvector(id) = tanh(z/5.0);
+			} else { // n == 3, 4
+				OPvector(id) = 0.0;
+			}
+
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
+				OPvector(id) = eta_BC[n].valueL;
+				no_update.push_back(id);
+			}
+			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
+				OPvector(id) = eta_BC[n].valueR;
+				no_update.push_back(id);
+			}
+			else if (v == 0 && eta_BC[n].typeB == string("D")) {
+				OPvector(id) = eta_BC[n].valueB;
+				no_update.push_back(id);
+			}
+			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
+				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
+			}
+		}
+
+		VectorXd freeEb(grid_size), freeEg(grid_size);
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3c.txt");
+	}
+
+	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+		// TODO
+		// Using BC's to make a smooth guess
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+			if (n < 2) {
+				// build a smooth guess based on BC's
 				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = ( eta_BC[n].valueB * wB
 								+ eta_BC[n].valueT * wT
@@ -616,66 +702,6 @@ using namespace Eigen;
 		}
 
 		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3.txt");
-	}
-
-	void Cylindrical::initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		// start with the simple 3-comp. system in cartesian
-		SC_class *pSC;
-		int Nop3 = 3;
-		pSC = new ThreeCompHe3(Nop3,Nu,Nv,h);
-
-		in_conditions cond3;
-		vector<Bound_Cond> BC3;
-		read_input_data(Nop3,cond3,BC3,"conditions3_normal.txt");
-		vector<int> no_update3;
-		int GridSize = Nu * Nv;
-		int VectSize = Nop3 * GridSize;
-		T_vector OPvector3(VectSize);
-		T_vector rhsBC = T_vector::Zero(VectSize);
-		SpMat_cd M(VectSize,VectSize);
-
-		cond3.SIZEu = Nu;
-		cond3.SIZEv = Nv;
-		cond3.STEP = h;
-
-		pSC->initialOPguess(BC3,OPvector3,no_update3);
-		pSC->BuildSolverMatrix( M, rhsBC, OPvector3, BC3 );
-		Solver(OPvector3, M, rhsBC, cond3, no_update3, pSC); // solve the system setup above
-		
-		OPvector = T_vector::Zero(vect_size); // size for the 5 comp
-		for (int id = 0; id < VectSize; id++) OPvector(id) = OPvector3(id);
-
-		// for (int n = 0; n < Nop; n++)
-		// for (int u = 0; u < Nu; u++)
-		// for (int v = 0; v < Nv; v++) {
-		// 	int id = ID(u,v,n);
-		// 	if (n < 2) {
-		// 		// build a smooth guess based on BC's
-		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-		// 		OPvector(id) = ( eta_BC[n].valueB * wB
-		// 						+ eta_BC[n].valueT * wT
-		// 						+ eta_BC[n].valueL * wL
-		// 						+ eta_BC[n].valueR * wR )
-		// 					/(Nu+Nv);
-		// 	} else if (n == 2) {
-		// 		double z = h*v; // so that z = 0 is the surface
-		// 		OPvector(id) = tanh(z/5.0);
-		// 	} else
-		// 		OPvector(id) = 0.0;
-
-		// 	if (u == 0 && eta_BC[n].typeL == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (u == Nu-1 && eta_BC[n].typeR == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (v == 0 && eta_BC[n].typeB == string("D"))
-		// 		no_update.push_back(id);
-		// 	else if (v == Nv-1 && eta_BC[n].typeT == string("D"))
-		// 		no_update.push_back(id);
-		// }
-	}
-
-	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		// TODO
+		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
 	}
 // ===========================================================
