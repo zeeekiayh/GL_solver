@@ -124,20 +124,21 @@ const std::vector<std::vector<double>> Kwv = {
 // using Kuu, Kvv, Kuv, Kvu matrices' entries corresponding to these OP components 
 // for example (Ayz is component 2 in this example) so gradK[2][2](x,z) = Kuu[7][7];
 
-inline std::vector<std::vector<double>> Kij(int i, int j) {
+inline double Kij(int i, int j, int m, int n) {
 	if (i == 0) {
-		     if (j == 0) return Kuu;
-		else if (j == 1) return Kuw;
-		else if (j == 2) return Kuv;
+		     if (j == 0) return Kuu[m][n];
+		else if (j == 1) return Kuw[m][n];
+		else if (j == 2) return Kuv[m][n];
 	} else if (i == 1) {
-		     if (j == 0) return Kwu;
-		else if (j == 1) return Kww;
-		else if (j == 2) return Kwv;
+		     if (j == 0) return Kwu[m][n];
+		else if (j == 1) return Kww[m][n];
+		else if (j == 2) return Kwv[m][n];
 	} else if (i == 2) {
-		     if (j == 0) return Kvu;
-		else if (j == 1) return Kvw;
-		else if (j == 2) return Kvv;
+		     if (j == 0) return Kvu[m][n];
+		else if (j == 1) return Kvw[m][n];
+		else if (j == 2) return Kvv[m][n];
 	}
+	return 0.0;
 }
 
 #endif
