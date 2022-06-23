@@ -295,13 +295,13 @@ using namespace Eigen;
 // ===========================================================
 // Cylindrical :: function definitions
 	void Cylindrical::Build_curvilinear_matrices(std::vector<Bound_Cond> eta_BC) {
-		Dr.resize(vect_size,vect_size);
-		Dz.resize(vect_size,vect_size);
-		Dphi.resize(vect_size,vect_size);
+		Dr.resize(9*grid_size,9*grid_size);
+		Dz.resize(9*grid_size,9*grid_size);
+		Dphi.resize(9*grid_size,9*grid_size);
 
 		// make sure to only pre-multiply by r_inv!
 		r_inv.resize(grid_size,grid_size);
-		r_inv_full.resize(vect_size,vect_size);
+		r_inv_full.resize(9*grid_size,9*grid_size);
 		
 		// u-shift
 		double u_shift = 0.5; // this can be any value != 0 for the basic system (no r-variation)
@@ -313,11 +313,14 @@ using namespace Eigen;
 		}
 
 		T_vector dummy; // just a dummy variable for arguments below
+		SpMat_cd tempDv, tempDu;
 		
-		for (int n = 0; n < Nop; n++) {
-			            Dz += Place_subMatrix(n,n,Nop,Dv_BD(eta_BC[n],n,dummy,dummy));
-			if (Nu > 1) Dr += Place_subMatrix(n,n,Nop,Du_BD(eta_BC[n],n,dummy,dummy));
-			r_inv_full += Place_subMatrix(n,n,Nop,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
+		for (int n = 0; n < 9; n++) {
+			tempDv = n < Nop ? Dv_BD(eta_BC[n],n,dummy,dummy) : Dv; // we only have BC's for the Nop ... so
+			tempDu = n < Nop ? Du_BD(eta_BC[n],n,dummy,dummy) : Du; // 	we must just use the default otherwise
+			            Dz += Place_subMatrix(n,n,9,tempDv);
+			if (Nu > 1) Dr += Place_subMatrix(n,n,9,tempDu);
+			r_inv_full     += Place_subMatrix(n,n,9,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
 		}
 		
 		MatrixXd temp(9,9);
@@ -333,6 +336,9 @@ using namespace Eigen;
 		SpMat_cd small_I(grid_size,grid_size);
 		small_I.setIdentity();
 		Dphi = kroneckerProduct(temp,small_I);
+
+		// add the to the D vector for simple computation of free energy density
+		this->D.insert(D.end(),{Dr, Dphi, Dz});
 		
 		return;
 	}
@@ -365,12 +371,9 @@ using namespace Eigen;
 		T_vector rhsBC_r_gsize = T_vector::Zero(vect_size);
 		T_vector rhsBC_z_gsize = T_vector::Zero(vect_size);
 
-		// Should they be passed in as arguments?
-		double K1_const = 1.0, K23_const = 2.0; // WHAT TO DO WITH K-VALUES?!
-
 		for (int n = 0; n < Nop; n++) {
 			// initialize the D matrices based on BC's
-			// only make those that we ABOLUTELY need, because these take a LONG time to build!
+			// only make those that we ABOLUTELY need, because these can take a LONG time to build!
 			if (Nu > 1) Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
 			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
 			if (Nu > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
@@ -428,7 +431,7 @@ using namespace Eigen;
 		}
 
 		// make M from the 2 matrices
-		M = K1_const*DK1 + K23_const*DK23;
+		M = K1*DK1 + K23*DK23; // use the K-values defined in "Kstorage.hpp"
 
 		return;
 	}
@@ -469,8 +472,53 @@ using namespace Eigen;
 	}
 
 	double Cylindrical::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
-		// TODO
-		return 0.0;
+		T_vector dummy(vect_size);
+		this->bulkRHS_FE(parameters, OPvector, dummy, freeEb);
+		cout << "calculating: FreeEn" << endl;
+
+		T_vector eta = OPvector;
+		T_vector eta_dag=eta.adjoint();
+		
+		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
+		double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
+		double DtKD = 0.0;			 // for D^T_i K^ij D_j, in eq. (47)
+
+		for (int u = 0; u < Nu; u++) {
+			if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
+			double r = (u+u_shift)*h;
+			for (int v = 0; v < Nv; v++) {
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+				int id = ID(u,v,0);
+				freeEg( id ) = 0;
+				for (int m = 0; m < 9; m++)
+				for (int n = 0; n < 9; n++) {
+					DtKD = 0.0; // reset
+
+					// Get the corresponding elements of eta_dag and eta
+					int id_m = ID(u,v,m), id_n = ID(u,v,n);
+					// If the Nop of this SC_class object is less than 9, there will be a problem
+					// 		because the eta-vector will be too small. What we will do then is just
+					//		take the element to be zero (since it actually is, technically).
+					double eta_dag_m = m < Nop ? eta_dag(id_m) : 0.0,
+						   eta_n     = n < Nop ? eta(id_n)     : 0.0;
+
+					// Instead of calculating the whole matrix product and only selecting one element from it,
+					//	  we will just calculate that single element by selecting the corresponding row & col!
+					for (int i = 0; i < 3; i++) // loop through the 3 coordinates
+					for (int j = 0; j < 3; j++)
+						DtKD += Kij(i,j,m,n) * D[i].col(m).dot(D[j].col(n));
+					freeEg( id ) += eta_dag_m * DtKD * eta_n;
+				}
+				FE_minus_uniform += (2.0*3.1415926*r) * wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id ));
+			}
+		}
+
+		freeEg *= 2.0/3.0/(h*h);
+		FEdensity = freeEb + freeEg;
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+
+		return FE_minus_uniform;
 	}
 
 	// initial guess functions
