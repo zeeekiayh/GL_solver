@@ -143,7 +143,6 @@ class Cylindrical : public SC_class {
 		// inherits all the basic D matrices
 		// define covariant matrices ::: I can be used for imaginary unit sometimes 
 		SpMat_cd Dr, Dz, Dphi, Ident, r_inv, r_inv_full;
-		std::vector<SpMat_cd> D;
 	public:
 		// the constructor should call the parent constructor and some other functions.
 		Cylindrical (int n, int nr, int nz, double h, std::vector<Bound_Cond> eta_BC) : SC_class(n,nr,nz,h) {
@@ -155,15 +154,14 @@ class Cylindrical : public SC_class {
 		void Build_curvilinear_matrices(std::vector<Bound_Cond> eta_BC);
 		void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC);
 		void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & freeEb);
-		
-		// TODO:
 		double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg);
 
-		// TODO: any way to combine these??
 		// initial guess function prototypes
-		void initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+		// TODO: any way to combine these 2?
 		void initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+
+		void initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		void initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 };
 

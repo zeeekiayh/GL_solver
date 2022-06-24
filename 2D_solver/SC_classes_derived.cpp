@@ -332,7 +332,7 @@ using namespace Eigen;
 		Dphi = kroneckerProduct(temp,r_inv);
 
 		// add the to the D vector for simple computation of free energy density
-		this->D.insert(D.end(),{Dr, Dphi, Dz});
+		// this->D.insert(D.end(),{Dr, Dphi, Dz});
 		
 		return;
 	}
@@ -474,37 +474,35 @@ using namespace Eigen;
 		//   don't make it the full size, then we will either get mis-matched matrix
 		//   multiplication or we will miss the "extra" parts that come from D_phi.)
 		T_vector eta(9*grid_size); eta << OPvector, T_vector::Zero((9-Nop)*grid_size);
-		T_vector eta_dag=eta.conjugate();
+		T_vector eta_c=eta.conjugate();
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
 		double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
 		// some other variable used in the loops below; label them here to reduce time in the loops
-		T_vector Di_eta, Dj_eta;
+		vector<T_vector> D_eta_c, D_eta;
 		double K_ij, r;
 		int id, id_m, id_n;
 
 		freeEg *= 0.0; // zero out the free energy grad vector
 
+		// build the vectors of D-matrices used in loops below
+		D_eta_c.insert(D_eta_c.end(),{Dr*eta_c, Dphi*eta_c, Dz*eta_c});
+		D_eta.insert(D_eta.end(),{Dr*eta, Dphi*eta, Dz*eta});
+
 		for (int i = 0; i < 3; i++) // Loop through the 3 coordinates
-		for (int j = 0; j < 3; j++) {
-				// one can probably just define Dr_eta, Dp_eta, Dz_eta outside any of these loops and
-				// calculate them once instead of 18 times !!! 
-				Di_eta = D[i] * eta_dag; // Calculate these matrix products outside of the grid loops
-				Dj_eta = D[j] * eta;     //	  to not have to calculate it over again for every grid point.
-			for (int m = 0; m < 9; m++)
-			for (int n = 0; n < 9; n++) {
-				K_ij = Kij(i,j,m,n);
-				if ( abs(K_ij) > 1e-4 ) { // Just to not have to calculate as much, if not needed!
-					for (int u = 0; u < Nu; u++) { // loop over the whole grid
-						for (int v = 0; v < Nv; v++) {
-							id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
-							freeEg(id) += K_ij * Di_eta(id_m) * Dj_eta(id_n); // see eq. (46)
-						}
-					}
-				}// if kij
-			}// for m,n
-		} // for over 3 coord.'s
+		for (int j = 0; j < 3; j++)
+		for (int m = 0; m < 9; m++)
+		for (int n = 0; n < 9; n++) {
+			K_ij = Kij(i,j,m,n);
+
+			if ( abs(K_ij) > 1e-4 )      // Just to not have to calculate as much, if not needed!
+			for (int u = 0; u < Nu; u++) // loop over the whole grid
+			for (int v = 0; v < Nv; v++) {
+				id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
+				freeEg(id) += K_ij * D_eta_c[i](id_m) * D_eta[j](id_n); // see eq. (46)
+			}
+		}
 
 		// Since the loop above will actually add to each element "freeEg(id)" several times
 		//   in the loop above, we must wait til afterwards (now) to calulate the integral.
