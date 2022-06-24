@@ -152,7 +152,7 @@ def plot_OP_comps_and_slices(file_name):
     FE_prof_ax.set_ylabel('FE')
     FE_prof_ax.set_title('Total FE profile')
     if Nu > 1:
-        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0][len(FE_data_array[0])//2,:])
+        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][len(FE_data_array[0])//2,:])
         FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
     else:
         FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])
