@@ -539,7 +539,7 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
       data << std::setprecision(8) << std::fixed;
 
       // label the columns in the output file
-      data << "# x/xi     \t z/xi     ";
+      data << "x/xi     \t z/xi     ";
 
       // loop through all OP components...
       for (int n = 0; n < Nop; n++)
