@@ -299,7 +299,6 @@ using namespace Eigen;
 		Dz.resize(9*grid_size,9*grid_size);
 		Dphi.resize(9*grid_size,9*grid_size);
 		r_inv.resize(grid_size,grid_size); // make sure to only pre-multiply by r_inv!
-		double u_shift = 0.5; // this can be any value != 0 for the basic system (no r-variation)
 
 		// calcualte the 1/r - matrix		
 		for (int u = 0; u < Nu; u++)
@@ -494,7 +493,6 @@ using namespace Eigen;
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
-		double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
 		// some other variable used in the loops below; label them here to reduce time in the loops
 		vector<T_vector> D_eta_c, D_eta;
 		double K_ij, r;
@@ -544,12 +542,11 @@ using namespace Eigen;
 	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
 		// Nop, Nu, Nv, h, ID() - are part of the SC_class, so we use them!
 		double radius, r_wall = 0.5*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
-		double u_shift = 0.5;
 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
-			double r = h*(u+u_shift);  // shift u-points to half-grid points // old: double r = h*u;
+			double r = h*(u+u_shift);
 			double z = h*v;  
 			int id = ID(u,v,2);
 			radius = sqrt(r*r + z*z);
@@ -562,8 +559,6 @@ using namespace Eigen;
 		for (int u = 0; u < Nu; u++) // loop over the whole mesh
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
-
-			
 
 			if (u == 0 && eta_BC[n].typeL == string("D")) {
 				OPvector(id) = eta_BC[n].valueL;
@@ -589,20 +584,6 @@ using namespace Eigen;
 			}
 			// else OPvector(id) = 0.0;
 		}
-		// // smooth off the initial guess a little to avoid discontinouities
-		// for (int i = 0; i < 10; i++)
-		// for (int n = 0; n < Nop; n++)
-		// for (int u = 0; u < Nu; u++)
-		// for (int v = 0; v < Nv; v++) {
-		// 	if ( n != 2 ) {
-		// 		int id = ID(u,v,n);
-		// 		int idU = ID(u,(v<Nv-1)?v+1:v,n);
-		// 		int idL = ID((u>0)?u-1:u,v,n);
-		// 		int idD = ID(u,(v>0)?v-1:v,n);
-		// 		int idR = ID((u<Nu-1)?u+1:u,v,n);
-		// 		OPvector(id) = (OPvector(idU) + OPvector(idL) + OPvector(idD) + OPvector(idR))/4.;
-		// 	}
-		// }
 
 		VectorXd freeEb(grid_size), freeEg(grid_size);
 		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
@@ -695,7 +676,6 @@ using namespace Eigen;
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		double u_shift = 0.5;
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
