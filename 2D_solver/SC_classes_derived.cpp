@@ -298,18 +298,14 @@ using namespace Eigen;
 		Dr.resize(9*grid_size,9*grid_size);
 		Dz.resize(9*grid_size,9*grid_size);
 		Dphi.resize(9*grid_size,9*grid_size);
-
-		// make sure to only pre-multiply by r_inv!
-		r_inv.resize(grid_size,grid_size);
-		r_inv_full.resize(9*grid_size,9*grid_size);
-		
-		// u-shift
+		r_inv.resize(grid_size,grid_size); // make sure to only pre-multiply by r_inv!
 		double u_shift = 0.5; // this can be any value != 0 for the basic system (no r-variation)
-		
+
+		// calcualte the 1/r - matrix		
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,0);
-			r_inv.coeffRef(id,id) = 1./((u+u_shift)*h); // shift u-points to half-grid points to avoid 1/r|r=0 problems
+			r_inv.coeffRef(id,id) = 1./((u+u_shift)  ); // don't *h? // shift u-points to half-grid points to avoid 1/r|r=0 problems
 		}
 
 		T_vector dummy; // just a dummy variable for arguments below
@@ -320,9 +316,9 @@ using namespace Eigen;
 			tempDu = n < Nop ? Du_BD(eta_BC[n],n,dummy,dummy) : Du; // 	we must just use the default otherwise
 			            Dz += Place_subMatrix(n,n,9,tempDv);
 			if (Nu > 1) Dr += Place_subMatrix(n,n,9,tempDu);
-			r_inv_full     += Place_subMatrix(n,n,9,r_inv); // we do need this one for the free energy calculations...see eq.'s (44 - 47)
 		}
 		
+		// build the D_phi matrix
 		MatrixXd temp(9,9);
 		temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
 				0, 0, 0, 0, 0, 1, 1, 0, 0,
@@ -333,9 +329,7 @@ using namespace Eigen;
 				1,-1, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 1, 0, 0, 0, 0,
 				0, 0, 0, 1, 0, 0, 0, 0, 0;
-		SpMat_cd small_I(grid_size,grid_size);
-		small_I.setIdentity();
-		Dphi = kroneckerProduct(temp,small_I);
+		Dphi = kroneckerProduct(temp,r_inv);
 
 		// add the to the D vector for simple computation of free energy density
 		this->D.insert(D.end(),{Dr, Dphi, Dz});
@@ -475,47 +469,54 @@ using namespace Eigen;
 		T_vector dummy(vect_size);
 		this->bulkRHS_FE(parameters, OPvector, dummy, freeEb);
 
-		T_vector eta = OPvector;
-		T_vector eta_dag=eta.adjoint();
+		// We MUST have eta be the full size so that we can most easily account for
+		//	 the four D_phi contributions from components we don't calculate. (If we
+		//   don't make it the full size, then we will either get mis-matched matrix
+		//   multiplication or we will miss the "extra" parts that come from D_phi.)
+		T_vector eta(9*grid_size); eta << OPvector, T_vector::Zero((9-Nop)*grid_size);
+		T_vector eta_dag=eta.conjugate();
 		
 		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
-		// double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
-		double DtKD = 0.0;			 // for D^T_i K^ij D_j, in eq. (47)
+		double u_shift = 0.5;        // the u-shift to avoid 1/r|r=0 errors
+		// some other variable used in the loops below; label them here to reduce time in the loops
+		T_vector Di_eta, Dj_eta;
+		double K_ij, r;
+		int id, id_m, id_n;
 
-		for (int u = 0; u < Nu; u++) {
-			if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
-			// double r = (u+u_shift)*h;
-			for (int v = 0; v < Nv; v++) {
-				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
-				int id = ID(u,v,0);
-				freeEg( id ) = 0;
-				for (int m = 0; m < 9; m++)
-				for (int n = 0; n < 9; n++) {
-					DtKD = 0.0; // reset
+		freeEg *= 0.0; // zero out the free energy grad vector
 
-					// Get the corresponding elements of eta_dag and eta
-					int id_m = ID(u,v,m), id_n = ID(u,v,n);
-					// If the Nop of this SC_class object is less than 9, there will be a problem
-					// 		because the eta-vector will be too small. What we will do then is just
-					//		take the element to be zero (since it actually is, technically).
-					double eta_dag_m = m < Nop ? eta_dag(id_m) : 0.0,
-						   eta_n     = n < Nop ? eta(id_n)     : 0.0;
+		for (int i = 0; i < 3; i++) // Loop through the 3 coordinates
+		for (int j = 0; j < 3; j++) {
+			for (int m = 0; m < 9; m++)
+			for (int n = 0; n < 9; n++) {
+				K_ij = Kij(i,j,m,n);
+				if ( abs(K_ij) > 1e-4 ) { // Just to not have to calculate as much, if not needed!
+					Di_eta = D[i] * eta_dag; // Calculate these matrix products outside of the grid loops
+					Dj_eta = D[j] * eta;     //	  to not have to calculate it over again for every grid point.
 
-					// Instead of calculating the whole matrix product and only selecting one element from it,
-					//	  we will just calculate that single element by selecting the corresponding row & col!
-					for (int i = 0; i < 3; i++) // loop through the 3 coordinates
-					for (int j = 0; j < 3; j++)
-						DtKD += Kij(i,j,m,n) * D[i].col(m).dot(D[j].col(n));
-					freeEg( id ) += eta_dag_m * DtKD * eta_n;
-				}
-				FE_minus_uniform += wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id )); // * (2.0*3.1415926*r) // 2 pi r factor from eq. 46?
-			}
-		}
+					for (int u = 0; u < Nu; u++) {
+						if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
+						r = (u+u_shift); // don't *h?  Since we took it out of the r_inv matrices...
+						for (int v = 0; v < Nv; v++) {
+							if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+							id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
+
+							freeEg( id ) += K_ij * Di_eta(id_m) * Dj_eta(id_n); // see eq. (46)
+
+							// We need 3 powers of h since this is actually an integral over 3 dimension (r, phi, z);
+							//   2 of the powers are obvious; the other power of h is hidden in r...not any more!
+							FE_minus_uniform += h*h * (2.0*M_PI*r*h) * wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id )/h/h); // see eq. (47)
+						}
+					}
+
+				}// if kij
+			}// for m,n
+		} // for over 3 coord.'s
 
 		freeEg *= 2.0/3.0/(h*h);
 		FEdensity = freeEb + freeEg;
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h; // if one dimension is basically unused...
 
 		return FE_minus_uniform;
 	}
