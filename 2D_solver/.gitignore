@@ -13,9 +13,3 @@ initial_guess_OP?c.txt
 
 # ignore gl_fdm changes
 gl_fdm
-
-# ignore any temporary debugging codes
-debugging.py
-debugging_files/
-
-test.cpp
