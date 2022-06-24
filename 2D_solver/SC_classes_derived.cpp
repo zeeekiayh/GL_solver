@@ -314,13 +314,13 @@ using namespace Eigen;
 		for (int n = 0; n < 9; n++) {
 			tempDv = n < Nop ? Dv_BD(eta_BC[n],n,dummy,dummy) : Dv; // we only have BC's for the Nop ... so
 			tempDu = n < Nop ? Du_BD(eta_BC[n],n,dummy,dummy) : Du; // 	we must just use the default otherwise
-			            Dz += Place_subMatrix(n,n,9,tempDv);
+			if (Nv > 1) Dz += Place_subMatrix(n,n,9,tempDv);
 			if (Nu > 1) Dr += Place_subMatrix(n,n,9,tempDu);
 		}
 		
 		// build the D_phi matrix
 		MatrixXd temp(9,9);
-		temp << 0, 0, 0, 0, 0,-1,-1, 0, 0,
+		temp << 	0, 0, 0, 0, 0,-1,-1, 0, 0,
 				0, 0, 0, 0, 0, 1, 1, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0,-1,
@@ -488,17 +488,16 @@ using namespace Eigen;
 
 		for (int i = 0; i < 3; i++) // Loop through the 3 coordinates
 		for (int j = 0; j < 3; j++) {
+				// one can probably just define Dr_eta, Dp_eta, Dz_eta outside any of these loops and
+				// calculate them once instead of 18 times !!! 
+				Di_eta = D[i] * eta_dag; // Calculate these matrix products outside of the grid loops
+				Dj_eta = D[j] * eta;     //	  to not have to calculate it over again for every grid point.
 			for (int m = 0; m < 9; m++)
 			for (int n = 0; n < 9; n++) {
 				K_ij = Kij(i,j,m,n);
 				if ( abs(K_ij) > 1e-4 ) { // Just to not have to calculate as much, if not needed!
-					Di_eta = D[i] * eta_dag; // Calculate these matrix products outside of the grid loops
-					Dj_eta = D[j] * eta;     //	  to not have to calculate it over again for every grid point.
-
 					for (int u = 0; u < Nu; u++) { // loop over the whole grid
-						if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
 						for (int v = 0; v < Nv; v++) {
-							if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
 							id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
 							freeEg(id) += K_ij * Di_eta(id_m) * Dj_eta(id_n); // see eq. (46)
 						}
@@ -510,21 +509,19 @@ using namespace Eigen;
 		// Since the loop above will actually add to each element "freeEg(id)" several times
 		//   in the loop above, we must wait til afterwards (now) to calulate the integral.
 		for (int u = 0; u < Nu; u++) { // loop over the whole grid
-			if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
+			if( ( (u==0 && u_shift<0.1) || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
 			r = (u+u_shift); // don't *h;  since we took it out of the r_inv matrices...
 			for (int v = 0; v < Nv; v++) {
 				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
 				id = ID(u,v,0);
 
-				// We need 3 powers of h since this is actually an integral over 3 dimension (r, phi, z);
-				//   2 of the powers are obvious; the other power of h is hidden in r...not any more!
 				FE_minus_uniform += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) + 1.0) + 2.0/3.0*freeEg(id) ); // see eq. (47)
 			}
 		}
 
 		freeEg *= 2.0/3.0/(h*h);
 		FEdensity = freeEb + freeEg;
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h; // if one dimension is basically unused...
+		if(Nu==1 || Nv==1) FE_minus_uniform /=h; 
 
 		return FE_minus_uniform;
 	}
