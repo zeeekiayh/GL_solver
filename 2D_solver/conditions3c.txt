@@ -6,8 +6,8 @@ D  1e-10  1     N  1e+07  1.11  N  1e+07  1     N  1e+10  1   # Arr
 D  1e-10  1     N  1e+07  1.11  N  1e+07  1     N  1e+10  1   # App
 D  1e-10  1     D  1e-10  0     N  1e+07  1     N  1e+10  1   # Azz
 
-1 60 # mesh size (r, z)
-0.4    # h (step size)
+120 120 # mesh size (r, z)
+0.2    # h (step size)
 0.5     # temperature
 0       # pressure
 1e-6    # accuracy
