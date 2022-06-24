@@ -78,10 +78,10 @@ def plot_OP_comps_and_slices(file_name):
     Nop, N_FE_cols, Nu, Nv, h, X, Z, OP_data_array, FE_data_array, labels = read_file(file_name)
     if input("Is this for a cylindrical system? (y/n): ") == 'y':
         custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
-        x_axis_labels = rf'$r/\xi_0$ (bottom)'
+        x_axis_labels = rf'$r/\xi_0$'
     else:
         custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
-        x_axis_labels = rf'$x/\xi_0$ (bottom)'
+        x_axis_labels = rf'$x/\xi_0$'
 
     # the domain extents for the imshow calls
     ext = [0*h, Nu*h, 0*h, Nv*h]
@@ -102,7 +102,7 @@ def plot_OP_comps_and_slices(file_name):
          (FE_prof_ax, axs[2])) = axes
 
         if Nu > 1 and Nv > 1:
-            axs[2].set_xlabel(x_axis_labels)
+            axs[2].set_xlabel(x_axis_labels+' (bottom)')
             axs[0].axes.xaxis.set_ticks([])
             axs[1].axes.xaxis.set_ticks([])
             axs[0].axes.yaxis.set_ticks([])
@@ -112,9 +112,9 @@ def plot_OP_comps_and_slices(file_name):
             axs[1].set_xlabel(rf'$z/\xi_0$')
             axs[2].set_xlabel(rf'$z/\xi_0$')
         elif Nv == 1:
-            axs[0].set_xlabel(rf'$x/\xi_0$')
-            axs[1].set_xlabel(rf'$x/\xi_0$')
-            axs[2].set_xlabel(rf'$x/\xi_0$')
+            axs[0].set_xlabel(rf'${x_axis_labels}/\xi_0$')
+            axs[1].set_xlabel(rf'${x_axis_labels}/\xi_0$')
+            axs[2].set_xlabel(rf'${x_axis_labels}/\xi_0$')
     elif Nop == 5:
         fig, axes = plt.subplots(3,3)
         # then unpack the axes tuple
@@ -132,14 +132,14 @@ def plot_OP_comps_and_slices(file_name):
             axs[3].axes.yaxis.set_ticks([])
             axs[4].axes.yaxis.set_ticks([])
 
-            axs[2].set_xlabel(x_axis_labels)
-            axs[4].set_xlabel(x_axis_labels)
+            axs[2].set_xlabel(x_axis_labels+' (bottom)')
+            axs[4].set_xlabel(x_axis_labels+' (bottom)')
         elif Nu == 1:
             axs[2].set_xlabel(rf'$z/\xi_0$')
             axs[4].set_xlabel(rf'$z/\xi_0$')
         elif Nv == 1:
-            axs[2].set_xlabel(rf'$x/\xi_0$')
-            axs[4].set_xlabel(rf'$x/\xi_0$')
+            axs[2].set_xlabel(rf'${x_axis_labels}/\xi_0$')
+            axs[4].set_xlabel(rf'${x_axis_labels}/\xi_0$')
     else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
 
     fig.suptitle(f'OP-{Nop}')
@@ -162,16 +162,20 @@ def plot_OP_comps_and_slices(file_name):
 
     # plot the FE profile
     FE_prof_ax.set_ylabel('FE')
-    FE_prof_ax.set_title('Total FE profile')
+    x_array = np.linspace(ext[2],ext[3],Nv)
     if Nu > 1 and Nv > 1:
-        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][len(FE_data_array[0])//2,:])
-        FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
+        FE_prof_ax.set_title(rf'Total FE profile; along {x_axis_labels}$ = {round(x_array[len(FE_data_array[0])//2],2)}$')
+        FE_prof_ax.plot(x_array, FE_data_array[0][len(FE_data_array[0])//2,:])
+        FE_prof_ax.set_xlabel(r'$z/\xi_0$')
     elif Nu == 1:
-        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])
+        FE_prof_ax.set_title(rf'Total FE profile; along {x_axis_labels}$ = 0$')
+        FE_prof_ax.plot(x_array, FE_data_array[0][0])
         FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
     elif Nv == 1:
-        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0])
-        FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
+        x_array = np.linspace(ext[0],ext[1],Nv)
+        FE_prof_ax.set_title(r'Total FE profile; along $z/\xi_0 = 0$')
+        FE_prof_ax.plot(x_array, FE_data_array[0])
+        FE_prof_ax.set_xlabel(x_axis_labels)
 
     # plot the 2D heatmap of the FE
     FE_ax.set_title('Total FE')

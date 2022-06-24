@@ -178,16 +178,20 @@ def plot_OP_comps_and_slices_compare(file_name1, file_name2):
 
     # plot the FE profile
     FE_prof_ax.set_ylabel('FE')
-    FE_prof_ax.set_title('Total FE profile')
+    x_array = np.linspace(ext[2],ext[3],Nv)
     if Nu > 1 and Nv > 1:
-        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][len(FE_data_array[0])//2,:])
-        FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
+        FE_prof_ax.set_title(rf'Total FE profile; along $x/\xi_0 = {round(x_array[len(FE_data_array[0])//2],2)}$')
+        FE_prof_ax.plot(x_array, FE_data_array[0][len(FE_data_array[0])//2,:])
+        FE_prof_ax.set_xlabel(r'$z/\xi_0$')
     elif Nu == 1:
-        FE_prof_ax.plot(np.linspace(ext[2],ext[3],Nv), FE_data_array[0][0])
+        FE_prof_ax.set_title(r'Total FE profile; along $x/\xi_0 = 0$')
+        FE_prof_ax.plot(x_array, FE_data_array[0][0])
         FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
     elif Nv == 1:
-        FE_prof_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0])
-        FE_prof_ax.set_xlabel(rf'$x/\xi_0$')
+        x_array = np.linspace(ext[0],ext[1],Nv)
+        FE_prof_ax.set_title(r'Total FE profile; along $z/\xi_0 = 0$')
+        FE_prof_ax.plot(x_array, FE_data_array[0])
+        FE_prof_ax.set_xlabel(r'$x/\xi_0$')
 
     # plot the 2D heatmap of the FE
     FE_ax.set_title('Total FE')
