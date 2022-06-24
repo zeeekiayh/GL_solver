@@ -495,24 +495,32 @@ using namespace Eigen;
 					Di_eta = D[i] * eta_dag; // Calculate these matrix products outside of the grid loops
 					Dj_eta = D[j] * eta;     //	  to not have to calculate it over again for every grid point.
 
-					for (int u = 0; u < Nu; u++) {
+					for (int u = 0; u < Nu; u++) { // loop over the whole grid
 						if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
-						r = (u+u_shift); // don't *h?  Since we took it out of the r_inv matrices...
 						for (int v = 0; v < Nv; v++) {
 							if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
 							id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
-
-							freeEg( id ) += K_ij * Di_eta(id_m) * Dj_eta(id_n); // see eq. (46)
-
-							// We need 3 powers of h since this is actually an integral over 3 dimension (r, phi, z);
-							//   2 of the powers are obvious; the other power of h is hidden in r...not any more!
-							FE_minus_uniform += h*h * (2.0*M_PI*r*h) * wr*wz * ((freeEb(id) + 1.0) + 2.0/3.0*freeEg( id )/h/h); // see eq. (47)
+							freeEg(id) += K_ij * Di_eta(id_m) * Dj_eta(id_n); // see eq. (46)
 						}
 					}
-
 				}// if kij
 			}// for m,n
 		} // for over 3 coord.'s
+
+		// Since the loop above will actually add to each element "freeEg(id)" several times
+		//   in the loop above, we must wait til afterwards (now) to calulate the integral.
+		for (int u = 0; u < Nu; u++) { // loop over the whole grid
+			if( (u==0 || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
+			r = (u+u_shift); // don't *h;  since we took it out of the r_inv matrices...
+			for (int v = 0; v < Nv; v++) {
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+				id = ID(u,v,0);
+
+				// We need 3 powers of h since this is actually an integral over 3 dimension (r, phi, z);
+				//   2 of the powers are obvious; the other power of h is hidden in r...not any more!
+				FE_minus_uniform += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) + 1.0) + 2.0/3.0*freeEg(id) ); // see eq. (47)
+			}
+		}
 
 		freeEg *= 2.0/3.0/(h*h);
 		FEdensity = freeEb + freeEg;
