@@ -138,8 +138,8 @@ def plot_OP_comps_and_slices(file_name):
             axs[2].set_xlabel(rf'$z/\xi_0$')
             axs[4].set_xlabel(rf'$z/\xi_0$')
         elif Nv == 1:
-            axs[2].set_xlabel(rf'${x_axis_labels}/\xi_0$')
-            axs[4].set_xlabel(rf'${x_axis_labels}/\xi_0$')
+            axs[2].set_xlabel(x_axis_labels)
+            axs[4].set_xlabel(x_axis_labels)
     else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
 
     fig.suptitle(f'OP-{Nop}')
@@ -172,7 +172,7 @@ def plot_OP_comps_and_slices(file_name):
         FE_prof_ax.plot(x_array, FE_data_array[0][0])
         FE_prof_ax.set_xlabel(rf'$z/\xi_0$')
     elif Nv == 1:
-        x_array = np.linspace(ext[0],ext[1],Nv)
+        x_array = np.linspace(ext[0],ext[1],Nu)
         FE_prof_ax.set_title(r'Total FE profile; along $z/\xi_0 = 0$')
         FE_prof_ax.plot(x_array, FE_data_array[0])
         FE_prof_ax.set_xlabel(x_axis_labels)
