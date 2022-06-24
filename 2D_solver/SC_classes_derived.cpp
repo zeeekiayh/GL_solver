@@ -312,10 +312,14 @@ using namespace Eigen;
 		SpMat_cd tempDv, tempDu;
 		
 		for (int n = 0; n < 9; n++) {
-			tempDv = n < Nop ? Dv_BD(eta_BC[n],n,dummy,dummy) : Dv; // we only have BC's for the Nop ... so
-			tempDu = n < Nop ? Du_BD(eta_BC[n],n,dummy,dummy) : Du; // 	we must just use the default otherwise
-			if (Nv > 1) Dz += Place_subMatrix(n,n,9,tempDv);
-			if (Nu > 1) Dr += Place_subMatrix(n,n,9,tempDu);
+			if (Nv > 1) {
+				tempDv = n < Nop ? Dv_BD(eta_BC[n],n,dummy,dummy) : Dv; // we only have BC's for the Nop ...
+				Dz += Place_subMatrix(n,n,9,tempDv);
+			}
+			if (Nu > 1) {
+				tempDu = n < Nop ? Du_BD(eta_BC[n],n,dummy,dummy) : Du; // ... so we just use the default otherwise
+				Dr += Place_subMatrix(n,n,9,tempDu);
+			}
 		}
 		
 		// build the D_phi matrix
@@ -330,9 +334,6 @@ using namespace Eigen;
 				0, 0, 0, 0, 1, 0, 0, 0, 0,
 				0, 0, 0, 1, 0, 0, 0, 0, 0;
 		Dphi = kroneckerProduct(temp,r_inv);
-
-		// add the to the D vector for simple computation of free energy density
-		// this->D.insert(D.end(),{Dr, Dphi, Dz});
 		
 		return;
 	}
@@ -344,6 +345,13 @@ using namespace Eigen;
 				Drm(grid_size,grid_size),   // D_r^-
 				Drzp(grid_size,grid_size),  // D_rz^+
 				D2t(grid_size,grid_size);   // D^2 ~
+				// initialize to 0-matrix in case they aren't needed
+				//    to be built, but they will still be in the code!
+				Dr2t *= 0.0;
+				Drp *= 0.0;
+				Drm *= 0.0;
+				Drzp *= 0.0;
+				D2t *= 0.0;
 
 		// define D matrices that are used in others' definitions
 		SpMat_cd Dr2_gsize(grid_size,grid_size),
@@ -353,6 +361,14 @@ using namespace Eigen;
 				Dz_over_r(grid_size,grid_size),
 				Dz2_gsize(grid_size,grid_size),
 				Dz_gsize(grid_size,grid_size);
+				Dr2_gsize *= 0.0;
+				Dr_gsize *= 0.0;
+				Dr_over_r *= 0.0;
+				Drz_gsize *= 0.0;
+				Dz_over_r *= 0.0;
+				Dz2_gsize *= 0.0;
+				Dz_gsize *= 0.0;
+
 		SpMat_cd r2_inv = r_inv*r_inv; // this one is the same regardless of BC's
 
 		// the matrices -- 2 parts of the solver matrix
@@ -369,12 +385,12 @@ using namespace Eigen;
 			// initialize the D matrices based on BC's
 			// only make those that we ABOLUTELY need, because these can take a LONG time to build!
 			if (Nu > 1) Dr2_gsize = Du2_BD(eta_BC[n],n,initOPvector,rhsBC_r2_gsize);
-			Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
-			if (Nu > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
+			if (Nv > 1) Dz2_gsize = Dv2_BD(eta_BC[n],n,initOPvector,rhsBC_z2_gsize);
+			if (Nu > 1 && Nv > 1 && (n == 0 || n == 2 || n == 3 || n == 4)) Drz_gsize = Duv_BD(eta_BC[n],n,initOPvector,rhsBC_rz_gsize);
 			if (Nu > 1 && (n == 0 || n == 1)) Dr_gsize  = Du_BD (eta_BC[n],n,initOPvector,rhsBC_r_gsize);
-			if (n == 0) Dz_gsize  = Dv_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
+			if (Nv > 1 && n == 0) Dz_gsize  = Dv_BD (eta_BC[n],n,initOPvector,rhsBC_z_gsize);
 			if (Nu > 1) Dr_over_r = r_inv*Dr_gsize;
-			if (n == 0 || n == 1 || n == 3 || n == 4) Dz_over_r = r_inv*Dz_gsize;
+			if (Nv > 1 && (n == 0 || n == 1 || n == 3 || n == 4)) Dz_over_r = r_inv*Dz_gsize;
 
 			// build each complicated D matrix
 			if (n == 0 || n == 3) Dr2t = Dr2_gsize + Dr_over_r - r2_inv;
