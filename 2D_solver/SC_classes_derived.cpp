@@ -304,7 +304,7 @@ using namespace Eigen;
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,0);
-			r_inv.coeffRef(id,id) = 1./((u+u_shift)  ); // don't *h? // shift u-points to half-grid points to avoid 1/r|r=0 problems
+			r_inv.coeffRef(id,id) = 1./(u+u_shift); 
 		}
 
 		T_vector dummy; // just a dummy variable for arguments below
@@ -495,41 +495,32 @@ using namespace Eigen;
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
 		// some other variable used in the loops below; label them here to reduce time in the loops
 		vector<T_vector> D_eta_c, D_eta;
-		double K_ij, r;
+		double K_ijmn, r;
 		int id, id_m, id_n;
 
-		freeEg *= 0.0; // zero out the free energy grad vector
-
-		// build the vectors of D-matrices used in loops below
+		// build the derivative vectors 
 		D_eta_c.insert(D_eta_c.end(),{Dr*eta_c, Dphi*eta_c, Dz*eta_c});
 		D_eta.insert(D_eta.end(),{Dr*eta, Dphi*eta, Dz*eta});
 
-		for (int i = 0; i < 3; i++) // Loop through the 3 coordinates
-		for (int j = 0; j < 3; j++)
-		for (int m = 0; m < 9; m++)
-		for (int n = 0; n < 9; n++) {
-			K_ij = Kij(i,j,m,n);
-
-			if ( abs(K_ij) > 1e-4 )      // Just to not have to calculate as much, if not needed!
-			for (int u = 0; u < Nu; u++) // loop over the whole grid
-			for (int v = 0; v < Nv; v++) {
-				id = ID(u,v,0), id_m = ID(u,v,m), id_n = ID(u,v,n); // id's for vectors
-				freeEg(id) += K_ij * D_eta_c[i](id_m) * D_eta[j](id_n); // see eq. (46)
-			}
-		}
-
-		// Since the loop above will actually add to each element "freeEg(id)" several times
-		//   in the loop above, we must wait til afterwards (now) to calulate the integral.
 		for (int u = 0; u < Nu; u++) { // loop over the whole grid
-			if( ( (u==0 && u_shift<0.1) || u==Nu-1) && Nu>1 ) wr=0.5; else wr=1.0;
-			r = (u+u_shift); // don't *h;  since we took it out of the r_inv matrices...
+			if( Nu>1 && ( u==Nu-1 || (u==0 && u_shift<0.1) ) ) wr=0.5; else wr=1.0;
+			r = (u+u_shift); 
 			for (int v = 0; v < Nv; v++) {
 				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+
 				id = ID(u,v,0);
+				freeEg(id)=0;
+				for (int m = 0; m < 9; m++) for (int n = 0; n < 9; n++) { // sum over op components 
+					id_m = ID(u,v,m), id_n = ID(u,v,n); 
+					for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) { // sums over coordinates 
+						K_ijmn = Kij(i,j,m,n); 
+						if ( abs(K_ijmn) > 1e-4 )   freeEg(id) += K_ijmn * D_eta_c[i](id_m) * D_eta[j](id_n); // see eq. (46)
+				}}
 
 				FE_minus_uniform += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) + 1.0) + 2.0/3.0*freeEg(id) ); // see eq. (47)
-			}
-		}
+
+			} // v
+		} // u
 
 		freeEg *= 2.0/3.0/(h*h);
 		FEdensity = freeEb + freeEg;
