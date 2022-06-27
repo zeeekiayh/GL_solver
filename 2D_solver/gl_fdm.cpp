@@ -39,6 +39,7 @@ int main(int argc, char** argv)
 	T_vector dummy(VectSize);                  // a dummy vector, ...for free energy?
 	SpMat_cd M(VectSize,VectSize);             // the matrix we will use to solve
 	VectorXd FEdens(GridSize), freeEb(GridSize), freeEg(GridSize); // free energy on the grid points
+	VectorXd FEdens_ref=VectorXd::Constant(GridSize,-1.0);  // reference free energy, -1=bulk uniform value by default
 	// add other observables here as desired...
 
 	// ===============================================================================================================
@@ -80,7 +81,8 @@ int main(int argc, char** argv)
 		// ---- set the OP vector to a good guess based on BC's ----
 		if (file_name == string("conditions5.txt"))              pSC->initialOPguess             (eta_BC, OPvector, no_update);
 		else if (file_name == string("conditions5_AyyFlip.txt")) pSC->initGuessWithCircularDomain(eta_BC, OPvector, no_update);
-		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, no_update); // Anton's version
+		else if (file_name == string("conditions5_wall.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, FEdens_ref, no_update); // Anton's version
+		else if (file_name == string("conditions5_slab.txt"))    pSC->initOPguess_special(cond, eta_BC, OPvector, FEdens_ref, no_update); // Anton's version
 		else {
 			cout << "Unknown file_name. Exiting..." << endl;
 			delete pSC;
@@ -110,14 +112,15 @@ int main(int argc, char** argv)
 	cout << "solved!" << endl;
 
 	cout << "calculating Free energy ...";
+	FEdens=FEdens_ref; // on INPUT: FEdensity is the density of a reference configuration;
 	double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg);
 	cout << "done" << endl;
-	cout << "the total energy loss in DW is " << totalFE << "\n";
+	cout << "the energy of the OP configuration relative to a refFE is " << totalFE << "\n";
 
 	// ===============================================================================================================
 
 	// write everything to file
-	pSC->WriteAllToFile(OPvector, freeEb, freeEg, "output_OP"+to_string(Nop)+( (argc == 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
+	pSC->WriteAllToFile(OPvector, FEdens, freeEb, FEdens_ref, "output_OP"+to_string(Nop)+( (argc == 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
 
 	// ===============================================================================================================
 

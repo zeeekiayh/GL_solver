@@ -62,6 +62,7 @@ using namespace Eigen;
 		return;
 	}
 
+	// on input FEdens is the FE density of a reference configuration 
 	double ThreeCompHe3::FreeEn(T_vector & OPvector, in_conditions cond, Eigen::VectorXd & FEdens, Eigen::VectorXd & FEb, Eigen::VectorXd & FEg) {
 		T_vector dummy(vect_size); 
 		this->bulkRHS_FE(cond, OPvector, dummy, FEb); // get the bulk contribution to free energy density
@@ -72,7 +73,7 @@ using namespace Eigen;
 
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		double FE_minus_ref=0.0; // relative to some reference free energy 
 		int x = 0, z = 1;            // indices for the K-matrix
 		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
 
@@ -95,15 +96,15 @@ using namespace Eigen;
 						FEg( id ) += gK[m][n](x,z) * real(Du_eta_dag(id_m) * Dv_eta(id_n)); 
 					}
 				}
-				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
+				FE_minus_ref += wx*wz*(h*h * (FEb(id) - FEdens(id)) + 2.0/3.0*FEg( id )); 
 			}
 		}
 
 		FEg *= 2.0/3.0/(h*h);
 		FEdens = FEb + FEg; 
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+		if(Nu==1 || Nv==1) FE_minus_ref /=h;
 
-		return FE_minus_uniform;
+		return FE_minus_ref;
 	}
 // ===========================================================
 
@@ -154,7 +155,7 @@ using namespace Eigen;
 
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		double FE_minus_ref=0.0; // relative to the reference Free energy (FEdens on INPUT) 
 		int x = 0, z = 1;            // indices for the K-matrix
 		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
 
@@ -177,15 +178,15 @@ using namespace Eigen;
 						FEg( id ) += gK[m][n](x,z) * real(Du_eta_dag(id_m) * Dv_eta(id_n)); 
 					}
 				}
-				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0/3.0*FEg( id )); 
+				FE_minus_ref += wx*wz*(h*h * (FEb(id) -FEdens(id)) + 2.0/3.0*FEg( id )); 
 			}
 		}
 
 		FEg *= 2.0/3.0/(h*h);
 		FEdens = FEb + FEg; 
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+		if(Nu==1 || Nv==1) FE_minus_ref /=h;
 
-		return FE_minus_uniform;
+		return FE_minus_ref;
 	}
 
 	void FiveCompHe3 :: initGuessWithCircularDomain(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, vector<int> & no_update) {
@@ -262,7 +263,7 @@ using namespace Eigen;
 
 		T_vector Du_eta_dag=Du_eta.adjoint(), Dv_eta_dag=Dv_eta.adjoint(); 
 		
-		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		double FE_minus_ref=0.0; // relative to a reference OP configuration 
 		int x = 0, z = 1;            // indices for the K-matrix
 		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
 
@@ -279,15 +280,15 @@ using namespace Eigen;
 				FEg( id ) += gK[0][0](z,x) * real(Dv_eta_dag(id) * Du_eta(id)); 
 				FEg( id ) += gK[0][0](x,z) * real(Du_eta_dag(id) * Dv_eta(id)); 
 
-				FE_minus_uniform += wx*wz*(h*h * (FEb(id) + 1.0) + 2.0*FEg( id )); 
+				FE_minus_ref += wx*wz*(h*h * (FEb(id) - FEdens(id)) + 2.0*FEg( id )); 
 			}
 		}
 
 		FEg *= 2.0/(h*h);
 		FEdens = FEb + FEg; 
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h;
+		if(Nu==1 || Nv==1) FE_minus_ref /=h;
 
-		return FE_minus_uniform;
+		return FE_minus_ref;
 	}
 // ===========================================================
 
@@ -491,7 +492,7 @@ using namespace Eigen;
 		T_vector eta(9*grid_size); eta << OPvector, T_vector::Zero((9-Nop)*grid_size);
 		T_vector eta_c=eta.conjugate();
 		
-		double FE_minus_uniform=0.0; // relative to uniform state with density FEuniform=-1;
+		double FE_minus_ref=0.0; // relative to a reference Free energy, FEdensity on INPUT 
 		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
 		// some other variable used in the loops below; label them here to reduce time in the loops
 		vector<T_vector> D_eta_c, D_eta;
@@ -517,16 +518,16 @@ using namespace Eigen;
 						if ( abs(K_ijmn) > 1e-4 )   freeEg(id) += K_ijmn * D_eta_c[i](id_m) * D_eta[j](id_n); // see eq. (46)
 				}}
 
-				FE_minus_uniform += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) + 1.0) + 2.0/3.0*freeEg(id) ); // see eq. (47)
+				FE_minus_ref += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) - FEdensity(id)) + 2.0/3.0*freeEg(id) ); // see eq. (47)
 
 			} // v
 		} // u
 
 		freeEg *= 2.0/3.0/(h*h);
 		FEdensity = freeEb + freeEg;
-		if(Nu==1 || Nv==1) FE_minus_uniform /=h; 
+		if(Nu==1 || Nv==1) FE_minus_ref /=h; 
 
-		return FE_minus_uniform;
+		return FE_minus_ref;
 	}
 
 	// initial guess functions
@@ -606,8 +607,8 @@ using namespace Eigen;
 		// 	// else OPvector(id) = 0.0;
 		// }
 
-		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
+		VectorXd dummyFE=VectorXd::Zero(grid_size); 
+		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
 		delete pSC_init;
 
 		return;
@@ -651,8 +652,8 @@ using namespace Eigen;
 			}
 		}
 
-		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP3c.txt");
+		VectorXd dummyFE(grid_size); 
+		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP3c.txt");
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
@@ -693,8 +694,8 @@ using namespace Eigen;
 			}
 		}
 
-		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
+		VectorXd dummyFE(grid_size); 
+		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
 	}
 
 	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
@@ -737,7 +738,7 @@ using namespace Eigen;
 			}
 		}
 
-		VectorXd freeEb(grid_size), freeEg(grid_size);
-		this->WriteAllToFile(OPvector, freeEb, freeEg, "initial_guess_OP5c.txt");
+		VectorXd dummyFE(grid_size); 
+		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
 	}
 // ===========================================================

@@ -4,12 +4,12 @@ BOUNDARY CONDITIONS
 top               bottom           left             right     ( D/N : slip : value )
 N  1e+10  1       N  1e+10  1       N  1e+10  1    N  1e+10  1  # Axx
 N  1e+10  1       N  1e+10  1       N  1e+10  1    N  1e+10  1  # Ayy
-N  1e+10  0       D  1e-10  0       N  1e+10 -1    N  1e+10  1  # Azz
+N  1e+10  1       D  1e-10  0       N  1e+10 -1    N  1e+10  1  # Azz
 D  1e-10  0       N  1e+10  0       N  1e+10  0    N  1e+10  0  # Azx
 D  1e-10  0       D  1e-10  0       N  1e+10  0    N  1e+10  0  # Axz
 
-301 61 	# mesh size
-0.3    	# h (step size)
+201 91 	# mesh size
+0.2    	# h (step size)
 0.5     	# temperature in Tc 
 0       	# pressure in bars
 1e-5    # accuracy of OP convergence

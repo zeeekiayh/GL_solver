@@ -47,7 +47,7 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		return;
 	}
 
-	int cts = 0; // count loops
+	int iter = 0; // count iterations 
 	double err;  // to store current error
 	VectorXd dummy(vect_size); // dummy free energy variable for RHS function
 	T_vector df(vect_size), rhs(vect_size); 
@@ -57,7 +57,7 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		   
  	// loop until f converges or until it's gone too long
 	do {
-		cts++; // increment counter
+		iter++; // increment counter
 
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = (M*f - get_rhs(h2*rhs, rhsBC) ); // the best, works with both relaxation and acceleration methods 
@@ -65,12 +65,14 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart next guess
 
 		// output approx. percent completed
-		cout << "\033[A\33[2K\r" << "\testimated: " << round((cts*100.)/cond.N_loop) << "% done; current error: " << err << endl;
-	} while(err > cond.ACCUR && cts < cond.N_loop);
+		// cout << "\033[A\33[2K\r" << "\t estimated: " << round((iter*100.)/cond.N_loop) << "% done; current error: " << err << endl;
+		if (iter%25==0) 
+		cout << "\033[A\33[2K\r" << "\t done " << iter << " iterations (out of " << cond.N_loop <<")" << "; current error: " << err << endl;
+	} while(err > cond.ACCUR && iter < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
 	else cout << "\tResult did not converge satisfactorily:" << endl;
-	cout << "\t\titerations = " << cts << endl;
+	cout << "\t\titerations = " << iter << endl;
 	cout << "\t\trelative error = " << err << endl;
 
 	cout << endl;

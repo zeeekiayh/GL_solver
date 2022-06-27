@@ -55,7 +55,7 @@ class SC_class{
 		// the general method of making the initial guess based on the given BC's
 		void initialOPguess(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
 		// a method of initializing a guess based on a previous solution
-		void initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update);
+		void initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FEref, std::vector<int> & no_update);
 		// Needs to be virtual so that it can be accessed by "pSC" in 'gl_fdm.cpp', because it is defined as a 'SC_class' object;
 		// 		any initial guess functions that should be defined for specific OP's will need to them be defined in the derived
 		//		classes, and thus will all need to be virtual as well.
@@ -70,7 +70,7 @@ class SC_class{
 		virtual void BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC){};
 		
 		// write all components and free energy to a file
-		void WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name);
+		void WriteAllToFile(const T_vector& solution, const Eigen::VectorXd & FEdens, const Eigen::VectorXd & FEbulk, const Eigen::VectorXd & FEref, std::string file_name);
 
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};

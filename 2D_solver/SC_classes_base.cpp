@@ -475,7 +475,7 @@ void SC_class :: initialOPguess(std::vector<Bound_Cond> eta_BC, T_vector & OPvec
 
 // a method of initializing a guess based on a previous solution
 // Works, with minimal changes for slab or semi-infinite system. This is determined by the boundary conditions 
-void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, std::vector<int> & no_update) {
    vector<int> no_update_init;
    in_conditions cond_init=cond; // copy the conditions, 
    // but change them appropriately to fit this guess 
@@ -493,65 +493,77 @@ void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond>
 	}
    int GridSize_init = cond_init.SIZEu * cond_init.SIZEv;
    int VectSize_init = cond_init.Nop * GridSize_init;
-   T_vector OPvector_init(VectSize_init), dummy(VectSize_init), dummyE(GridSize_init);
+   T_vector OPvector_init(VectSize_init);
    SpMat_cd M_init(VectSize_init,VectSize_init);
    T_vector rhsBC_init = T_vector::Zero(VectSize_init);
-   VectorXd freeEb_init(GridSize_init), freeEg_init(GridSize_init); // free energy on the grid points
+   VectorXd freeEb_init(GridSize_init), freeEg_init(GridSize_init), FEdens_init(GridSize_init); // free energy on the grid points
+   VectorXd FEref_init=VectorXd::Constant(GridSize_init,-1.0);  // reference free energy, -1=bulk uniform value by default
+   FEdens_init = FEref_init; // FE density on input is the uniform bulk free energy
 
    SC_class *pSC_init = new ThreeCompHe3( cond_init.Nop, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
    pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
    pSC_init->BuildSolverMatrix(M_init, rhsBC_init, OPvector_init, eta_BC_init);
 
    Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init);
-   pSC_init->bulkRHS_FE(cond, OPvector_init, dummy, freeEb_init); 
-   pSC_init->FreeEn(OPvector_init, cond_init, dummyE, freeEb_init, freeEg_init); // we don't really need this since it's for the initial guess...
-   pSC_init->WriteAllToFile(OPvector_init, freeEb_init, freeEg_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt");
+   double totalFE = pSC_init->FreeEn(OPvector_init, cond_init, FEdens_init, freeEb_init, freeEg_init); 
+   cout << "initial 1D Guess total FE energy relative to bulk's is " << totalFE << "\n";
+   pSC_init->WriteAllToFile(OPvector_init, FEdens_init, freeEb_init, FEref_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt");
 
-   for (int n = 0; n < Nop; n++) {
-      for (int v = 0; v < Nv; v++) {
+	double R=10.0;
+
+	for (int v = 0; v < Nv; v++) {
 		double z=h*v;
-         for (int u = 0; u < Nu; u++) {
-            double x = h*(u-Nu/2);
-            int id = ID(u,v,n);
-            int id_init = v + GridSize_init*n;
-            if (n < 3)
-               OPvector(id) = OPvector_init(id_init) * ( (n==2) ? -tanh(x/2) : 1. );
-            else 	if(n==3) 
-               	OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
-         else OPvector(id) = 0.0;
+	   for (int u = 0; u < Nu; u++) {
+		double x = h*(u-Nu/2);
+		double rho=sqrt(x*x+z*z);
 
-      // Don't need to update values that we already know from the BC's
-		if(u==0  && eta_BC[n].typeL=="D" && Nv>1) no_update.push_back( id );
-		if(u==Nu-1 && eta_BC[n].typeR=="D" && Nv>1) no_update.push_back( id );
-		if(v==0  && eta_BC[n].typeB=="D" && Nu>1) no_update.push_back( id );
-		if(v==Nv-1 && eta_BC[n].typeT=="D" && Nu>1) no_update.push_back( id );
-         }
-      }
-   }
+		for (int n = 0; n < Nop; n++) {
+			int id = ID(u,v,n);
+			int id_init = v + GridSize_init*n;
+
+			if     (n==0) OPvector(id) = OPvector_init(id_init);  
+			else if(n==1) OPvector(id) = OPvector_init(id_init);  
+			//else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh((R-rho)/2); // semi-circle domain in Azz near a wall
+			else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh(-x/2); // domain wall in Azz component along x
+			else if(n==3) OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
+		   	else 		  OPvector(id) = 0.0;
+
+			// Don't need to update values that we already know from the BC's
+			if(u==0  && eta_BC[n].typeL=="D" && Nv>1) no_update.push_back( id );
+			if(u==Nu-1 && eta_BC[n].typeR=="D" && Nv>1) no_update.push_back( id );
+			if(v==0  && eta_BC[n].typeB=="D" && Nu>1) no_update.push_back( id );
+			if(v==Nv-1 && eta_BC[n].typeT=="D" && Nu>1) no_update.push_back( id );
+			//if( n==2 &&  abs(rho-R) < 0.4*h) no_update.push_back( id ); // to fix the radius of the semi-circle domain
+		}
+		FE_ref( ID(u,v,0) ) = FEdens_init( v );
+
+	   }
+	}
 	delete pSC_init;
 	return;
 }
 
-void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bulk, const T_vector& FE_grad, std::string file_name) {
+void SC_class :: WriteAllToFile(const T_vector& solution, const Eigen::VectorXd & FEdens, const Eigen::VectorXd & FEbulk, const Eigen::VectorXd & FEref, std::string file_name)
+{
 	std::ofstream data (file_name); // open the file for writing
 	if (data.is_open()) {           // if opening was successful...
       // set precision here
       data << std::setprecision(8) << std::fixed;
 
       // label the columns in the output file
-      data << "x/xi     \t z/xi     ";
+      data << "#x/xi     \t\t z/xi     ";
 
       // loop through all OP components...
       for (int n = 0; n < Nop; n++)
-         data << "\t#Re(OP" << n << ") \t#Im(OP" << n << ")  ";
+         data << "\tRe(OP" << n << ") \tIm(OP" << n << ")  ";
 
-      // TODO: add more here! more columns: FE_total - FE_b, FE_total - FE_B, etc.
-      data << "\ttotal_FE  \tbulk_FE   \tgrad_FE";
-      data << std::endl; // end the line
+      // add more here if needed 
+      data << "\tFEdensity  \tbulk_FE   \tgrad_FE \t FE-FEref";
+      data << std::endl; 
 
       // loop through the whole mesh...
       double x_shift=(Nu/2)*h;
-      double z_shift=0.0;//(Nv/2)*h; // the z-shift doesn't really make a difference, does it?
+      double z_shift=0.0;//(Nv/2)*h; 
       for (int v = 0; v < Nv; v++) {
          for (int u = 0; u < Nu; u++) {
             data << h*u-x_shift << "\t" << h*v-z_shift; // write the position
@@ -563,14 +575,16 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const T_vector& FE_bul
             }
 
             int id = ID(u, v, 0); // get the id
-            // TODO: add more here! more columns like said above
-            data << "\t" << real(FE_bulk(id))+real(FE_grad(id)); // because it should already pure real!
-            data << "\t" << real(FE_bulk(id));
-            data << "\t" << real(FE_grad(id));
+            // add more here if needed 
+            data << "\t" << FEdens(id); 
+            data << "\t" << FEbulk(id);
+            data << "\t" << FEdens(id) - FEbulk(id); // FE gradient part
+            data << "\t" << FEdens(id) - FEref(id); // FE relative to some reference 
 
             data << endl; // finish the line
-         }
-      }
+         } // u-loop
+	   if(Nu>1) data << "\n"; // for gnuplot to make 3D surfaces we need a break 
+       } // v-loop
 	}
 	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
 }
