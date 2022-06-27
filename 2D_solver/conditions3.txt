@@ -6,7 +6,7 @@ N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Axx
 N  1e+03  1    N  1e+10  1    N  1e+07  1    N  1e+10  1  # Ayy
 N  1e+10  1    D  1e-10  0    N  1e+07  1    N  1e+10  1  # Azz
 
-180 180 # mesh size (x, z)
+1 180 # mesh size (x, z)
 0.1     # h (step size)
 0.5e-4  # temperature
 1e5     # pressure
