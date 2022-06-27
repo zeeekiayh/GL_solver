@@ -1,10 +1,35 @@
 # Ginzburg-Landau equation solver
 
-Using FDM to solve the GL equations. I am open for any suggestions and help.
+Using FDM to solve the GL equations in Cartesian and Cylindrical coordinates. I am open to any suggestions and help.
+
+#### How to use:
+
+* Must have Makefile, GCC, python3; download the Eigen C++ library and make it accessible to GCC, i.e. in your ```include``` folder.
+* Run the code for a system (in Linux terminal):
+  - ```$ make``` (if not made already)
+  - ```$ ./gl_fdm <conditions_file_name> [c]``` (optional argument ```c``` to specify that the conditions file is for a cylindrical system.)
+  - ```$ make plot<#>[c]``` (see more below in **plotting**)
+* Procedure for new systems:
+  - Write a new conditions file (follow the format in the other conditions files). (Look at how these files are read in: ```readwrite.hpp```.)
+    - If you want to solve a system that is not 1-, 3-, or 5-component (or not the same OP structure), you will have to write a new derived class, following th pattern in ```SC_class.hpp```, and add all appropriate code to ```SC_classes_base.cpp``` and ```SC_classes_derived```.
+    - Notes about the conditions file:
+      - Be careful to not change the format--it is important!
+      - In the subsection ```BOUNDARY CONDITIONS```, ```N``` means a Neumann condition, ```D``` means Dirichlet.
+      - The first number is the "slip length"; should be small (```~1e-10```) for D-type, and larger for N-type.
+      - The second number is the (estimated) OP value on that boundary. (It will be held fixed for D-type, but is only an estimate for N-type.)
+      - There are sufficient comments to describe the other things there.
+      - To have the solver use normal relaxation methods rather than the acceleration method, set the parameter ```wait``` equal to ```number loops```.
+  - Write a new ```initialGuess``` function, in  ```SC_classes_base.cpp``` or ```SC_classes_derived```, with corresponding additions to ```SC_class.hpp```. You may choose to use a pre-exisiting initial guess function.
+  - Add the conditional statements to ```gl_fdm.cpp``` to say what derived class and which initial guess function must be used for your conditions file. (Be careful to clean up memory! It can cause very strange errors if you don't!)
+  - Run the code as described above.
+
+* The **plotting** (python) script should just take the file that ```WriteAllToFile()``` wrote to. So, you can either use the quick ones through the Makefile: ```make plot5c```, for example, to plot the solution from a 5-component cylindrical system. When the script runs, it will ask if you are plotting for a cylindrical OP--that is just so that it will have the correct plot titles and axes labels. If you want to run the python script yourself, say ```python3 plot_solution.py <solution_file_name>```. You can also use ```solution_comparison.py``` (may still be incomplete) to see the difference between 2 solutions: ```python3 solution_comparison.py <sol_file_name_1> <sol_file_name_2>```. It will ask if each is a cylindrical system, again for labeling. It will give you an error message if the mesh sizes are not the same; and it will warn you if it thinks that the step sizes are inconsistent between the 2.
 
 #### Abstract
 
 The Ginzburg-Landau (GL) theory is often used to determine the stability of superfluid phases. We are interested in some phases of He-3 that that are manifest in confined geometries. We design and implement the finite element method to solve the coupled differential equations derived from the GL theory. We discuss methods for handling boundary conditions, building the matrix equation, and methods of relaxation.
+
+$^3$He is used to better understand the fundamental physics of superconductors and superfluids. The Ginzburg-Landau (GL) theory is often used to determine the stability of superfluid phases. Using weak coupling parameters for a 3-component order parameter (OP), the GL equations are derived and normalized with respect to the bulk value. The method for handling boundary conditions and the process of building the matrix equation are discussed. The finite difference method is used (implemented in C++ code) to solve the differential equations derived here. A brief description is provided on how to use the code. A short discussion is given on the main ideas of the program and how to modify the code for other systems. The program successfully solves for the OP on reasonably large meshes, in roughly 10 seconds.
 
 #### Description from presentaion:
 * What did we want to accomplish? Why did we do this research?
@@ -35,8 +60,6 @@ The Ginzburg-Landau (GL) theory is often used to determine the stability of supe
     - Building the matrix equation
     - The idea of relaxation to solve the system
   - Programming: C++, Eigen, Python
-    - .
-    - - What did you do that worked and what did you try that didn't work?
     - Started out by finding the inverse of the matrix, but then realized that sparse matrices in Eigen didn't have an inverse method. We also figured out that there are other solvers in the Eigen library that don't even need the inverse, and are much faster!
     - The normal relaxation method doesn't always converge very well (very dependent on the relaxation parameter). Anton wrote an acceleration method that is more stable and can converge faster.
     - Because of how the relaxation method works, the initial guess can make a huge difference in the speed of convergence, and whether or not it actually converges. We try to build each guess to match the given BC's and to be close to what we expect the solution to be. ...
@@ -49,11 +72,14 @@ The Ginzburg-Landau (GL) theory is often used to determine the stability of supe
     - I often started coding for the most general case that I could, but then my code would get too large and complicated, with so many errors hidden inside. I would then simplify, find the errors, and then start to generalize it again.
     - To find errors in the code, I would place print statements all over the place; I would comment parts out to see if that section caused the compilation error; I would carefully adjust parameters to see how it affected the output; I would run through the math and physics again to make sure I understood and was using the right equations.
 * Further research:
-  - fix/finish the 5-component Cartesian solver
-  - Make the cylindrical solver and calculate free-energy
-  - Figure out how to use the general gl equation form in the code (to calculate the rhs and the free-energy) rather than simplifying everything by hand and normalizing...or is that possible? What might the values be like if they're not normalized?
-* Sources:
-  - Anton Vorontsov
-  - list all papers
-  - cite others' pictures used
-  - Eigen C++ library
+  - fix/finish the 5-component Cartesian solver (done!)
+  - Make the cylindrical solver and calculate free-energy (done!)
+  - Figure out how to use the general gl equation form in the code (to calculate the rhs and the free-energy) rather than simplifying everything by hand and normalizing. (done!)
+* Sources/References:
+  - A. B. Vorontsov
+  - Levitin et al. "Evidence for a Spatially Modulated Superfluid Phase of 3He under Confinement." Physical Review Letters, Feb 2019.
+  - A. B. Vorontsov and J. A. Sauls. "Crystalline Order in Superfluid 3He Films." Physical Review Letters, Jan 2007.
+  - J. J. Wiman and J. A. Sauls. "Superfluid Phases of 3He in a Periodic Confined Geometry." J Low Temp Phys, 175:17–30, Oct 2014.
+  - J. J. Wiman and J. A. Sauls. "Superfluid Phases of 3He in Nanoscale Channels." Physical Review B, 92:1–13, Oct 2015.
+  - Joshua J. Wiman and J. A. Sauls. "Strong-Coupling and the Stripe Phase of 3He." J Low Temp Phys, 184:1054–1070, Jun 2016.
+  - Eigen C++ library (https://eigen.tuxfamily.org/index.php?title=Main_Page)
