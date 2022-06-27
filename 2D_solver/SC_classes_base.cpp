@@ -482,9 +482,9 @@ void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond>
       cond_init.Nop=3;
       cond_init.SIZEu = 1; // make it vertical, effectively setting u=0 
    vector<Bound_Cond> eta_BC_init(Nop); // change the Top boundary conditons 
-   	eta_BC_init[0]=eta_BC[0]; 
-   	eta_BC_init[1]=eta_BC[1]; 
-   	eta_BC_init[2]=eta_BC[2]; 
+   	eta_BC_init[0]=eta_BC[0];
+   	eta_BC_init[1]=eta_BC[1];
+   	eta_BC_init[2]=eta_BC[2];
 	// if Azz > 0 on top we want semi-infinite system along z, and we improve convergence of initial solution by setting D on top
 	if(abs(eta_BC[2].valueT)>0.1) { 
 		eta_BC_init[0].typeT="D"; eta_BC_init[0].slipT=1e-10; 

@@ -714,7 +714,7 @@ using namespace Eigen;
 							// /(Nu+Nv);
 			} else if (n == 2) {
 				double r = h*(u+u_shift);
-				double r_center = h*Nu/2;
+				double r_center = 20.0;//h*Nu/2;
 				OPvector(id) = tanh((r-r_center)/5.0);
 			} else { // n == 3, 4
 				OPvector(id) = 0.0;

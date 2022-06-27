@@ -93,69 +93,70 @@ def plot_OP_comps_and_slices(file_name):
     FE_ax, FE_prof_ax, empty_ax, grad_FE_ax = None, None, None, None
     fig, axes = None, None
 
-    # shape the plot based on OP size
-    if Nop == 3:
-        fig, axes = plt.subplots(3,2)
-        # then unpack the axes tuple
-        ((grad_FE_ax, axs[0]),
-         (FE_ax,      axs[1]),
-         (FE_prof_ax, axs[2])) = axes
+    if Nu > 1 and Nv > 1:
+        # shape the plot based on OP size
+        if Nop == 3:
+            fig, axes = plt.subplots(3,2)
+            # then unpack the axes tuple
+            ((grad_FE_ax, axs[0]),
+            (FE_ax,      axs[1]),
+            (FE_prof_ax, axs[2])) = axes
 
-        if Nu > 1 and Nv > 1:
             axs[2].set_xlabel(x_axis_labels+' (bottom)')
             axs[0].axes.xaxis.set_ticks([])
             axs[1].axes.xaxis.set_ticks([])
             axs[0].axes.yaxis.set_ticks([])
             axs[1].axes.yaxis.set_ticks([])
-        elif Nu == 1:
-            axs[0].set_xlabel(rf'$z/\xi_0$')
-            axs[1].set_xlabel(rf'$z/\xi_0$')
-            axs[2].set_xlabel(rf'$z/\xi_0$')
-        elif Nv == 1:
-            axs[0].set_xlabel(rf'${x_axis_labels}/\xi_0$')
-            axs[1].set_xlabel(rf'${x_axis_labels}/\xi_0$')
-            axs[2].set_xlabel(rf'${x_axis_labels}/\xi_0$')
-    elif Nop == 5:
-        fig, axes = plt.subplots(3,3)
+        elif Nop == 5:
+            fig, axes = plt.subplots(3,3)
+            # then unpack the axes tuple
+            ((grad_FE_ax, axs[0], axs[3]),
+            (FE_ax,      axs[1], axs[4]),
+            (FE_prof_ax, axs[2], empty_ax)) = axes
+
+            axs[0].axes.xaxis.set_ticks([])
+            axs[1].axes.xaxis.set_ticks([])
+            axs[3].axes.xaxis.set_ticks([])
+
+            if Nu > 1 and Nv > 1:
+                axs[0].axes.yaxis.set_ticks([])
+                axs[1].axes.yaxis.set_ticks([])
+                axs[3].axes.yaxis.set_ticks([])
+                axs[4].axes.yaxis.set_ticks([])
+
+                axs[2].set_xlabel(x_axis_labels+' (bottom)')
+                axs[4].set_xlabel(x_axis_labels+' (bottom)')
+    elif Nu == 1:
+        fig, axes = plt.subplots(2,2)
         # then unpack the axes tuple
-        ((grad_FE_ax, axs[0], axs[3]),
-         (FE_ax,      axs[1], axs[4]),
-         (FE_prof_ax, axs[2], empty_ax)) = axes
-
-        axs[0].axes.xaxis.set_ticks([])
-        axs[1].axes.xaxis.set_ticks([])
-        axs[3].axes.xaxis.set_ticks([])
-
-        if Nu > 1 and Nv > 1:
-            axs[0].axes.yaxis.set_ticks([])
-            axs[1].axes.yaxis.set_ticks([])
-            axs[3].axes.yaxis.set_ticks([])
-            axs[4].axes.yaxis.set_ticks([])
-
-            axs[2].set_xlabel(x_axis_labels+' (bottom)')
-            axs[4].set_xlabel(x_axis_labels+' (bottom)')
-        elif Nu == 1:
-            axs[2].set_xlabel(rf'$z/\xi_0$')
-            axs[4].set_xlabel(rf'$z/\xi_0$')
-        elif Nv == 1:
-            axs[2].set_xlabel(x_axis_labels)
-            axs[4].set_xlabel(x_axis_labels)
+        ((grad_FE_ax, FE_ax),
+        (FE_prof_ax, axs[0])) = axes
+        axs[0].set_xlabel(rf'$z/\xi_0$')
+    elif Nv == 1:
+        fig, axes = plt.subplots(2,2)
+        # then unpack the axes tuple
+        ((grad_FE_ax, FE_ax),
+        (FE_prof_ax, axs[0])) = axes
+        axs[0].set_xlabel(x_axis_labels)
     else: print(f"Implement 'plot_OP_comps_and_slices' for {Nop = }.")
 
     fig.suptitle(f'OP-{Nop}')
 
     # plot the 2D solution
-    for i in range(Nop):
-        axs[i].set_title(f'{custom_labels[i]}')
-        if Nu > 1 and Nv > 1:
+    if Nu > 1 and Nv > 1:
+        for i in range(Nop):
+            axs[i].set_title(f'{custom_labels[i]}')
             im = axs[i].imshow(OP_data_array[i][:,::-1].transpose(), extent=ext, cmap='bwr')
             plt.colorbar(im,ax=axs[i])
-        elif Nu == 1:
-            axs[i].plot(np.linspace(ext[2],ext[3],Nv), OP_data_array[i][0])
-            axs[i].set_ylim( [ min([0, OP_data_array.min()])-0.1, 0.1+max([0, OP_data_array.max()]) ] )
-        elif Nv == 1:
-            axs[i].plot(np.linspace(ext[0],ext[1],Nu), OP_data_array[i])
-            axs[i].set_ylim( [ min([0, OP_data_array.min()])-0.1, 0.1+max([0, OP_data_array.max()]) ] )
+    else:
+        for i in range(Nop):
+            if Nu == 1:
+                axs[0].plot(np.linspace(ext[2],ext[3],Nv), OP_data_array[i][0],label=f'{custom_labels[i]}')
+                axs[0].set_ylim( [ min([0, OP_data_array.min()])-0.1, 0.1+max([0, OP_data_array.max()]) ] )
+            if Nv == 1:
+                axs[0].plot(np.linspace(ext[0],ext[1],Nu), OP_data_array[i],label=f'{custom_labels[i]}')
+                axs[0].set_ylim( [ min([0, OP_data_array.min()])-0.1, 0.1+max([0, OP_data_array.max()]) ] )
+        axs[0].legend()
     
     if empty_ax != None:
         empty_ax.axis('off')
