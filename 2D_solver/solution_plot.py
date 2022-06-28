@@ -176,6 +176,19 @@ def main(argv): # argv will be like: [ file_name ]
     plt.colorbar(pcm,ax=FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # THE BASIC WAY TO JUST PLOT ONE FIGURE
+    # plt.clf() # make sure the figure is clear
+    # plt.title('Title')
+    # plt.xlabel(x_axis_label)
+    # plt.ylabel(z_axis_label)
+    # pcm = PColorMeshPlot(2,0.5,0.9,plt)
+    # plt.colorbar(pcm) # show the colorbar for this 2D plot
+    # plt.show()
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
     plt.show() # show the finished figure
 
 # how the python interpreter will know to run our function called 'main()'
