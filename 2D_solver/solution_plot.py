@@ -32,9 +32,7 @@ def read_columns_from_file(file_name):
                 line_count -= 1 # decrement once since we'll count it later, but we only count lines with data on it
         line_count += 1
     # now that we know Nv and the total number of lines...
-    Nu = line_count//Nv # BUT WILL HAPPEN WHEN WE HAVE 1D SYSTEMS?
-
-    # print(f'{labels = }')
+    Nu = line_count//Nv # MAY HAVE PROBLEMS FOR 1D SYSTEMS
 
     # calculate step size
     h = max( column_dict[labels[0]][1]-column_dict[labels[0]][0], column_dict[labels[1]][1]-column_dict[labels[1]][0] )
@@ -43,18 +41,16 @@ def read_columns_from_file(file_name):
     if Nu > 1 and Nv > 1: # if it is a 2D system
         for label in labels:
             column_dict[label] = np.reshape(np.array(column_dict[label]), (Nu,Nv)) # TODO: check Nv-Nu order here!
-    # else: pass # it is a 1D system, and the list in the dictionary is fine: no need to reshape
         
     return column_dict, labels # can also return Nu, Nv, h
 
 # the main code to run
-def main(argv): # argv will be like: [ file_name, Nop ]
+def main(argv): # argv will be like: [ file_name ]
     if len(argv) < 1:
-        print("ERROR: you forgot to call this script with argumnets! I need a file_name and Nop.")
+        print("ERROR: you forgot to call this script with argumnets! I need a file_name.")
         exit()
     
     file_name = argv[0]
-    # Nop = int(argv[1])
     Nop = 5 # UPDATE THIS!
     CD, labels = read_columns_from_file(file_name) # can also get "Nu, Nv, h" from this function
 
@@ -85,6 +81,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     OP_axs = [None]*Nop
     FE_ax, grad_FE_ax, empty_ax, empty_ax2 = None, None, None, None
 
+
     # SET UP PLOTTING FIGURES
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # # for 3-component OP plotting
@@ -99,6 +96,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     (empty_ax2,   OP_axs[2], empty_ax)) = axes # unpack the axes
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
     # SET ORDER PARAMETER TITLES FOR SUBPLOTS
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # for both 3 & 5
@@ -109,6 +107,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     if empty_ax2 != None: empty_ax2.axis('off')
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
     # OP COMPONENT 1
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[0].axes.yaxis.set_ticks([]) # for 5 comp
@@ -117,7 +116,8 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     pcm = PColorMeshPlot(2, 0.6, 1.0, OP_axs[0]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[0]) # show the colorbar for this 2D plot
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    
+
+
     # OP COMPONENT 2
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[1].axes.yaxis.set_ticks([])
@@ -125,7 +125,8 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     pcm = PColorMeshPlot(4, 0.7, 1.0, OP_axs[1]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[1])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    
+
+
     # OP COMPONENT 3
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[2].set_xlabel(x_axis_label+' (bottom)')
@@ -134,7 +135,8 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     pcm = PColorMeshPlot(6, 0.1, 0.9, OP_axs[2]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[2])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    
+
+
     # OP COMPONENT 4
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[3].axes.xaxis.set_ticks([])
@@ -143,6 +145,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     plt.colorbar(pcm,ax=OP_axs[3])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
+
     # OP COMPONENT 5
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[4].axes.yaxis.set_ticks([])
@@ -151,6 +154,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     plt.colorbar(pcm,ax=OP_axs[4])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
+
     # GRADIENT FREE ENERGY
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     grad_FE_ax.set_title('Grad FE')
@@ -160,6 +164,7 @@ def main(argv): # argv will be like: [ file_name, Nop ]
     pcm = PColorMeshPlot(12, 0.5, 1.0, grad_FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP
     plt.colorbar(pcm,ax=grad_FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
     # TOTAL FREE ENERGY
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
