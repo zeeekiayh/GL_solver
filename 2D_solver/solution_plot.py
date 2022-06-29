@@ -116,7 +116,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     if Nop == 5: OP_axs[0].axes.yaxis.set_ticks([]) # for 5 comp
     if Nop == 3: OP_axs[0].set_ylabel(z_axis_label) # for 3 comp
     OP_axs[0].axes.xaxis.set_ticks([])
-    pcm = PColorMeshPlot(2, 0.6, 1.0, OP_axs[0]) # change these values!
+    pcm = PColorMeshPlot(2, 0.7, 1.0, OP_axs[0]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[0]) # show the colorbar for this 2D plot
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -132,10 +132,10 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
 
     # OP COMPONENT 3
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    OP_axs[2].set_xlabel(x_axis_label+' (bottom)')
+    OP_axs[2].set_xlabel(x_axis_label)
     if Nop == 5: OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
     if Nop == 3: OP_axs[2].axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(6, 0.1, 0.9, OP_axs[2]) # change these values!
+    pcm = PColorMeshPlot(6, 0.5, 0.8, OP_axs[2]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[2])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -154,7 +154,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     if Nop == 5:
         OP_axs[4].axes.yaxis.set_ticks([])
-        OP_axs[4].set_xlabel(x_axis_label+' (bottom)')
+        OP_axs[4].set_xlabel(x_axis_label)
         pcm = PColorMeshPlot(10, 0.4, 0.6, OP_axs[4]) # change these values!
         plt.colorbar(pcm,ax=OP_axs[4])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
