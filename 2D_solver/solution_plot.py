@@ -63,19 +63,20 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     z_axis_label = rf'$z/\xi_0$'
 
     clr_map = LinearSegmentedColormap.from_list("", ["navy","blue","white","red","maroon"]) # colors for the gradient in plots; low value to high
-    def PColorMeshPlot(z_col, lower_lim, upper_lim, ax, x_col=0, y_col=1):
-        return ax.pcolormesh(
-            # choose what columns to plot
-            CD[labels[x_col]], # x-data, from column x_col # this one shouldn't need to be changed
-            CD[labels[y_col]], # y-data, from column y_col # this one shouldn't need to be changed
-            CD[labels[z_col]], # z-data, from column z_col
-            shading='gouraud', # to make the plot look more smooth
-            cmap=ListedColormap(clr_map(np.linspace(
+    def PColorMeshPlot(z_col, lower_lim, upper_lim, ax, cmap=None, x_col=0, y_col=1):
+        if cmap == None:
+            cmap = ListedColormap(clr_map(np.linspace(
                 # play with these values! must be between 0.0 and 1.0, inclusive
                 lower_lim, # the lower limit/percent of the color gradient
                 upper_lim, # the upper limit/percent
                 128  # don't change! must be 128
             )))
+        return ax.pcolormesh(
+            CD[labels[x_col]], # x-data, from column x_col # this one shouldn't need to be changed
+            CD[labels[y_col]], # y-data, from column y_col # this one shouldn't need to be changed
+            CD[labels[z_col]], # z-data, from column z_col
+            shading='gouraud', # to make the plot look more smooth
+            cmap=cmap
         )
 
     OP_axs = [None]*Nop
@@ -141,19 +142,21 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
 
     # OP COMPONENT 4
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    OP_axs[3].axes.xaxis.set_ticks([])
-    OP_axs[3].axes.yaxis.set_ticks([])
-    pcm = PColorMeshPlot(8, 0.5, 0.8, OP_axs[3]) # change these values!
-    plt.colorbar(pcm,ax=OP_axs[3])
+    if Nop == 5:
+        OP_axs[3].axes.xaxis.set_ticks([])
+        OP_axs[3].axes.yaxis.set_ticks([])
+        pcm = PColorMeshPlot(8, 0.5, 0.8, OP_axs[3]) # change these values!
+        plt.colorbar(pcm,ax=OP_axs[3])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 
     # OP COMPONENT 5
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    OP_axs[4].axes.yaxis.set_ticks([])
-    OP_axs[4].set_xlabel(x_axis_label+' (bottom)')
-    pcm = PColorMeshPlot(10, 0.4, 0.6, OP_axs[4]) # change these values!
-    plt.colorbar(pcm,ax=OP_axs[4])
+    if Nop == 5:
+        OP_axs[4].axes.yaxis.set_ticks([])
+        OP_axs[4].set_xlabel(x_axis_label+' (bottom)')
+        pcm = PColorMeshPlot(10, 0.4, 0.6, OP_axs[4]) # change these values!
+        plt.colorbar(pcm,ax=OP_axs[4])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 
