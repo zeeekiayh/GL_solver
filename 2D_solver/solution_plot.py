@@ -26,7 +26,6 @@ def read_columns_from_file(file_name):
                 for i, label in enumerate(labels):
                     column_dict[label].append(values[i]) # put values into their columns
             else:
-                # print(f'{len(values) = }')
                 # must be a blank line
                 if Nv < 0: Nv = line_count-1 # we now know Nv!
                 line_count -= 1 # decrement once since we'll count it later, but we only count lines with data on it
@@ -40,18 +39,19 @@ def read_columns_from_file(file_name):
     # convert and reshape all items of the column dictionary
     if Nu > 1 and Nv > 1: # if it is a 2D system
         for label in labels:
-            column_dict[label] = np.reshape(np.array(column_dict[label]), (Nu,Nv)) # TODO: check Nv-Nu order here!
+            column_dict[label] = np.reshape(np.array(column_dict[label]), (Nu,Nv))
         
     return column_dict, labels # can also return Nu, Nv, h
 
 # the main code to run
-def main(argv): # argv will be like: [ file_name ]
+def main(argv): # argv will be like: [ file_name, [Nop] ]
     if len(argv) < 1:
         print("ERROR: you forgot to call this script with argumnets! I need a file_name.")
         exit()
     
     file_name = argv[0]
-    Nop = 5 # UPDATE THIS!
+    Nop = 3 # UPDATE THIS!
+    if len(argv) == 2: Nop == argv[1] # get Nop from the command line
     CD, labels = read_columns_from_file(file_name) # can also get "Nu, Nv, h" from this function
 
     if input("Is this for a cylindrical system? (y/n): ") == 'y':
@@ -84,16 +84,18 @@ def main(argv): # argv will be like: [ file_name ]
 
     # SET UP PLOTTING FIGURES
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # # for 3-component OP plotting
-    # fig, axes = plt.subplots(2,3)
-    # ((OP_axs[0], OP_axs[1], OP_axs[2]),
-    # (grad_FE_ax, FE_ax,     empty_ax)) = axes # unpack the axes
+    # for 3-component OP plotting
+    if Nop == 3:
+        fig, axes = plt.subplots(2,3)
+        ((OP_axs[0], OP_axs[1], OP_axs[2]),
+        (grad_FE_ax, FE_ax,     empty_ax)) = axes # unpack the axes
 
     # for 5-component OP plotting
-    fig, axes = plt.subplots(3,3)
-    ((grad_FE_ax, OP_axs[0], OP_axs[3]),
-    (FE_ax,       OP_axs[1], OP_axs[4]),
-    (empty_ax2,   OP_axs[2], empty_ax)) = axes # unpack the axes
+    if Nop == 5:
+        fig, axes = plt.subplots(3,3)
+        ((grad_FE_ax, OP_axs[0], OP_axs[3]),
+        (FE_ax,       OP_axs[1], OP_axs[4]),
+        (empty_ax2,   OP_axs[2], empty_ax)) = axes # unpack the axes
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -110,8 +112,8 @@ def main(argv): # argv will be like: [ file_name ]
 
     # OP COMPONENT 1
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    OP_axs[0].axes.yaxis.set_ticks([]) # for 5 comp
-    # OP_axs[0].set_ylabel(z_axis_label) # for 3 comp
+    if Nop == 5: OP_axs[0].axes.yaxis.set_ticks([]) # for 5 comp
+    if Nop == 3: OP_axs[0].set_ylabel(z_axis_label) # for 3 comp
     OP_axs[0].axes.xaxis.set_ticks([])
     pcm = PColorMeshPlot(2, 0.6, 1.0, OP_axs[0]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[0]) # show the colorbar for this 2D plot
@@ -130,8 +132,8 @@ def main(argv): # argv will be like: [ file_name ]
     # OP COMPONENT 3
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[2].set_xlabel(x_axis_label+' (bottom)')
-    OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
-    # OP_axs[2].axes.yaxis.set_ticks([]) # for 3 comp
+    if Nop == 5: OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
+    if Nop == 3: OP_axs[2].axes.yaxis.set_ticks([]) # for 3 comp
     pcm = PColorMeshPlot(6, 0.1, 0.9, OP_axs[2]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[2])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -159,9 +161,9 @@ def main(argv): # argv will be like: [ file_name ]
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     grad_FE_ax.set_title('Grad FE')
     grad_FE_ax.set_ylabel(z_axis_label)
-    grad_FE_ax.axes.xaxis.set_ticks([]) # for 5 comp
-    # grad_FE_ax.set_xlabel(x_axis_label) # for 3 comp
-    pcm = PColorMeshPlot(12, 0.5, 1.0, grad_FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP
+    if Nop == 5: grad_FE_ax.axes.xaxis.set_ticks([]) # for 5 comp
+    if Nop == 3: grad_FE_ax.set_xlabel(x_axis_label) # for 3 comp
+    pcm = PColorMeshPlot(8, 0.5, 1.0, grad_FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=grad_FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -169,10 +171,10 @@ def main(argv): # argv will be like: [ file_name ]
     # TOTAL FREE ENERGY
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     FE_ax.set_title('Total FE')
-    FE_ax.set_ylabel(z_axis_label) # for 5 comp
+    if Nop == 5: FE_ax.set_ylabel(z_axis_label) # for 5 comp
     FE_ax.set_xlabel(x_axis_label)
-    # FE_ax.axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(13, 0.5, 1.0, FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP
+    if Nop == 3: FE_ax.axes.yaxis.set_ticks([]) # for 3 comp
+    pcm = PColorMeshPlot(10, 0.5, 1.0, FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
