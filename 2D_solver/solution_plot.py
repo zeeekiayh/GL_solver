@@ -80,7 +80,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
         )
 
     OP_axs = [None]*Nop
-    FE_ax, grad_FE_ax, empty_ax, empty_ax2 = None, None, None, None
+    FE_ax, grad_FE_ax, FE_ref_ax, empty_ax2 = None, None, None, None
 
 
     # SET UP PLOTTING FIGURES
@@ -89,14 +89,14 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     if Nop == 3:
         fig, axes = plt.subplots(2,3)
         ((OP_axs[0], OP_axs[1], OP_axs[2]),
-        (grad_FE_ax, FE_ax,     empty_ax)) = axes # unpack the axes
+        (grad_FE_ax, FE_ax,     FE_ref_ax)) = axes # unpack the axes
 
     # for 5-component OP plotting
     if Nop == 5:
         fig, axes = plt.subplots(3,3)
         ((grad_FE_ax, OP_axs[0], OP_axs[3]),
         (FE_ax,       OP_axs[1], OP_axs[4]),
-        (empty_ax2,   OP_axs[2], empty_ax)) = axes # unpack the axes
+        (empty_ax2,   OP_axs[2], FE_ref_ax)) = axes # unpack the axes
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -106,7 +106,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     for i, ax in enumerate(OP_axs): # set labels for the OP components
         ax.set_title(custom_labels[i])
     # turn off unused axes
-    empty_ax.axis('off')
+    FE_ref_ax.axis('off') # BUT DON'T TURN THIS ONE OFF IF YOU WANT TO PLOT SOMETHING ELSE...LIKE A REFERENCE ENERGY DENSITY!
     if empty_ax2 != None: empty_ax2.axis('off')
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
