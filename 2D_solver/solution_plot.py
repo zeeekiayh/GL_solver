@@ -50,7 +50,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
         exit()
     
     file_name = argv[0]
-    Nop = 3 # UPDATE THIS!
+    Nop = 5 # UPDATE THIS!
     if len(argv) == 2: Nop == argv[1] # get Nop from the command line
     CD, labels = read_columns_from_file(file_name) # can also get "Nu, Nv, h" from this function
 
@@ -96,7 +96,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
         fig, axes = plt.subplots(3,3)
         ((grad_FE_ax, OP_axs[0], OP_axs[3]),
         (FE_ax,       OP_axs[1], OP_axs[4]),
-        (empty_ax2,   OP_axs[2], FE_ref_ax)) = axes # unpack the axes
+        (FE_ref_ax,   OP_axs[2], empty_ax2)) = axes # unpack the axes
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -106,7 +106,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     for i, ax in enumerate(OP_axs): # set labels for the OP components
         ax.set_title(custom_labels[i])
     # turn off unused axes
-    FE_ref_ax.axis('off') # BUT DON'T TURN THIS ONE OFF IF YOU WANT TO PLOT SOMETHING ELSE...LIKE A REFERENCE ENERGY DENSITY!
+    # FE_ref_ax.axis('off') # BUT DON'T TURN THIS ONE OFF IF YOU WANT TO PLOT SOMETHING ELSE...LIKE A REFERENCE ENERGY DENSITY!
     if empty_ax2 != None: empty_ax2.axis('off')
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -135,7 +135,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     OP_axs[2].set_xlabel(x_axis_label)
     if Nop == 5: OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
     if Nop == 3: OP_axs[2].axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(6, 0.5, 0.8, OP_axs[2]) # change these values!
+    pcm = PColorMeshPlot(6, 0.35, 0.7, OP_axs[2]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[2])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -145,7 +145,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     if Nop == 5:
         OP_axs[3].axes.xaxis.set_ticks([])
         OP_axs[3].axes.yaxis.set_ticks([])
-        pcm = PColorMeshPlot(8, 0.5, 0.8, OP_axs[3]) # change these values!
+        pcm = PColorMeshPlot(8, 0.4, 0.7, OP_axs[3]) # change these values!
         plt.colorbar(pcm,ax=OP_axs[3])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
@@ -166,7 +166,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     grad_FE_ax.set_ylabel(z_axis_label)
     if Nop == 5: grad_FE_ax.axes.xaxis.set_ticks([]) # for 5 comp
     if Nop == 3: grad_FE_ax.set_xlabel(x_axis_label) # for 3 comp
-    pcm = PColorMeshPlot(8, 0.5, 1.0, grad_FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    pcm = PColorMeshPlot(12, 0.4, 1.8, grad_FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=grad_FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -175,10 +175,22 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     FE_ax.set_title('Total FE')
     if Nop == 5: FE_ax.set_ylabel(z_axis_label) # for 5 comp
-    FE_ax.set_xlabel(x_axis_label)
+    # FE_ax.set_xlabel(x_axis_label)
+    FE_ax.axes.xaxis.set_ticks([])
     if Nop == 3: FE_ax.axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(10, 0.5, 1.0, FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    pcm = PColorMeshPlot(14, 0., 1., FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=FE_ax)
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+    # REFERENCE ENERGY
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    FE_ref_ax.set_title('Reference FE')
+    if Nop == 5: FE_ref_ax.set_ylabel(z_axis_label) # for 5 comp
+    FE_ref_ax.set_xlabel(x_axis_label)
+    if Nop == 3: FE_ref_ax.axes.yaxis.set_ticks([]) # for 3 comp
+    pcm = PColorMeshPlot(15, 0., 1., FE_ref_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    plt.colorbar(pcm,ax=FE_ref_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
