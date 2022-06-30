@@ -71,6 +71,13 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
                 upper_lim, # the upper limit/percent
                 128  # don't change! must be 128
             )))
+        else:
+            cmap = ListedColormap(cm.get_cmap(cmap,128)(np.linspace(
+                # play with these values! must be between 0.0 and 1.0, inclusive
+                lower_lim, # the lower limit/percent of the color gradient
+                upper_lim, # the upper limit/percent
+                128  # don't change! must be 128
+            )))
         return ax.pcolormesh(
             CD[labels[x_col]], # x-data, from column x_col # this one shouldn't need to be changed
             CD[labels[y_col]], # y-data, from column y_col # this one shouldn't need to be changed
@@ -133,9 +140,10 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # OP COMPONENT 3
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[2].set_xlabel(x_axis_label)
-    if Nop == 5: OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
+    # if Nop == 5: OP_axs[2].set_ylabel(z_axis_label) # for 5 comp
+    OP_axs[2].axes.yaxis.set_ticks([])
     if Nop == 3: OP_axs[2].axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(6, 0.35, 0.7, OP_axs[2]) # change these values!
+    pcm = PColorMeshPlot(6, 0.25, 0.8, OP_axs[2]) # change these values!
     plt.colorbar(pcm,ax=OP_axs[2])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -166,7 +174,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     grad_FE_ax.set_ylabel(z_axis_label)
     if Nop == 5: grad_FE_ax.axes.xaxis.set_ticks([]) # for 5 comp
     if Nop == 3: grad_FE_ax.set_xlabel(x_axis_label) # for 3 comp
-    pcm = PColorMeshPlot(12, 0.4, 1.8, grad_FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    pcm = PColorMeshPlot(14, 0.5, 1., grad_FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=grad_FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -178,7 +186,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # FE_ax.set_xlabel(x_axis_label)
     FE_ax.axes.xaxis.set_ticks([])
     if Nop == 3: FE_ax.axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(14, 0., 1., FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    pcm = PColorMeshPlot(12, 0., 0.5, FE_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -189,7 +197,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     if Nop == 5: FE_ref_ax.set_ylabel(z_axis_label) # for 5 comp
     FE_ref_ax.set_xlabel(x_axis_label)
     if Nop == 3: FE_ref_ax.axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(15, 0., 1., FE_ref_ax, 'gist_heat') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
+    pcm = PColorMeshPlot(15, 0.2, 1., FE_ref_ax, 'PuOr_r') # change these values! # the first value here will have to be different for 3 & 5 comp OP: 12-15 for 5comp, 8-11 for 3comp
     plt.colorbar(pcm,ax=FE_ref_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
