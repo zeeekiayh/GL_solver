@@ -13,7 +13,7 @@ N  1e+07  0    D  1e-10  0    N  1e+10  0    N  1e+07  0   # Arz
 0.5     # temperature
 0       # pressure
 1e-6    # accuracy
-100000  # number loops
+40000   # number loops
 3       # maxStore
 2e-5    # relaxation parameter
 0       # wait
