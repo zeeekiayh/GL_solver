@@ -590,7 +590,8 @@ using namespace Eigen;
 			OPvector(id2) = OPvector_init(id2);
 		}
 
-		double radius, r_wall = 0.6*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
+		// TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
+		double radius, r_wall = 30.;//0.6*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
