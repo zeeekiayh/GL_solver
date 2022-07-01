@@ -56,10 +56,13 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	// converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
 	// adaptive relaxation
-	// double prev_error = 0., percent_delta_err;
+	double prev_error = 0., percent_delta_err;
 	double rp = cond.rel_p;//, rpMax = 0.1;//, rpMin = 0.001;
 	// double percent_delta_err_min = -0.05;
-	// double c = 100./99.; // > 1, but ~1
+	// double c = 10./9.; // > 1, but ~1
+	// int freq = 500;
+	// cout << "freq = " << freq << "; enter a new value: ";
+	// cin >> freq;
 		   
  	// loop until f converges or until it's gone too long
 	do {
@@ -73,21 +76,27 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		// adaptive relaxation
 		f += rp*df;
 		err = rp*df.norm();
-		// percent_delta_err = (err-prev_error)/err;
+		percent_delta_err = (err-prev_error)/err;
+		// if (iter%freq==0 && percent_delta_err < 0. && percent_delta_err > percent_delta_err_min/* && rp*c < rpMax*/) rp *= c;
 		// if (iter%50==0) {
 		// 	if (percent_delta_err < 0. && percent_delta_err > percent_delta_err_min/* && rp*c < rpMax*/) rp *= c;
 		// 	// else if (rp/c > rpMin && percent_delta_err > 0.) rp /= c;
 		// }
-		// prev_error = err;
+		prev_error = err;
 
 		// output approx. percent completed
 		// cout << "\033[A\33[2K\r" << "\t estimated: " << round((iter*100.)/cond.N_loop) << "% done; current error: " << err << endl;
 		// if (iter%25==0) 
 		cout << "\033[A\33[2K\r" << "\t done " << iter << " iterations (out of " << cond.N_loop << ")"
 			 << "; current error: " << err
-			//  << "; percent_delta_err: " << percent_delta_err
+			 << "; percent_delta_err: " << percent_delta_err
 			 << "; rp: " << rp << endl;
-	} while(err > cond.ACCUR && iter < cond.N_loop);
+		
+		if (err > 5. && err > prev_error) {
+			cout << "WARNING: The solution is probably exploding. Exiting for safety." << endl;
+			break;
+		}
+	} while(err > cond.ACCUR);// && iter < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
 	else cout << "\tResult did not converge satisfactorily:" << endl;
