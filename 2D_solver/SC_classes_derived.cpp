@@ -403,40 +403,57 @@ using namespace Eigen;
 			// Can we, or do we even need to make it for larger systems as well?
 
 			// build eq.'s (55-56)
-			if (n == 0) {
-				DK23 += Place_subMatrix(0,n,Nop,Dr2t)
-					+ Place_subMatrix(1,n,Nop,r_inv*Drp);
-				if (Nop > 3) DK23 += Place_subMatrix(4,n,Nop,Drzp);
-				
-				DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
-					+ Place_subMatrix(1,n,Nop,2.*r2_inv);
-				
-			} else if (n == 1) {
-				DK23 += Place_subMatrix(0,n,Nop,-r_inv*Drm)
-					+ Place_subMatrix(1,n,Nop,-r2_inv);
-				if (Nop > 3) DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
-				
-				DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
-					+ Place_subMatrix(0,n,Nop,2.*r2_inv);
 
-			} else if (n == 2) {
-				DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
-				if (Nop > 3) DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
-				
-				DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
+			if (Nop == 3) {
+				if (n == 0) {
+					DK23 += Place_subMatrix(0,n,Nop,Dr2t)
+						+ Place_subMatrix(1,n,Nop,r_inv*Drp);
+					DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
+						+ Place_subMatrix(1,n,Nop,2.*r2_inv);
+					
+				} else if (n == 1) {
+					DK23 += Place_subMatrix(0,n,Nop,-r_inv*Drm)
+						+ Place_subMatrix(1,n,Nop,-r2_inv);
+					DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
+						+ Place_subMatrix(0,n,Nop,2.*r2_inv);
 
-			} else if (n == 3) {
-				DK23 += Place_subMatrix(2,n,Nop,Drzp)
-					+ Place_subMatrix(3,n,Nop,Dr2t);
-				
-				DK1 += Place_subMatrix(n,n,Nop,D2t);
+				} else if (n == 2) {
+					DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
+					DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
+				}
+			}
 
-			} else if (n == 4) {
-				DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
-					+ Place_subMatrix(1,n,Nop,Dz_over_r)
-					+ Place_subMatrix(4,n,Nop,Dz2_gsize);
-				
-				DK1 += Place_subMatrix(n,n,Nop,D2t);
+			if (Nop == 5) {
+				if (n == 0) {
+					DK23 += Place_subMatrix(0,n,Nop,Dr2t)
+						+ Place_subMatrix(1,n,Nop,r_inv*Drp);
+					DK23 += Place_subMatrix(4,n,Nop,Drzp);
+					DK1 += Place_subMatrix(0,n,Nop,D2t-r2_inv)
+						+ Place_subMatrix(1,n,Nop,2.*r2_inv);
+					
+				} else if (n == 1) {
+					DK23 += Place_subMatrix(0,n,Nop,-r_inv*Drm)
+						+ Place_subMatrix(1,n,Nop,-r2_inv);
+					DK23 += Place_subMatrix(4,n,Nop,-Dz_over_r);
+					DK1 += Place_subMatrix(1,n,Nop,D2t-r2_inv)
+						+ Place_subMatrix(0,n,Nop,2.*r2_inv);
+
+				} else if (n == 2) {
+					DK23 += Place_subMatrix(2,n,Nop,Dz2_gsize);
+					DK23 += Place_subMatrix(3,n,Nop,Drz_gsize);
+					DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
+
+				} else if (n == 3) {
+					DK23 += Place_subMatrix(2,n,Nop,Drzp)
+						+ Place_subMatrix(3,n,Nop,Dr2t);
+					DK1 += Place_subMatrix(n,n,Nop,D2t);
+
+				} else if (n == 4) {
+					DK23 += Place_subMatrix(0,n,Nop,Drz_gsize)
+						+ Place_subMatrix(1,n,Nop,Dz_over_r)
+						+ Place_subMatrix(4,n,Nop,Dz2_gsize);
+					DK1 += Place_subMatrix(n,n,Nop,D2t);
+				}
 			}
 		}
 
@@ -531,13 +548,14 @@ using namespace Eigen;
 	}
 
 	// initial guess functions
-	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, std::vector<int> & no_update) {
 		// build the guess from the 3 component cylindrical solution
 		int Nop_init = 3;
-		string file_name_init = "conditions3c.txt";
+		string file_name_init = "conditions3.txt";
 		in_conditions cond_init;
 		vector<Bound_Cond> eta_BC_init;
 		read_input_data(Nop_init, cond_init, eta_BC_init, file_name_init);
+		// confirm_input_data(Nop_init, cond_init, eta_BC_init);
 		cond_init.SIZEu = Nu;
 		cond_init.SIZEv = Nv;
 		cond_init.STEP = h;
@@ -547,11 +565,19 @@ using namespace Eigen;
 		T_vector OPvector_init(VectSize_init);
 		T_vector rhsBC_init = T_vector::Zero(VectSize_init);
 		SpMat_cd M_init(VectSize_init,VectSize_init);
+   		VectorXd freeEb_init(GridSize_init), freeEg_init(GridSize_init), FEdens_init(GridSize_init); // free energy on the grid points
 		SC_class *pSC_init;
-		pSC_init = new Cylindrical( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP, eta_BC_init );
-		pSC_init->initialOPguess_Cylindrical_simple3(eta_BC_init, OPvector_init, no_update_init);
-		pSC_init->BuildSolverMatrixCyl( M_init, rhsBC_init, OPvector_init, eta_BC_init );
+		// pSC_init = new Cylindrical( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP, eta_BC_init );
+		// pSC_init->initialOPguess_Cylindrical_simple3(eta_BC_init, OPvector_init, no_update_init);
+		// pSC_init->BuildSolverMatrixCyl( M_init, rhsBC_init, OPvector_init, eta_BC_init );
+		pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
+		pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
+		pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init );
 		Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init); // get the solution to the 3-comp. system
+
+		// calculate the reference energy!
+	    pSC_init->FreeEn(OPvector_init, cond_init, FEdens_init, freeEb_init, freeEg_init);
+		FE_ref = FEdens_init;
 
 		OPvector *= 0.0; // zero out the OPvector
 
@@ -564,7 +590,8 @@ using namespace Eigen;
 			OPvector(id2) = OPvector_init(id2);
 		}
 
-		double radius, r_wall = 0.6*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
+		// TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
+		double radius, r_wall = 30.;//0.6*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
 		// going through the entire grid
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
@@ -575,26 +602,26 @@ using namespace Eigen;
 			OPvector( id ) = tanh( (radius-r_wall)/5. ) * tanh( z/5. );
 		}
 
-		// // set some boundary values based on conditions file
-		// for (int n = 0; n < Nop; n++)
-		// if  (n != 2)
-		// for (int u = 0; u < Nu; u++) // loop over the whole mesh
-		// for (int v = 0; v < Nv; v++) {
-		// 	int id = ID(u,v,n);
+		// set some boundary values based on conditions file
+		for (int n = 0; n < Nop; n++) //if  (n != 2) {...
+		for (int u = 0; u < Nu; u++) // loop over the whole mesh
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
 
-		// 	if (u == 0 && eta_BC[n].typeL == string("D")) {
-		// 		OPvector(id) = eta_BC[n].valueL;
-		// 		no_update.push_back(id);
-		// 	} else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
-		// 		OPvector(id) = eta_BC[n].valueR;
-		// 		no_update.push_back(id);
-		// 	} else if (v == 0 && eta_BC[n].typeB == string("D")) {
-		// 		OPvector(id) = eta_BC[n].valueB;
-		// 		no_update.push_back(id);
-		// 	} else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
-		// 		OPvector(id) = eta_BC[n].valueT;
-		// 		no_update.push_back(id);	
-		// 	}
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
+				OPvector(id) = eta_BC[n].valueL;
+				no_update.push_back(id);
+			} else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
+				OPvector(id) = eta_BC[n].valueR;
+				no_update.push_back(id);
+			} else if (v == 0 && eta_BC[n].typeB == string("D")) {
+				OPvector(id) = eta_BC[n].valueB;
+				no_update.push_back(id);
+			} else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
+				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
+			}
+		}
 		// 	else {//if (n < 2)
 		// 		// build a smooth guess based on BC's
 		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
@@ -623,12 +650,13 @@ using namespace Eigen;
 			int id = ID(u,v,n);
 			if (n < 2) {
 				// build a smooth guess based on BC's
-				int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-				OPvector(id) = ( eta_BC[n].valueB * wB
-								+ eta_BC[n].valueT * wT
-								+ eta_BC[n].valueL * wL
-								+ eta_BC[n].valueR * wR )
-							/(Nu+Nv);
+				// int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
+				OPvector(id) = 1.0;
+				// ( eta_BC[n].valueB * wB
+				// 				+ eta_BC[n].valueT * wT
+				// 				+ eta_BC[n].valueL * wL
+				// 				+ eta_BC[n].valueR * wR )
+				// 			/(Nu+Nv);
 			} else { // n == 2
 				double z = h*v; // so that z = 0 is the surface
 				OPvector(id) = tanh(z/5.0);
