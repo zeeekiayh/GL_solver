@@ -561,10 +561,13 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const Eigen::VectorXd 
       data << "\tFEdensity  \tbulk_FE   \tgrad_FE \t FE-FEref";
       data << std::endl; 
 
+	std::ofstream fexint ("free_energy_x_integrated.dat"); 
+      fexint << std::setprecision(8) << std::fixed << "#z/xi   \t FE_xintegrated\n";
       // loop through the whole mesh...
       double x_shift=(Nu/2)*h;
       double z_shift=0.0;//(Nv/2)*h; 
       for (int v = 0; v < Nv; v++) {
+		double FE_xintegrated=0.0;
          for (int u = 0; u < Nu; u++) {
             data << h*u-x_shift << "\t" << h*v-z_shift; // write the position
 
@@ -582,8 +585,10 @@ void SC_class :: WriteAllToFile(const T_vector& solution, const Eigen::VectorXd 
             data << "\t" << FEdens(id) - FEref(id); // FE relative to some reference 
 
             data << endl; // finish the line
+		FE_xintegrated += h* (FEdens(id)-FEref(id));
          } // u-loop
 	   if(Nu>1) data << "\n"; // for gnuplot to make 3D surfaces we need a break 
+         fexint << h*v-z_shift << "\t" << FE_xintegrated << endl;
        } // v-loop
 	}
 	else std::cout << "Unable to open '" << file_name << "' to write vector to file." << std::endl;
