@@ -13,7 +13,7 @@ def read_columns_from_file(file_name):
 
     line_count = 0
     for line in open(file_name,'r'):
-        if line_count == 0: # change to 1 if file has column numbers
+        if line_count == 0: # change to 1 if file has column numbers, 0 if only column labels
             labels = line.split() # the first line should give us all the labels of the columns
             # start the lists in the dictionary
             for label in labels:
@@ -108,6 +108,14 @@ def main(argv): # argv will be like: [ file_name ]
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
+    # SET (x,y) ranges for the plots 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    for ax in axes.reshape(-1): 
+	    ax.set_xlim([-21, 21])
+	    ax.set_ylim([0, 15])
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
     # OP COMPONENT 1
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     OP_axs[0].axes.yaxis.set_ticks([]) # for 5 comp
@@ -157,7 +165,7 @@ def main(argv): # argv will be like: [ file_name ]
 
     # GRADIENT FREE ENERGY
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    grad_FE_ax.set_title('Grad FE')
+    grad_FE_ax.set_title('Total FE')
     grad_FE_ax.set_ylabel(z_axis_label)
     grad_FE_ax.axes.xaxis.set_ticks([]) # for 5 comp
     # grad_FE_ax.set_xlabel(x_axis_label) # for 3 comp
@@ -168,11 +176,11 @@ def main(argv): # argv will be like: [ file_name ]
 
     # TOTAL FREE ENERGY
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    FE_ax.set_title('Total FE')
+    FE_ax.set_title('$FE-FE_B$')
     FE_ax.set_ylabel(z_axis_label) # for 5 comp
     FE_ax.set_xlabel(x_axis_label)
     # FE_ax.axes.yaxis.set_ticks([]) # for 3 comp
-    pcm = PColorMeshPlot(13, 0.5, 1.0, FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP
+    pcm = PColorMeshPlot(15, 0.5, 1.0, FE_ax) # change these values! # the first value here will have to be different for 3 & 5 comp OP
     plt.colorbar(pcm,ax=FE_ax)
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

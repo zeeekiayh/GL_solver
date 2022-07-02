@@ -159,10 +159,10 @@ using namespace Eigen;
 		int x = 0, z = 1;            // indices for the K-matrix
 		double wx, wz;               // weights for the integral free energy (trapezoidal rule)
 
-		for (int u = 0; u < Nu; u++) {
-			if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
-			for (int v = 0; v < Nv; v++) {
-				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+		for (int v = 0; v < Nv; v++) {
+			if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+			for (int u = 0; u < Nu; u++) {
+				if( (u==0 || u==Nu-1) && Nu>1 ) wx=0.5; else wx=1.0;
 
 				int id = ID(u,v,0);
 				FEg( id ) = 0;
