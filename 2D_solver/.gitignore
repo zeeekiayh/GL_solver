@@ -11,5 +11,8 @@ output_OP?c.txt
 initial_guess_OP?.txt
 initial_guess_OP?c.txt
 
+free_energy_x_integrated.dat
+testing.py
+
 # ignore gl_fdm changes
 gl_fdm
