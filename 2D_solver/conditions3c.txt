@@ -13,5 +13,5 @@ D  1e-10  1     D  1e-10  0     N  1e+07  1     N  1e+10  1   # Azz
 1e-5    # accuracy
 10000   # number loops
 3       # maxStore
-0.05   # relaxation parameter
+0.01   # relaxation parameter
 0       # wait
