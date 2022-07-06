@@ -567,9 +567,6 @@ using namespace Eigen;
 		SpMat_cd M_init(VectSize_init,VectSize_init);
    		VectorXd freeEb_init(GridSize_init), freeEg_init(GridSize_init), FEdens_init(GridSize_init); // free energy on the grid points
 		SC_class *pSC_init;
-		// pSC_init = new Cylindrical( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP, eta_BC_init );
-		// pSC_init->initialOPguess_Cylindrical_simple3(eta_BC_init, OPvector_init, no_update_init);
-		// pSC_init->BuildSolverMatrixCyl( M_init, rhsBC_init, OPvector_init, eta_BC_init );
 		pSC_init = new ThreeCompHe3( Nop_init, cond_init.SIZEu, cond_init.SIZEv, cond_init.STEP );
 		pSC_init->initialOPguess(eta_BC_init, OPvector_init, no_update_init);
 		pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init );
@@ -580,8 +577,7 @@ using namespace Eigen;
 
 		OPvector *= 0.0; // zero out the OPvector
 
-		// TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
-		double radius, r_wall = 10.0;
+		double radius, r_wall = 10.0; // TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
 		cout << "r_wall = " << r_wall << endl;
 
 		for (int n = 0; n < Nop; n++)
@@ -593,8 +589,7 @@ using namespace Eigen;
 			int id_init = v + GridSize_init*n; // OPvector_init id
 
 			// go through the first 2 OP components, copying values from the solution
-			if (n == 0) OPvector(id) = OPvector_init(id_init);
-			if (n == 1) OPvector(id) = OPvector_init(id_init);
+			if (n == 0 || n == 1) OPvector(id) = OPvector_init(id_init);
 			if (n == 2) {
 				radius = sqrt(r*r + z*z); // "radius" at current position
 				OPvector( id ) = tanh( (radius-r_wall)/2. ) * OPvector_init(id_init);
@@ -615,7 +610,7 @@ using namespace Eigen;
 				no_update.push_back(id);	
 			}
 		
-			// copy over the free energy of the reference, forming it into the right shape
+			// copy over the free energy of the reference B-phase, forming it into the right shape
 			FE_ref(ID(u,v,0)) = FEdens_init(v);
 		}
 
