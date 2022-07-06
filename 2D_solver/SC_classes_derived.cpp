@@ -556,7 +556,7 @@ using namespace Eigen;
 		vector<Bound_Cond> eta_BC_init;
 		read_input_data(Nop_init, cond_init, eta_BC_init, file_name_init);
 		// confirm_input_data(Nop_init, cond_init, eta_BC_init);
-		cond_init.SIZEu = Nu;
+		cond_init.SIZEu = 1;
 		cond_init.SIZEv = Nv;
 		cond_init.STEP = h;
 		vector<int> no_update_init;
@@ -577,37 +577,30 @@ using namespace Eigen;
 
 		// calculate the reference energy!
 	    pSC_init->FreeEn(OPvector_init, cond_init, FEdens_init, freeEb_init, freeEg_init);
-		FE_ref = FEdens_init;
 
 		OPvector *= 0.0; // zero out the OPvector
 
-		// go through the first 2 OP components, copying values from the solution
-		for (int u = 0; u < Nu; u++)
-		for (int v = 0; v < Nv; v++) {
-			int id1 = ID(u,v,0);
-			int id2 = ID(u,v,1);
-			OPvector(id1) = OPvector_init(id1);
-			OPvector(id2) = OPvector_init(id2);
-		}
-
 		// TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
-		double radius, r_wall = 30.;//0.6*min(Nu,Nv)*h; // may need to change r_wall...; r0, z0, 
-		// going through the entire grid
-		for (int u = 0; u < Nu; u++)
+		double radius, r_wall = 10.0;
+		cout << "r_wall = " << r_wall << endl;
+
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++) // loop over the whole mesh
 		for (int v = 0; v < Nv; v++) {
 			double r = h*(u+u_shift); // current r coordinate value
 			double z = h*v;           // current z value
-			int id = ID(u,v,2);       // just look at the Azz component right now
-			radius = sqrt(r*r + z*z); // radius of the bubble
-			OPvector( id ) = tanh( (radius-r_wall)/5. ) * tanh( z/5. );
-		}
+			int id = ID(u,v,n);       // OPvector id
+			int id_init = v + GridSize_init*n; // OPvector_init id
 
-		// set some boundary values based on conditions file
-		for (int n = 0; n < Nop; n++) //if  (n != 2) {...
-		for (int u = 0; u < Nu; u++) // loop over the whole mesh
-		for (int v = 0; v < Nv; v++) {
-			int id = ID(u,v,n);
+			// go through the first 2 OP components, copying values from the solution
+			if (n == 0) OPvector(id) = OPvector_init(id_init);
+			if (n == 1) OPvector(id) = OPvector_init(id_init);
+			if (n == 2) {
+				radius = sqrt(r*r + z*z); // "radius" at current position
+				OPvector( id ) = tanh( (radius-r_wall)/2. ) * OPvector_init(id_init);
+			}
 
+			// set some boundary values based on conditions file
 			if (u == 0 && eta_BC[n].typeL == string("D")) {
 				OPvector(id) = eta_BC[n].valueL;
 				no_update.push_back(id);
@@ -621,18 +614,10 @@ using namespace Eigen;
 				OPvector(id) = eta_BC[n].valueT;
 				no_update.push_back(id);	
 			}
+		
+			// copy over the free energy of the reference, forming it into the right shape
+			FE_ref(ID(u,v,0)) = FEdens_init(v);
 		}
-		// 	else {//if (n < 2)
-		// 		// build a smooth guess based on BC's
-		// 		int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
-		// 		OPvector(id) = ( eta_BC[n].valueB * wB
-		// 						+ eta_BC[n].valueT * wT
-		// 						+ eta_BC[n].valueL * wL
-		// 						+ eta_BC[n].valueR * wR )
-		// 					/(Nu+Nv);
-		// 	}
-		// 	// else OPvector(id) = 0.0;
-		// }
 
 		VectorXd dummyFE=VectorXd::Zero(grid_size); 
 		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
