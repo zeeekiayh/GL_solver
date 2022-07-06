@@ -572,6 +572,52 @@ using namespace Eigen;
 		pSC_init->BuildSolverMatrix( M_init, rhsBC_init, OPvector_init, eta_BC_init );
 		Solver(OPvector_init, M_init, rhsBC_init, cond_init, no_update_init, pSC_init); // get the solution to the 3-comp. system
 
+		// ==============================================================================================
+		int Nop_init2 = 3;
+		string file_name_init2 = "conditions3.txt";
+		in_conditions cond_init2;
+		vector<Bound_Cond> eta_BC_init2;
+		read_input_data(Nop_init2, cond_init2, eta_BC_init2, file_name_init2);
+		cond_init2.SIZEu = Nu;
+		cond_init2.SIZEv = Nv;
+		cond_init2.STEP = h;
+		cond_init2.rel_p = 0.001;
+		vector<int> no_update_init2;
+		int GridSize_init2 = cond_init2.SIZEu * cond_init2.SIZEv;
+		int VectSize_init2 = cond_init2.Nop * GridSize_init2;
+		T_vector OPvector_init2(VectSize_init2);
+		T_vector rhsBC_init2 = T_vector::Zero(VectSize_init2);
+		SpMat_cd M_init2(VectSize_init2,VectSize_init2);
+   		VectorXd freeEb_init2(GridSize_init2), freeEg_init2(GridSize_init2), FEdens_init2(GridSize_init2); // free energy on the grid points
+		SC_class *pSC_init2;
+		pSC_init2 = new ThreeCompHe3( Nop_init2, cond_init2.SIZEu, cond_init2.SIZEv, cond_init2.STEP );
+		OPvector_init2 *= 0.0; // zero out the OPvector_init2
+		for (int n = 0; n < 3; n++)
+		for (int u = 0; u < Nu; u++) // loop over the whole mesh
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n); // OPvector_init2 id
+			int id_init = v + GridSize_init*n; // OPvector_init id
+			OPvector_init2(id) = OPvector_init(id_init);
+
+			// set some boundary values based on conditions file
+			if (u == 0 && eta_BC_init2[n].typeL == string("D")) {
+				OPvector_init2(id) = eta_BC_init2[n].valueL;
+				no_update_init2.push_back(id);
+			} else if (u == Nu-1 && eta_BC_init2[n].typeR == string("D")) {
+				OPvector_init2(id) = eta_BC_init2[n].valueR;
+				no_update_init2.push_back(id);
+			} else if (v == 0 && eta_BC_init2[n].typeB == string("D")) {
+				OPvector_init2(id) = eta_BC_init2[n].valueB;
+				no_update_init2.push_back(id);
+			} else if (v == Nv-1 && eta_BC_init2[n].typeT == string("D")) {
+				OPvector_init2(id) = eta_BC_init2[n].valueT;
+				no_update_init2.push_back(id);	
+			}
+		}
+		pSC_init2->BuildSolverMatrix( M_init2, rhsBC_init2, OPvector_init2, eta_BC_init2 );
+		Solver(OPvector_init2, M_init2, rhsBC_init2, cond_init2, no_update_init2, pSC_init2); // get the solution to the 3-comp. system
+		// ==============================================================================================
+
 		// calculate the reference energy!
 	    pSC_init->FreeEn(OPvector_init, cond_init, FEdens_init, freeEb_init, freeEg_init);
 
