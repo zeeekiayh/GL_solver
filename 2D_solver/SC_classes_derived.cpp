@@ -593,6 +593,8 @@ using namespace Eigen;
 			if (n == 2) {
 				radius = sqrt(r*r + z*z); // "radius" at current position
 				OPvector( id ) = tanh( (radius-r_wall)/2. ) * OPvector_init(id_init);
+				// don't update elements along the wall that should be 0
+				if (abs(radius-r_wall) < h) no_update.push_back(id);
 			}
 
 			// set some boundary values based on conditions file
