@@ -548,7 +548,7 @@ using namespace Eigen;
 	}
 
 	// initial guess functions
-	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, std::vector<int> & no_update) {
+	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, double r_wall, std::vector<int> & no_update) {
 		// build the guess from the 3 component cylindrical solution
 		int Nop_init = 3;
 		string file_name_init = "conditions3.txt";
@@ -577,7 +577,7 @@ using namespace Eigen;
 
 		OPvector *= 0.0; // zero out the OPvector
 
-		double radius, r_wall = 10.0; // TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
+		double radius;//, r_wall = 10.0; // TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
 		cout << "r_wall = " << r_wall << endl;
 
 		for (int n = 0; n < Nop; n++)
