@@ -96,7 +96,7 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 			cout << "WARNING: The solution is probably exploding. Exiting for safety." << endl;
 			break;
 		}
-	} while(err > cond.ACCUR);// && iter < cond.N_loop);
+	} while(err > cond.ACCUR && iter < cond.N_loop);
 
 	if (err < cond.ACCUR) cout << "\tFound solution:" << endl;
 	else cout << "\tResult did not converge satisfactorily:" << endl;
