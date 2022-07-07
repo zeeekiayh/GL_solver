@@ -24,7 +24,7 @@ def read_file(file_name):
             labels = line.split()
             # loop through all the labels and determine Nop
             for l in labels:
-                if l[0] == "#":
+                if l[0] == "R" or l[0] == "I" or l[0] == "#": 
                     Nop += 1
             Nop //= 2 # to account for complex columns
 
@@ -53,6 +53,8 @@ def read_file(file_name):
 
     Nu = int(v_0_count) # YES! the u and v are switched! they need to be!
     Nv = int(u_0_count)
+
+    print("read Nu=",Nu," Nv=",Nv," Nop=",Nop, "N_FE_columns=",N_FE_cols)  
 
     # convert the data array and reshape all components
     OP_data_array = np.array(OP_data_array)
@@ -93,6 +95,7 @@ def plot_OP_comps_and_slices(file_name):
     FE_ax, FE_prof_ax, empty_ax, grad_FE_ax = None, None, None, None
     fig, axes = None, None
 
+    #print("Nu,Nv,Nop=",Nu,Nv,Nop)
     if Nu > 1 and Nv > 1:
         # shape the plot based on OP size
         if Nop == 3:
@@ -165,7 +168,7 @@ def plot_OP_comps_and_slices(file_name):
     FE_prof_ax.set_ylabel('FE')
     x_array = np.linspace(ext[2],ext[3],Nv)
     if Nu > 1 and Nv > 1:
-        FE_prof_ax.set_title(rf'Total FE profile; along {x_axis_labels}$ = {round(x_array[len(FE_data_array[0])//2],2)}$')
+        #FE_prof_ax.set_title(rf'Total FE profile; along {x_axis_labels}$ = {round(x_array[len(FE_data_array[0])//2],2)}$')
         FE_prof_ax.plot(x_array, FE_data_array[0][len(FE_data_array[0])//2,:])
         FE_prof_ax.set_xlabel(r'$z/\xi_0$')
     elif Nu == 1:
@@ -193,11 +196,11 @@ def plot_OP_comps_and_slices(file_name):
         FE_ax.plot(np.linspace(ext[0],ext[1],Nu), FE_data_array[0])
 
     # plot the defect energy
-    grad_FE_ax.set_title('Grad free energy')
+    grad_FE_ax.set_title('Energy relative to distorted B phase')
     grad_FE_ax.axes.xaxis.set_ticks([])
     if Nu > 1 and Nv > 1:
         grad_FE_ax.set_ylabel(rf'$z/\xi_0$ (left)')
-        im = grad_FE_ax.imshow(FE_data_array[2][:,::-1].transpose(), extent=ext, cmap='gist_heat')
+        im = grad_FE_ax.imshow(FE_data_array[3][:,::-1].transpose(), extent=ext, cmap='bwr')
         fig.colorbar(im,ax=grad_FE_ax)
     elif Nu == 1:
         grad_FE_ax.set_ylabel('amplitude')
