@@ -8,7 +8,7 @@ N 1e+10 1   N 1e+10 1   N 1e+07 -1   N 1e+10 1   # Azz
 N 1e+10 0   D 1e-10 0   N 1e+10 0    N 1e+10 0   # Azx
 D 1e-10 0   N 1e+10 0   N 1e+10 0    N 1e+10 0   # Axz
 
-201 1   	  # mesh size
+201 50  	  # mesh size
 0.2     	  # h (step size)
 0.5	  	  # temperature
 1     	  # pressure
