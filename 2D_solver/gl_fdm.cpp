@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	} else {
 		cout << "Unknown OP size. Exiting..." << endl;
-		delete pSC; // IS THIS ACTUALLY OK IF pSC HAS NOT BEEN SET?
+		delete pSC;
 		return 1;
 	}
 	
