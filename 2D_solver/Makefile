@@ -36,12 +36,12 @@ clean:
 	rm *.o;
 
 plot9:
-	python3 plot_solution.py output_OP9.txt
+	python3 solution_plot.py output_OP9.txt
 plot5:
-	python3 plot_solution.py output_OP5.txt
+	python3 solution_plot.py output_OP5.txt
 plot5c:
-	python3 plot_solution.py output_OP5c.txt
+	python3 solution_plot.py output_OP5c.txt
 plot3:
-	python3 plot_solution.py output_OP3.txt
+	python3 solution_plot.py output_OP3.txt
 plot3c:
-	python3 plot_solution.py output_OP3c.txt
+	python3 solution_plot.py output_OP3c.txt
