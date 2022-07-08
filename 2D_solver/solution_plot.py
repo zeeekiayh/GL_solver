@@ -126,9 +126,9 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
 
     # SET (x,y) ranges for the plots 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    for ax in axes.reshape(-1): 
-	    ax.set_xlim([-21, 21])
-	    ax.set_ylim([0, 12])
+    # for ax in axes.reshape(-1): 
+	#     ax.set_xlim([-21, 21])
+	#     ax.set_ylim([0, 12])
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 

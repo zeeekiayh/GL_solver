@@ -3,6 +3,7 @@
 // most of the typedefs and custom structures are in this file:
 #include "structures.hpp"
 #include "SC_classes.hpp"
+#include "linear_eq_solver.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -10,7 +11,7 @@ using namespace Eigen;
 // ===========================================================
 // Function prototypes defined in other files
 	// prototype for function defined in linear_eq_solver.cpp
-	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+	// void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
 int main(int argc, char** argv)
@@ -113,33 +114,48 @@ int main(int argc, char** argv)
 
 	// ===============================================================================================================
 
-	cout << "solving system..." << endl;
-	Solver(OPvector, M, rhsBC, cond, no_update, pSC); // solve the system setup above
-	cout << "solved!" << endl;
+	double r_start = 6.6, r_end = 8.2, r_step = 0.2;
+	int loops;
+	if (argc == 5) loops = (r_end-r_start)/r_step;
+	else loops = 1;
 
-	cout << "calculating Free energy ...";
-	FEdens=FEdens_ref; // on INPUT: FEdensity is the density of a reference configuration;
-	double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg);
-	cout << "done" << endl;
-	cout << "the energy of the OP configuration relative to a refFE is " << totalFE << "\n";
+	Solver solver(M, cond, pSC); // solver for the system setup above
+	
+	int i = 0;
+	while (i < loops) {
+		cout << "solving system..." << endl;
+		solver.Solve(OPvector, no_update, rhsBC);
+		cout << "solved!" << endl;
+
+		cout << "calculating Free energy ...";
+		FEdens=FEdens_ref; // on INPUT: FEdensity is the density of a reference configuration;
+		double totalFE = pSC->FreeEn(OPvector, cond, FEdens, freeEb, freeEg);
+		cout << "done" << endl;
+		cout << "the energy of the OP configuration relative to a refFE is " << totalFE << "\n";
+
+		if (file_name == string("conditions5c_bubble.txt") && argc == 5) {
+			// write the data to file
+			string En_file_name("E_vs_r.txt");
+			ofstream file_out;
+			file_out.open(En_file_name, std::ios_base::app);
+			file_out << totalFE << "\t" << rWall << endl; // write E and r_wall
+		}
+
+		// prepare for the next loop
+		rWall = r_start + r_step*i;
+		pSC->initialOPguess_Cylindrical_bubble (eta_BC, OPvector, FEdens_ref, rWall, no_update);
+		i++;
+	}
 
 	// ===============================================================================================================
 
-	// write everything to file
+	// write all the last solution to file
 	pSC->WriteAllToFile(OPvector, FEdens, freeEb, FEdens_ref, "output_OP"+to_string(Nop)+( (argc >= 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
 
 	// ===============================================================================================================
 
 	// de-allocating memory
 	delete pSC;
-
-	if (file_name == string("conditions5c_bubble.txt") && argc == 5) {
-		// write the data to file
-		string En_file_name("E_vs_r.txt");
-		ofstream file_out;
-		file_out.open(En_file_name, std::ios_base::app);
-		file_out << totalFE << "\t" << rWall << endl; // write E and r_wall
-	}
 
 	return 0;
 }
