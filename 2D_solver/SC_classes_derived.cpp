@@ -39,9 +39,9 @@ using namespace Eigen;
 
 			// create He3 OP matrix
 			Matrix<T_scalar,3,3> A; 
-						A << eta_bulk[0],     0,         0,
-							0,          eta_bulk[1],    0, 
-							0,               0,     eta_bulk[2];
+				A << eta_bulk[0], 0,           0,
+					 0,           eta_bulk[1], 0, 
+					 0,           0,           eta_bulk[2];
 
 			Matrix<T_scalar,3,3> dFdA;
 			double FEbulk, betaB;
@@ -191,7 +191,6 @@ using namespace Eigen;
 
 	void FiveCompHe3 :: initGuessWithCircularDomain(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, vector<int> & no_update) {
 		// use "conditions5_AyyFlip.txt"
-
 		// all boundaries should be Dirichlet => 1
 		// we will create the circular domain in the middle of Ayy to be -1
 
@@ -399,11 +398,9 @@ using namespace Eigen;
 			if (n == 0 || n == 3) Drzp = Drz_gsize + Dz_over_r;
 			D2t = Dz2_gsize + Dr2_gsize + Dr_over_r - r2_inv;
 
-			// TODO/WARNING: this is hard-coded for the 5-component system!!
+			// WARNING: this is hard-coded for the 5-component system!!
 			// Can we, or do we even need to make it for larger systems as well?
-
 			// build eq.'s (55-56)
-
 			if (Nop == 3) {
 				if (n == 0) {
 					DK23 += Place_subMatrix(0,n,Nop,Dr2t)
@@ -422,7 +419,6 @@ using namespace Eigen;
 					DK1 += Place_subMatrix(n,n,Nop,D2t+r2_inv);
 				}
 			}
-
 			if (Nop == 5) {
 				if (n == 0) {
 					DK23 += Place_subMatrix(0,n,Nop,Dr2t)
@@ -474,7 +470,7 @@ using namespace Eigen;
 			// and for all grid points collect all OP components into one eta_bulk[] array
 			for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
 
-			// create He3 OP matrix
+			// create He3 OP matrix; works for both 3 & 5 component cylindrical systems
 			Matrix<T_scalar,3,3> A; 
 						A <<  eta_bulk[0],               0,      Nop==5?eta_bulk[4]:0.0,
 								         0,          eta_bulk[1],    0,
@@ -510,7 +506,7 @@ using namespace Eigen;
 		T_vector eta_c=eta.conjugate();
 		
 		double FE_minus_ref=0.0; // relative to a reference Free energy, FEdensity on INPUT 
-		double wr, wz;               // weights for the integral free energy (trapezoidal rule)
+		double wr, wz;           // weights for the integral free energy (trapezoidal rule)
 		// some other variable used in the loops below; label them here to reduce time in the loops
 		vector<T_vector> D_eta_c, D_eta;
 		double K_ijmn, r;
@@ -536,7 +532,6 @@ using namespace Eigen;
 				}}
 
 				FE_minus_ref += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) - FEdensity(id)) + 2.0/3.0*freeEg(id) ); // see eq. (47)
-
 			} // v
 		} // u
 
@@ -576,7 +571,7 @@ using namespace Eigen;
 
 		OPvector *= 0.0; // zero out the OPvector
 
-		double radius;//, r_wall = 10.0; // TODO: CHANGE THIS VALUE TO THE DESIRED RADIUS
+		double radius;
 		cout << "r_wall = " << r_wall << endl;
 
 		for (int n = 0; n < Nop; n++)
@@ -630,14 +625,7 @@ using namespace Eigen;
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 			if (n < 2) {
-				// build a smooth guess based on BC's
-				// int wT = v, wL = Nu-u, wB = Nv-v, wR = u; // weights
 				OPvector(id) = 1.0;
-				// ( eta_BC[n].valueB * wB
-				// 				+ eta_BC[n].valueT * wT
-				// 				+ eta_BC[n].valueL * wL
-				// 				+ eta_BC[n].valueR * wR )
-				// 			/(Nu+Nv);
 			} else { // n == 2
 				double z = h*v; // so that z = 0 is the surface
 				OPvector(id) = tanh(z/5.0);
@@ -713,14 +701,7 @@ using namespace Eigen;
 		for (int v = 0; v < Nv; v++) {
 			int id = ID(u,v,n);
 			if (n < 2) {
-				// build a smooth guess based on BC's
-				// int wT = v, wL = Nu-u-1, wB = Nv-v-1, wR = u; // weights
 				OPvector(id) = 1.0;
-							// 	( eta_BC[n].valueB * wB
-							// 	+ eta_BC[n].valueT * wT
-							// 	+ eta_BC[n].valueL * wL
-							// 	+ eta_BC[n].valueR * wR )
-							// /(Nu+Nv);
 			} else if (n == 2) {
 				double r = h*(u+u_shift);
 				double r_center = 20.0;//h*Nu/2;
