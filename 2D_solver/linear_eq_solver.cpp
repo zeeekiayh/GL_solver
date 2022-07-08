@@ -53,7 +53,7 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 	T_vector df(vect_size), rhs(vect_size); 
 
 	// the acceleration object
-	// converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
+	converg_acceler<T_vector> Con_Acc(cond.maxStore,cond.wait,cond.rel_p,no_update);
 
 	// adaptive relaxation
 	double prev_error = 0., percent_delta_err;
@@ -71,11 +71,11 @@ void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector
 		SC->bulkRHS_FE(cond, f, rhs, dummy);
 		df = (M*f - get_rhs(h2*rhs, rhsBC) ); // the best, works with both relaxation and acceleration methods 
 		for(auto id : no_update) df(id) = 0.0; // no update for Dirichlet bc and other fixed points
-		// Con_Acc.next_vector<T_matrix>( f, df, err ); // smart next guess
+		Con_Acc.next_vector<T_matrix>( f, df, err ); // smart next guess
 
 		// adaptive relaxation
-		f += rp*df;
-		err = rp*df.norm();
+		// f += rp*df;
+		// err = rp*df.norm();
 		percent_delta_err = (err-prev_error)/err;
 		// if (iter%freq==0 && percent_delta_err < 0. && percent_delta_err > percent_delta_err_min/* && rp*c < rpMax*/) rp *= c;
 		// if (iter%50==0) {
