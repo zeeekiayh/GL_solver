@@ -7,18 +7,16 @@
 // base_class of superconducting OP; contains the common features 
 class SC_class{
 	protected: // protected variables can be accessed by the derived classes
-		int Nop; // number of OP components
+		int Nop;               // number of OP components
 		int Nu, Nv, grid_size; // size of the grid in u,v-directions, and total number of grid points 
-		int vect_size; // full vector size of 
-		double h; // grid step size
-		T_scalar *eta_bulk; // OP components (pointer) 
-		Eigen::Matrix2d **gK;            // gradient coefficients in GL functional, each gK matrix is (xx, xz, // zx, zz)
+		int vect_size;         // full vector size of 
+		double h;              // grid step size
+		T_scalar *eta_bulk;    // OP components (pointer) 
+		Eigen::Matrix2d **gK;  // gradient coefficients in GL functional, each gK matrix is (xx, xz, // zx, zz)
       	SpMat_cd Du2, Dv2, Duv, Du, Dv; // base derivative matrices, without boundary conditions
-		SpMat_cd Du_FE, Dv_FE; // full first-order Derivative matrices to be used in FE calculation 
+		SpMat_cd Du_FE, Dv_FE;          // full first-order Derivative matrices to be used in FE calculation 
 	public:
-		//constructor 
-		// SC_op () {Nop=1; *eta_bulk = 1;}; // default constructor for single-component OP 
-		//      - eliminate default constructor for now, and always initiate the class ourselves  
+		//constructor
 		SC_class(int n, int nx, int ny, double step) {
 			Nop=n; Nu=nx; Nv=ny; grid_size=nx*ny; vect_size=grid_size * Nop; h=step; 
 			eta_bulk=new T_scalar [n];
@@ -74,8 +72,7 @@ class SC_class{
 
 		// to be defined by each derived class
 		virtual void bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb){};
-		virtual double FreeEn(T_vector & OPvector, in_conditions parameters, 
-				Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg){return 0.0;};
+		virtual double FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg){return 0.0;};
 };
 
 // derived_classes depends on the particular form of the bulk free energy, that gives the appropriate RHS vector
