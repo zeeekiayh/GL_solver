@@ -10,7 +10,7 @@ using namespace Eigen;
 // ===========================================================
 // Function prototypes defined in other files
 	// prototype for function defined in linear_eq_solver.cpp
-	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+	void Solver(T_vector & f, const SpMat_cd & M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
 int main(int argc, char** argv)
@@ -49,9 +49,9 @@ int main(int argc, char** argv)
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
 	if (argc >= 3 && *(argv[2]) == 'c') { // if it is for a cylindrical system
-		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
 		if (Nop == 5) {
-			if (file_name == string("conditions5c.txt"))              pSC->initialOPguess_Cylindrical_simple5(eta_BC, OPvector, no_update);
+			pSC = new Cylindrical5( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+			if (file_name == string("conditions5c.txt")) pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update);
 			else if (file_name == string("conditions5c_AzzFlip.txt")) pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update);
 			else if (file_name == string("conditions5c_bubble.txt")) {
 				// when using this one, set the desired radius on line 594 of 'SC_classes_derived.cpp'
@@ -65,12 +65,18 @@ int main(int argc, char** argv)
 				return 1;
 			}
 		} else if (Nop == 3) {
-			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple3(eta_BC, OPvector, no_update);
+			pSC = new Cylindrical3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update);
 			else {
 				cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
 				delete pSC;
 				return 1;
 			}
+		} else {
+			// who knows...
+			cout << "WARNING?: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
+			delete pSC;
+			return 1;
 		}
 	}
 	// other wise we'll use the cartesian system
@@ -105,10 +111,7 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	if (argc >= 3 && *(argv[2]) == 'c') // TODO: combine these functions into one?
-		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC );
-	else
-		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
+	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
 	cout << "done" << endl;
 
 	// ===============================================================================================================
