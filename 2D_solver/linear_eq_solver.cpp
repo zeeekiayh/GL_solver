@@ -27,7 +27,7 @@ T_vector get_rhs(T_vector h2_times_rhs_bulk, T_vector rhsBC){
 	return rhs_local;
 }
 
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC) {
+void Solver(T_vector & f, const SpMat_cd & M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC) {
 	int grid_size=cond.SIZEu * cond.SIZEv;
 	int vect_size=cond.Nop * grid_size;
 	double h2 = cond.STEP*cond.STEP;
