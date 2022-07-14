@@ -20,9 +20,57 @@ using namespace Eigen;
 
 	// For solving some systems as an inital guess for others
 	// ------  coded in linear_eq_solver.cpp ---------
-	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+	void Solver(T_vector & f, const SpMat_cd & M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
+
+// The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
+// Note: this method does not build matrices for cylindrical systems! Only for cartesian!
+void Cartesian::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC) {
+   auto rhsBClocal=rhsBC;
+   int x = 0, z = 1; // indexes for the K-matrix
+   // Use equ. (15) in the Latex file: [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
+   
+   for (int m = 0; m < Nop; m++) {
+      for (int n = 0; n < Nop; n++) {
+         SpMat_cd toInsertM(grid_size,grid_size);
+
+         if (gK[m][n](x,x) != 0 && Nu > 1){
+            toInsertM += gK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gK[m][n](x,x) * rhsBClocal;
+   	   }
+
+         if (gK[m][n](z,z) != 0 && Nv > 1){
+            toInsertM += gK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+            if(m==n) rhsBC += gK[m][n](z,z) * rhsBClocal;
+   	   }
+
+         if (gK[m][n](z,x) + gK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
+            toInsertM += (gK[m][n](z,x) + gK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+   	   }
+
+         M += Place_subMatrix( m, n, Nop, toInsertM );
+      }
+   }
+
+   // For free energy matrix we use the equation (10) and (36) in the latex file
+   SpMat_cd toInsertD(grid_size,grid_size);
+
+   if(Nu > 1) { // we have u-derivatives 
+   	Du_FE.resize(vect_size,vect_size);
+      for (int n = 0; n < Nop; n++) {
+            toInsertD = Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+         	Du_FE += Place_subMatrix( n, n, Nop, toInsertD );
+   	 }
+   }
+   if(Nv > 1) { // we have v-derivatives 
+   	Dv_FE.resize(vect_size,vect_size);
+      for (int n = 0; n < Nop; n++) {
+            toInsertD = Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
+         	Dv_FE += Place_subMatrix( n, n, Nop, toInsertD );
+   	 }
+   }
+}
 
 // ===========================================================
 // ThreeCompHe3 :: function definitions
@@ -292,8 +340,8 @@ using namespace Eigen;
 // ===========================================================
 
 
-// ===========================================================
 // Cylindrical :: function definitions
+// ===================================
 	void Cylindrical::Build_curvilinear_matrices(std::vector<Bound_Cond> eta_BC) {
 		Dr.resize(9*grid_size,9*grid_size);
 		Dz.resize(9*grid_size,9*grid_size);
@@ -336,8 +384,7 @@ using namespace Eigen;
 		
 		return;
 	}
-
-	void Cylindrical::BuildSolverMatrixCyl( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC) {
+	void Cylindrical::BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector & initOPvector, std::vector<Bound_Cond> eta_BC) {
 		// make all the matrices in eq. (54)
 		SpMat_cd Dr2t(grid_size,grid_size), // D_r^2 ~
 				Drp(grid_size,grid_size),   // D_r^+
@@ -458,43 +505,12 @@ using namespace Eigen;
 
 		return;
 	}
+// ===================================
 
-	// this one should be the same as the 5-component system, right? (says just below eq. (38).)
-	void Cylindrical::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb) {
-		int grid_point; 
-
-		for (int v = 0; v < Nv; v++) 
-		for (int u = 0; u < Nu; u++){ 
-			// we go over all grid points, 
-			grid_point = ID(u,v,0);
-			// and for all grid points collect all OP components into one eta_bulk[] array
-			for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
-
-			// create He3 OP matrix; works for both 3 & 5 component cylindrical systems
-			Matrix<T_scalar,3,3> A; 
-						A <<  eta_bulk[0],               0,      Nop==5?eta_bulk[4]:0.0,
-								         0,          eta_bulk[1],    0,
-							  Nop==5?eta_bulk[3]:0.0,    0,      eta_bulk[2];
-
-			Matrix<T_scalar,3,3> dFdA;
-			double FEbulk, betaB;
-			T_scalar dFdeta[5];
-			// find the derivatives and bulk Free energy
-			he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk); 
-			dFdeta[0] = dFdA(0,0);
-			dFdeta[1] = dFdA(1,1);
-			dFdeta[2] = dFdA(2,2);
-			dFdeta[3] = dFdA(2,0);
-			dFdeta[4] = dFdA(0,2);
-			// and put them into the big vector in the same order as OP components 
-			for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
-			FEb(grid_point) = FEbulk;
-		}
-
-		return;
-	}
-
-	double Cylindrical::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
+// Derived cylindrical classes
+// ===========================
+	// 3 component
+	double Cylindrical3::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
 		T_vector dummy(vect_size);
 		this->bulkRHS_FE(parameters, OPvector, dummy, freeEb);
 
@@ -541,9 +557,157 @@ using namespace Eigen;
 
 		return FE_minus_ref;
 	}
+	void Cylindrical3::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb) {
+		int grid_point; 
 
+		for (int v = 0; v < Nv; v++) 
+		for (int u = 0; u < Nu; u++){ 
+			// we go over all grid points, 
+			grid_point = ID(u,v,0);
+			// and for all grid points collect all OP components into one eta_bulk[] array
+			for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
+
+			// create He3 OP matrix; works for both 3 & 5 component cylindrical systems
+			Matrix<T_scalar,3,3> A; 
+						A <<  eta_bulk[0],     0,         0,
+								    0,    eta_bulk[1],    0,
+							        0,         0,     eta_bulk[2];
+
+			Matrix<T_scalar,3,3> dFdA;
+			double FEbulk, betaB;
+			T_scalar dFdeta[3];
+			// find the derivatives and bulk Free energy
+			he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk); 
+			dFdeta[0] = dFdA(0,0);
+			dFdeta[1] = dFdA(1,1);
+			dFdeta[2] = dFdA(2,2);
+			// and put them into the big vector in the same order as OP components 
+			for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
+			FEb(grid_point) = FEbulk;
+		}
+
+		return;
+	}
+	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
+	void Cylindrical3::initialOPguess_Cylindrical_simple(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+		// Using BC's to make a smooth guess
+		for (int n = 0; n < Nop; n++)
+		for (int u = 0; u < Nu; u++)
+		for (int v = 0; v < Nv; v++) {
+			int id = ID(u,v,n);
+			if (n < 2) {
+				OPvector(id) = 1.0;
+			} else { // n == 2
+				double z = h*v; // so that z = 0 is the surface
+				OPvector(id) = tanh(z/5.0);
+			}
+
+			if (u == 0 && eta_BC[n].typeL == string("D")) {
+				OPvector(id) = eta_BC[n].valueL;
+				no_update.push_back(id);
+			}
+			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
+				OPvector(id) = eta_BC[n].valueR;
+				no_update.push_back(id);
+			}
+			else if (v == 0 && eta_BC[n].typeB == string("D")) {
+				OPvector(id) = eta_BC[n].valueB;
+				no_update.push_back(id);
+			}
+			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
+				OPvector(id) = eta_BC[n].valueT;
+				no_update.push_back(id);	
+			}
+		}
+
+		VectorXd dummyFE(grid_size); 
+		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP3c.txt");
+	}
+
+	// 5 component
+	double Cylindrical5::FreeEn(T_vector & OPvector, in_conditions parameters, Eigen::VectorXd & FEdensity, Eigen::VectorXd & freeEb, Eigen::VectorXd & freeEg) {
+		T_vector dummy(vect_size);
+		this->bulkRHS_FE(parameters, OPvector, dummy, freeEb);
+
+		// We MUST have eta be the full size so that we can most easily account for
+		//	 the four D_phi contributions from components we don't calculate. (If we
+		//   don't make it the full size, then we will either get mis-matched matrix
+		//   multiplication or we will miss the "extra" parts that come from D_phi.)
+		T_vector eta(9*grid_size); eta << OPvector, T_vector::Zero((9-Nop)*grid_size);
+		T_vector eta_c=eta.conjugate();
+		
+		double FE_minus_ref=0.0; // relative to a reference Free energy, FEdensity on INPUT 
+		double wr, wz;           // weights for the integral free energy (trapezoidal rule)
+		// some other variable used in the loops below; label them here to reduce time in the loops
+		vector<T_vector> D_eta_c, D_eta;
+		double K_ijmn, r;
+		int id, id_m, id_n;
+
+		// build the derivative vectors 
+		D_eta_c.insert(D_eta_c.end(),{Dr*eta_c, Dphi*eta_c, Dz*eta_c});
+		D_eta.insert(D_eta.end(),{Dr*eta, Dphi*eta, Dz*eta});
+
+		for (int u = 0; u < Nu; u++) { // loop over the whole grid
+			if( Nu>1 && ( u==Nu-1 || (u==0 && u_shift<0.1) ) ) wr=0.5; else wr=1.0;
+			r = (u+u_shift); 
+			for (int v = 0; v < Nv; v++) {
+				if( (v==0 || v==Nv-1) && Nv>1 ) wz=0.5; else wz=1.0;
+
+				id = ID(u,v,0);
+				freeEg(id)=0;
+				for (int m = 0; m < 9; m++) for (int n = 0; n < 9; n++) { // sum over op components 
+					id_m = ID(u,v,m), id_n = ID(u,v,n); 
+					for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) { // sums over coordinates 
+						K_ijmn = Kij(i,j,m,n); 
+						if ( abs(K_ijmn) > 1e-4 )   freeEg(id) += K_ijmn * D_eta_c[i](id_m) * D_eta[j](id_n); // see eq. (46)
+				}}
+
+				FE_minus_ref += (2.0*M_PI*r*h) * wr*wz * ( h*h*(freeEb(id) - FEdensity(id)) + 2.0/3.0*freeEg(id) ); // see eq. (47)
+			} // v
+		} // u
+
+		freeEg *= 2.0/3.0/(h*h);
+		FEdensity = freeEb + freeEg;
+		if(Nu==1 || Nv==1) FE_minus_ref /=h; 
+
+		return FE_minus_ref;
+	}
+	// this one should be the same as the 5-component system, right? (says just below eq. (38).)
+	void Cylindrical5::bulkRHS_FE(in_conditions parameters, T_vector & OPvector, T_vector & newRHSvector, Eigen::VectorXd & FEb) {
+		int grid_point; 
+
+		for (int v = 0; v < Nv; v++) 
+		for (int u = 0; u < Nu; u++){ 
+			// we go over all grid points, 
+			grid_point = ID(u,v,0);
+			// and for all grid points collect all OP components into one eta_bulk[] array
+			for ( int i = 0; i < Nop; i++) eta_bulk[i] = OPvector( ID(u, v, i) ); 
+
+			// create He3 OP matrix; works for both 3 & 5 component cylindrical systems
+			Matrix<T_scalar,3,3> A; 
+						A <<  eta_bulk[0],               0,      Nop==5?eta_bulk[4]:0.0,
+								         0,          eta_bulk[1],    0,
+							  Nop==5?eta_bulk[3]:0.0,    0,      eta_bulk[2];
+
+			Matrix<T_scalar,3,3> dFdA;
+			double FEbulk, betaB;
+			T_scalar dFdeta[5];
+			// find the derivatives and bulk Free energy
+			he3bulk(parameters.T, parameters.P, betaB, A, dFdA, FEbulk); 
+			dFdeta[0] = dFdA(0,0);
+			dFdeta[1] = dFdA(1,1);
+			dFdeta[2] = dFdA(2,2);
+			dFdeta[3] = dFdA(2,0);
+			dFdeta[4] = dFdA(0,2);
+			// and put them into the big vector in the same order as OP components 
+			for ( int i = 0; i < Nop; i++) newRHSvector( ID(u, v, i) ) = dFdeta[i];
+			FEb(grid_point) = FEbulk;
+		}
+
+		return;
+	}
 	// initial guess functions
-	void Cylindrical::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, double r_wall, std::vector<int> & no_update) {
+	void Cylindrical5::initialOPguess_Cylindrical_bubble(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, Eigen::VectorXd & FE_ref, double r_wall, std::vector<int> & no_update) {
 		// build the guess from the 3 component cylindrical solution
 		int Nop_init = 3;
 		string file_name_init = "conditions3.txt";
@@ -616,44 +780,7 @@ using namespace Eigen;
 
 		return;
 	}
-
-	// just the simplest system: only z-variation, no domain walls, just the pairbreaking at the surface
-	void Cylindrical::initialOPguess_Cylindrical_simple3(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
-		// Using BC's to make a smooth guess
-		for (int n = 0; n < Nop; n++)
-		for (int u = 0; u < Nu; u++)
-		for (int v = 0; v < Nv; v++) {
-			int id = ID(u,v,n);
-			if (n < 2) {
-				OPvector(id) = 1.0;
-			} else { // n == 2
-				double z = h*v; // so that z = 0 is the surface
-				OPvector(id) = tanh(z/5.0);
-			}
-
-			if (u == 0 && eta_BC[n].typeL == string("D")) {
-				OPvector(id) = eta_BC[n].valueL;
-				no_update.push_back(id);
-			}
-			else if (u == Nu-1 && eta_BC[n].typeR == string("D")) {
-				OPvector(id) = eta_BC[n].valueR;
-				no_update.push_back(id);
-			}
-			else if (v == 0 && eta_BC[n].typeB == string("D")) {
-				OPvector(id) = eta_BC[n].valueB;
-				no_update.push_back(id);
-			}
-			else if (v == Nv-1 && eta_BC[n].typeT == string("D")) {
-				OPvector(id) = eta_BC[n].valueT;
-				no_update.push_back(id);	
-			}
-		}
-
-		VectorXd dummyFE(grid_size); 
-		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP3c.txt");
-	}
-
-	void Cylindrical::initialOPguess_Cylindrical_simple5(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+	void Cylindrical5::initialOPguess_Cylindrical_simple(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
@@ -694,8 +821,7 @@ using namespace Eigen;
 		VectorXd dummyFE(grid_size); 
 		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
 	}
-
-	void Cylindrical::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
+	void Cylindrical5::initialOPguess_Cylindrical_AzzFlip(std::vector<Bound_Cond> eta_BC, T_vector & OPvector, std::vector<int> & no_update) {
 		for (int n = 0; n < Nop; n++)
 		for (int u = 0; u < Nu; u++)
 		for (int v = 0; v < Nv; v++) {
@@ -731,4 +857,4 @@ using namespace Eigen;
 		VectorXd dummyFE(grid_size); 
 		this->WriteAllToFile(OPvector, dummyFE, dummyFE, dummyFE, "initial_guess_OP5c.txt");
 	}
-// ===========================================================
+// ===========================
