@@ -7,7 +7,7 @@ using namespace Eigen;
 using namespace std;
 
 // prototype for function defined in linear_eq_solver.cpp
-void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+void Solver(T_vector & f, const SpMat_cd & M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 
 typedef Triplet<double> Trpl;
 
@@ -344,54 +344,6 @@ SpMat_cd Place_subMatrix(int i, int j, int size, SpMat_cd sm) {
    }
 // end of derivative matrices
 // -------------------------------------------------------------------------------
-
-// The method of building the solver matrix is general (at least the same for 1-, 3-, and 5-component OP's)
-// Note: this method does not build matrices for cylindrical systems! Only for cartesian!
-void SC_class :: BuildSolverMatrix( SpMat_cd & M, T_vector & rhsBC, const T_vector initOPvector, std::vector<Bound_Cond> eta_BC) {
-   auto rhsBClocal=rhsBC;
-   int x = 0, z = 1; // indexes for the K-matrix
-   // Use equ. (15) in the Latex file: [K^mn_xx D_x^2  +  K^mn_zz D_z^2  +  (K^mn_xz  +  K^mn_zx) D_xz] eta_n = f_m(eta)
-   
-   for (int m = 0; m < Nop; m++) {
-      for (int n = 0; n < Nop; n++) {
-         SpMat_cd toInsertM(grid_size,grid_size);
-
-         if (gK[m][n](x,x) != 0 && Nu > 1){
-            toInsertM += gK[m][n](x,x) * Du2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==n) rhsBC += gK[m][n](x,x) * rhsBClocal;
-   	   }
-
-         if (gK[m][n](z,z) != 0 && Nv > 1){
-            toInsertM += gK[m][n](z,z) * Dv2_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-            if(m==n) rhsBC += gK[m][n](z,z) * rhsBClocal;
-   	   }
-
-         if (gK[m][n](z,x) + gK[m][n](x,z) != 0 && Nu > 1 && Nv > 1){
-            toInsertM += (gK[m][n](z,x) + gK[m][n](x,z)) * Duv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-   	   }
-
-         M += Place_subMatrix( m, n, Nop, toInsertM );
-      }
-   }
-
-   // For free energy matrix we use the equation (10) and (36) in the latex file
-   SpMat_cd toInsertD(grid_size,grid_size);
-
-   if(Nu > 1) { // we have u-derivatives 
-   	Du_FE.resize(vect_size,vect_size);
-      for (int n = 0; n < Nop; n++) {
-            toInsertD = Du_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-         	Du_FE += Place_subMatrix( n, n, Nop, toInsertD );
-   	 }
-   }
-   if(Nv > 1) { // we have v-derivatives 
-   	Dv_FE.resize(vect_size,vect_size);
-      for (int n = 0; n < Nop; n++) {
-            toInsertD = Dv_BD(eta_BC[n], n, initOPvector, rhsBClocal);
-         	Dv_FE += Place_subMatrix( n, n, Nop, toInsertD );
-   	 }
-   }
-}
 
 T_scalar profile_dbl_tanh(double x, double x0, T_scalar v1, T_scalar v2) { return (v1+(1.0-v1)*tanh(x/2.0)) * (v2+(1.0-v2)*tanh((x0-x)/2.0)); };
 T_scalar profile_dom_wall(double x, double x0, T_scalar v1, T_scalar v2) { return 0.5*(v2+v1) + 0.5*(v2-v1)*tanh((x-x0)/2.0); };
