@@ -8,7 +8,7 @@ N  1e+10  1    D  1e-10  0    N  1e+10  0    N  1e+07  1   # Azz
 N  1e+07  0    N  1e+10  0    N  1e+10  0    N  1e+07  0   # Azr
 N  1e+07  0    D  1e-10  0    N  1e+10  0    N  1e+07  0   # Arz
 
-160 160 # mesh size (r, z)
+40 40 # mesh size (r, z)
 0.5    # h (step size)
 0.5     # temperature
 0       # pressure
