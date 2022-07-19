@@ -54,9 +54,15 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     if len(argv) == 2: Nop == argv[1] # or get Nop from the command line
     Col_Dictionary, labels = read_columns_from_file(file_name) # can also get "Nu, Nv, h" from this function
 
+    user_u_shift = 0
     if input("Is this for a cylindrical system? (y/n): ") == 'y':
         custom_labels = [r'$A_{rr}$', r'$A_{\phi \phi}$', r'$A_{zz}$', r'$A_{zr}$', r'$A_{rz}$'] # cylindrical
         x_axis_label = rf'$r/\xi_0$'
+        print('Reminder: make sure to change "u_shift" appropriately to make the r-axis run from 0 to R.')
+        r_min = Col_Dictionary[labels[0]].min()
+        print(f'{r_min = }')
+        if input('Would you like to change r_min? (y/n): ') == 'y':
+            user_u_shift = float(input('Enter new value: '))
     else:
         custom_labels = [r'$A_{xx}$', r'$A_{yy}$', r'$A_{zz}$', r'$A_{zx}$', r'$A_{xz}$']
         x_axis_label = rf'$x/\xi_{0}$'
@@ -77,18 +83,34 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # find the overall MIN of the OP components
     OP_min = OP_cols.min()
     # variables for later
-    y1, x1 = 0, 0
+    y1_OP, x1_OP = 0, 0
     if OP_max+OP_min > 0:
-        x1 = OP_max
-        y1 = 1.0
+        x1_OP = OP_max
+        y1_OP = 1.0
     else:
-        x1 = OP_min
-        y1 = 0.0
+        x1_OP = OP_min
+        y1_OP = 0.0
     def OP_to_color(OP_value): # a function to map OP value to colorbar values
-        return (y1-0.5)*OP_value/x1+0.5
+        return (y1_OP-0.5)*OP_value/x1_OP+0.5
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # We could do the same for FE...?
+    FE_cols = Col_Dictionary[labels[Nop*2]] # ADJUST THIS FOR THE NEEDED COLUMN!
+    # FE_cols = np.array(FE_cols)
+    # find the overall MAX of the FE components
+    FE_max = FE_cols.max()
+    # find the overall MIN of the FE components
+    FE_min = FE_cols.min()
+    # variables for later
+    y1_FE, x1_FE = 0, 0
+    if FE_max+FE_min > 0:
+        x1_FE = FE_max
+        y1_FE = 1.0
+    else:
+        x1_FE = FE_min
+        y1_FE = 0.0
+    def FE_to_color(FE_value): # a function to map FE value to colorbar values
+        return (y1_FE-0.5)*FE_value/x1_FE+0.5
     
 
     clr_map = LinearSegmentedColormap.from_list("", ["k","navy","blue","c","slategrey","lime","white","gold","orange","goldenrod","red","maroon","k"]) # colors for the gradient in plots; low value to high
@@ -130,7 +152,7 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     FE_ax, grad_FE_ax, FE_ref_ax, empty_ax2 = None, None, None, None
 
     # shift values...for x- and y-axes
-    u_shift = 0
+    u_shift = user_u_shift
     v_shift = 0
 
 
