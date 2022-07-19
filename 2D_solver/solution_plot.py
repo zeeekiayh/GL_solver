@@ -91,8 +91,8 @@ def main(argv): # argv will be like: [ file_name, [Nop] ]
     # We could do the same for FE...?
     
 
-    # clr_map = LinearSegmentedColormap.from_list("", ["k","navy","blue","c","slategrey","lime","white","gold","orange","goldenrod","red","maroon","k"]) # colors for the gradient in plots; low value to high
-    clr_map = LinearSegmentedColormap.from_list("", ["navy","blue","blue","blue","c","c","c","white","gold","gold","gold","red","red","red","maroon"]) # colors for the gradient in plots; low value to high
+    clr_map = LinearSegmentedColormap.from_list("", ["k","navy","blue","c","slategrey","lime","white","gold","orange","goldenrod","red","maroon","k"]) # colors for the gradient in plots; low value to high
+    # clr_map = LinearSegmentedColormap.from_list("", ["navy","blue","blue","blue","c","c","c","white","gold","gold","gold","red","red","red","maroon"]) # colors for the gradient in plots; low value to high
     def PColorMeshPlot(v_col, lower_lim=None, upper_lim=None, ax=plt, cmap=None, uShift=0, vShift=0, u_col=0, w_col=1):
         # get the values for the OP component we will plot
         this_OP_data = Col_Dictionary[labels[v_col]]
