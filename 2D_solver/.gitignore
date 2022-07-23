@@ -12,7 +12,6 @@ initial_guess_OP?.txt
 initial_guess_OP?c.txt
 
 free_energy_x_integrated.dat
-testing.py
 SC_classes_derived.cpp.bak
 
 # ignore gl_fdm changes

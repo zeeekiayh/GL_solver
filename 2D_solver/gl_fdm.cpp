@@ -10,14 +10,14 @@ using namespace Eigen;
 // ===========================================================
 // Function prototypes defined in other files
 	// prototype for function defined in linear_eq_solver.cpp
-	void Solver(T_vector & f, SpMat_cd M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
+	void Solver(T_vector & f, const SpMat_cd & M, T_vector rhsBC, in_conditions cond, vector<int> no_update, SC_class *SC);
 // ===========================================================
 
 int main(int argc, char** argv)
 {
 	int Nop;
-	if (argc < 2 || argc > 4) {
-		cout << "ERROR: need an argument for 'file_name'; do so like: '$ ./gl_fdm <file_name> [c]'." << endl;
+	if (argc < 2 || argc > 5) {
+		cout << "ERROR: need an argument for 'file_name'; do so like: '$ ./gl_fdm <file_name> [c] [r_wall] [append_to_file: y]'." << endl;
 		return 1;
 	}
 	string file_name = string(argv[1]);
@@ -48,14 +48,14 @@ int main(int argc, char** argv)
 	cout << "initializing object and guess..." << endl;
 	SC_class *pSC; // the SC object...
 	// ... depending on given OP size
-	if ((argc == 3 || argc == 4) && *(argv[2]) == 'c') { // if it is for a cylindrical system
-		pSC = new Cylindrical ( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+	if (argc >= 3 && *(argv[2]) == 'c') { // if it is for a cylindrical system
 		if (Nop == 5) {
-			if (file_name == string("conditions5c.txt"))              pSC->initialOPguess_Cylindrical_simple5(eta_BC, OPvector, no_update);
+			pSC = new Cylindrical5( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+			if (file_name == string("conditions5c.txt")) pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update);
 			else if (file_name == string("conditions5c_AzzFlip.txt")) pSC->initialOPguess_Cylindrical_AzzFlip(eta_BC, OPvector, no_update);
 			else if (file_name == string("conditions5c_bubble.txt")) {
 				// when using this one, set the desired radius on line 594 of 'SC_classes_derived.cpp'
-				if (argc==4) rWall = double(stod(string(argv[3])));
+				if (argc >= 4) rWall = double(stod(string(argv[3])));
 				else rWall = 10.0;
 				pSC->initialOPguess_Cylindrical_bubble (eta_BC, OPvector, FEdens_ref, rWall, no_update);
 			}
@@ -65,12 +65,18 @@ int main(int argc, char** argv)
 				return 1;
 			}
 		} else if (Nop == 3) {
-			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple3(eta_BC, OPvector, no_update);
+			pSC = new Cylindrical3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP, eta_BC );
+			if (file_name == string("conditions3c.txt")) pSC->initialOPguess_Cylindrical_simple(eta_BC, OPvector, no_update);
 			else {
 				cout << "WARNING: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
 				delete pSC;
 				return 1;
 			}
+		} else {
+			// who knows...
+			cout << "WARNING?: you either added the optional argument '[c]' on accident, or passed in the wrong file name for a cylindrical system." << endl;
+			delete pSC;
+			return 1;
 		}
 	}
 	// otherwise we'll use the Cartesian system
@@ -99,17 +105,14 @@ int main(int argc, char** argv)
 		pSC = new OneCompSC( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
 	} else {
 		cout << "Unknown OP size. Exiting..." << endl;
-		delete pSC; // IS THIS ACTUALLY OK IF pSC HAS NOT BEEN SET?
+		delete pSC;
 		return 1;
 	}
 	
 	// ===============================================================================================================
 
 	cout << "building solver matrix...";
-	if ((argc == 3 || argc == 4) && *(argv[2]) == 'c') // TODO: combine these functions into one?
-		pSC->BuildSolverMatrixCyl( M, rhsBC, OPvector, eta_BC );
-	else
-		pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
+	pSC->BuildSolverMatrix( M, rhsBC, OPvector, eta_BC );
 	cout << "done" << endl;
 
 	// ===============================================================================================================
@@ -127,14 +130,14 @@ int main(int argc, char** argv)
 	// ===============================================================================================================
 
 	// write everything to file
-	pSC->WriteAllToFile(OPvector, FEdens, freeEb, FEdens_ref, "output_OP"+to_string(Nop)+( (argc == 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
+	pSC->WriteAllToFile(OPvector, FEdens, freeEb, FEdens_ref, "output_OP"+to_string(Nop)+( (argc >= 3 && *(argv[2]) == 'c') ? "c" : "" )+".txt");
 
 	// ===============================================================================================================
 
 	// de-allocating memory
 	delete pSC;
 
-	if (file_name == string("conditions5c_bubble.txt")) {
+	if (file_name == string("conditions5c_bubble.txt") && argc == 5) {
 		// write the data to file
 		string En_file_name("E_vs_r.txt");
 		ofstream file_out;

@@ -53,6 +53,16 @@ void betas(double t, double p, double *beta)
 	beta[4]=-2*beta[1] 	+0.0; 
 	beta[5]=+2*beta[1] 	+0.0; 
 
+	// testing stong-coupling corrections:
+	//	+ T_over_Tc * Delta_beta
+	double T_over_Tc = 0.9; // 90% of Tc
+	// test p = 15 bar
+	beta[1] += T_over_Tc * 1.0;
+	beta[2] += T_over_Tc * 0.975;
+	beta[3] += T_over_Tc * 0.86;
+	beta[4] += T_over_Tc * 0.675;
+	beta[5] += T_over_Tc * 0.95;
+
 	double betaB = beta[1]+beta[2] + (beta[3]+beta[4]+beta[5])/3.0;
 
 	for(int i=1; i<=5; i++) beta[i] /= betaB;
