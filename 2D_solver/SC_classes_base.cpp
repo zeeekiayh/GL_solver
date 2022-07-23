@@ -509,7 +509,7 @@ void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond>
    cout << "initial 1D Guess total FE energy relative to bulk's is " << totalFE << "\n";
    pSC_init->WriteAllToFile(OPvector_init, FEdens_init, freeEb_init, FEref_init, "initial_guess_OP"+to_string(cond_init.Nop)+".txt");
 
-	double R=10.0;
+	double R=15.0;
 
 	for (int v = 0; v < Nv; v++) {
 		double z=h*v;
@@ -523,9 +523,9 @@ void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond>
 
 			if     (n==0) OPvector(id) = OPvector_init(id_init);  
 			else if(n==1) OPvector(id) = OPvector_init(id_init);  
-			//else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh((R-rho)/2); // semi-circle domain in Azz near a wall
-			else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh(-x/2); // domain wall in Azz component along x
-			else if(n==3) OPvector(id) = 0.0/cosh(x/5)/cosh(z/5); 
+			else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh((R-rho)/2); // semi-circle domain in Azz near a wall
+			//else if(n==2) OPvector(id) = OPvector_init(id_init) * tanh(-x/2); // domain wall in Azz component along x
+			else if(n==3) OPvector(id) = 0.0/cosh(x/8)/cosh(z/8);
 		   	else 		  OPvector(id) = 0.0;
 
 			// Don't need to update values that we already know from the BC's
@@ -533,7 +533,7 @@ void SC_class :: initOPguess_special(in_conditions cond, std::vector<Bound_Cond>
 			if(u==Nu-1 && eta_BC[n].typeR=="D" && Nv>1) no_update.push_back( id );
 			if(v==0  && eta_BC[n].typeB=="D" && Nu>1) no_update.push_back( id );
 			if(v==Nv-1 && eta_BC[n].typeT=="D" && Nu>1) no_update.push_back( id );
-			//if( n==2 &&  abs(rho-R) < 0.4*h) no_update.push_back( id ); // to fix the radius of the semi-circle domain
+			if( n==2 &&  abs(rho-R) < 0.4*h) no_update.push_back( id ); // to fix the radius of the semi-circle domain
 		}
 		FE_ref( ID(u,v,0) ) = FEdens_init( v );
 

@@ -73,10 +73,11 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	// other wise we'll use the cartesian system
+	// otherwise we'll use the Cartesian system
 	else if (Nop == 3) {
 		pSC = new ThreeCompHe3( Nop, cond.SIZEu, cond.SIZEv, cond.STEP );
-		if (file_name == string("conditions3.txt")) pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
+		if (file_name == string("conditions3.txt") || file_name == string("conditions3_x.txt") || file_name == string("conditions3_z.txt")) 
+			pSC->initialOPguess(eta_BC, OPvector, no_update); // set the OP vector to a good guess based on BC's
 		else {
 			cout << "WARNING: you probably forgot the optional argument '[c]'." << endl;
 			delete pSC;

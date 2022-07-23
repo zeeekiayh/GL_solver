@@ -48,10 +48,10 @@ void betas(double t, double p, double *beta)
 	beta[0]=-1.0; // alpha-coefficient in GL / |alpha| 
 	// strong-coupling corrections will change beta[1-5]
 	beta[1]=-1.0; // reference beta, followed by weak-coupling relations 
-	beta[2]=-2*beta[1]; 
-	beta[3]=-2*beta[1]; 
-	beta[4]=-2*beta[1]; 
-	beta[5]=+2*beta[1]; 
+	beta[2]=-2*beta[1] 	+0.0; // *abs(beta1_wc) = *1
+	beta[3]=-2*beta[1] 	+0.0; 
+	beta[4]=-2*beta[1] 	+0.0; 
+	beta[5]=+2*beta[1] 	+0.0; 
 
 	double betaB = beta[1]+beta[2] + (beta[3]+beta[4]+beta[5])/3.0;
 

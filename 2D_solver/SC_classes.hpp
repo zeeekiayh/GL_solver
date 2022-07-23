@@ -124,8 +124,9 @@ class FiveCompHe3 : public SC_class {
 		FiveCompHe3 (int n, int nx, int ny, double step) : SC_class(n, nx, ny, step) { 
 			int c[]={0,1,2,3,4}; // fill the gK matrix for OP components 0,1,2,3,4=(Axx, Ayy, Azz, Azx, Axz)
 			for(int m=0; m<5; m++) for(int k=0; k<5; k++){
+				//gK[m][k] << Kuu[c[m]][c[k]], 0, 0, Kvv[c[m]][c[k]] ;
 				gK[m][k] << Kuu[c[m]][c[k]], Kuv[c[m]][c[k]], 
-						    Kvu[c[m]][c[k]], Kvv[c[m]][c[k]] ;
+						Kvu[c[m]][c[k]], Kvv[c[m]][c[k]] ;
 			}
 		}
 		~FiveCompHe3 () {} 
